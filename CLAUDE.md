@@ -56,6 +56,8 @@ Three project subagents in `.claude/agents/`. Delegate to them (Agent tool, by n
 | `builder` | **Sonnet** | Go code: approved screens, scenes, the agent backdoor, the model, tests |
 | `tester` | **Sonnet** | Checks + driving the game through the agent backdoor (Architecture → Agent backdoor); reports, never fixes |
 
+**Fresh agents per milestone (Alejo, 2026-10-13):** when a milestone is finished, start **new** `art` and `builder` agents for the next one (a new Agent call, not a resume). Inside a milestone, resuming the same agent is fine. Put everything the new agent needs in its prompt.
+
 Usual cycle for a screen: `art` (sprites → Figma view) → **Alejo approves** → `builder` → `tester` → fixes by `builder`.
 
 **Visual-issue loop (Alejo, 2026-10-13): Sonnet spots it, Opus confirms it and fixes exactly that.** Subagents can't message each other, so the main session relays:
