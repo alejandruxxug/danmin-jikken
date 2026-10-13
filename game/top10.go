@@ -88,7 +88,7 @@ func (s *top10Scene) next() {
 }
 
 func (s *top10Scene) Draw(screen *ebiten.Image) {
-	p := &painter{art: s.art, screen: screen, elapse: time.Duration(s.ticks) * time.Second / 60}
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
 	p.terminal(nil, int(s.env.CameraX), "V CLOSE V")
 
 	p.text("TOP 10  DRIFTWELL CLERKS", textLeft, 27, colPaper)
@@ -111,11 +111,7 @@ func (s *top10Scene) Draw(screen *ebiten.Image) {
 		if r.Ghost {
 			rank, score = "-", "---"
 		}
-		name := r.Name
-		if len(name) > maxNameChars {
-			name = name[:maxNameChars]
-		}
-		p.row(rank, name, score, r.Time, y)
+		p.row(rank, shortName(r.Name), score, r.Time, y)
 		p.text(r.Message, colNote, y, colPaper)
 	}
 
@@ -134,6 +130,15 @@ func (s *top10Scene) Draw(screen *ebiten.Image) {
 	if p.err != nil && s.drawErr == nil {
 		s.drawErr = p.err
 	}
+}
+
+// shortName cuts a name to maxNameChars letters. It counts runes, not bytes,
+// so an OS username with accents is never cut in the middle of a letter.
+func shortName(name string) string {
+	if runes := []rune(name); len(runes) > maxNameChars {
+		return string(runes[:maxNameChars])
+	}
+	return name
 }
 
 // row prints the four columns of one table row, its top at y.

@@ -21,6 +21,10 @@ type Input struct {
 	mouseX     int
 	mouseY     int
 	IgnoreReal bool // set in test mode
+
+	// Where the 480x270 picture sits on the real screen (see fitScreen):
+	// scale 0 means the screen is the picture itself.
+	scale, offX, offY int
 }
 
 // NewInput makes an Input with nothing injected.
@@ -33,13 +37,44 @@ func (in *Input) KeyPressed(k ebiten.Key) bool {
 	return in.keys[k] || inpututil.IsKeyJustPressed(k)
 }
 
+// SetView tells Input how the game picture is placed on the screen.
+func (in *Input) SetView(scale, offX, offY int) {
+	in.scale, in.offX, in.offY = scale, offX, offY
+}
+
+// mouse is the real mouse in 1x game pixels. Outside the picture (on the
+// black bars) the numbers fall outside 0..479 and 0..269, so no button is hit.
+func (in *Input) mouse() (x, y int) {
+	px, py := ebiten.CursorPosition()
+	if in.scale <= 0 {
+		return px, py
+	}
+	return floorDiv(px-in.offX, in.scale), floorDiv(py-in.offY, in.scale)
+}
+
+// floorDiv divides rounding down, so -1 pixel left of the picture is column
+// -1 and not column 0 (Go's / rounds toward zero).
+func floorDiv(a, b int) int {
+	q := a / b
+	if a%b != 0 && (a < 0) != (b < 0) {
+		q--
+	}
+	return q
+}
+
+// FullscreenPressed is true on the frame F11 or Alt+Enter goes down.
+func (in *Input) FullscreenPressed() bool {
+	altEnter := ebiten.IsKeyPressed(ebiten.KeyAlt) && in.KeyPressed(ebiten.KeyEnter)
+	return in.KeyPressed(ebiten.KeyF11) || altEnter
+}
+
 // Click returns the 1x game position of a left click on this frame.
 func (in *Input) Click() (x, y int, ok bool) {
 	if in.clicked {
 		return in.clickX, in.clickY, true
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		x, y = ebiten.CursorPosition() // already in 480x270 game pixels
+		x, y = in.mouse()
 		return x, y, true
 	}
 	return 0, 0, false
@@ -53,7 +88,7 @@ func (in *Input) Cursor() (x, y int) {
 	case in.IgnoreReal:
 		return ScreenW / 2, ScreenH / 2
 	}
-	return ebiten.CursorPosition()
+	return in.mouse()
 }
 
 // InjectMouse moves the pretend cursor to (x, y) and keeps it there.

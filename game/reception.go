@@ -91,8 +91,13 @@ func (s *receptionScene) click(x, y int) {
 	}
 }
 
-// attend sends staff to a sleeping guest the player clicked.
+// attend sends staff to a sleeping guest the player clicked (or wakes the
+// guest who dozed off at the window).
 func (s *receptionScene) attend(g *Guest) {
+	if g == s.shift.Dozing() { // the day 1 tutorial: a click wakes her up
+		_ = s.shift.Wake(g)
+		return
+	}
 	if !s.shift.needsStaff(g) {
 		return // awake, in a bed or not here: nothing to do
 	}
@@ -123,6 +128,8 @@ func (s *receptionScene) clickAlert(x, y int) {
 func guestRect(sh *Shift, g *Guest) rect {
 	x, y := int(g.x), int(g.y)
 	switch sh.LookOf(g) {
+	case LookDozing: // the visible part of the window sprite
+		return rect{x, y, 96, windowGlass.y + windowGlass.h - y}
 	case LookAsleep:
 		return rect{x, y, 32, 64}
 	case LookHallway:
@@ -132,7 +139,7 @@ func guestRect(sh *Shift, g *Guest) rect {
 }
 
 func (s *receptionScene) Draw(screen *ebiten.Image) {
-	p := &painter{art: s.art, screen: screen, elapse: time.Duration(s.ticks) * time.Second / 60}
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
 	p.room(s.shift, int(s.env.CameraX))
 	p.hud(s.shift, s.env.Clock.String(), "^ PATIENT COMPUTER ^")
 	p.toast(s.shift.Message())

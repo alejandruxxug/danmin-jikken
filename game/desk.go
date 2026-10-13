@@ -29,8 +29,12 @@ type spot struct{ x, y int }
 
 var (
 	windowSpot = spot{312, 64} // behind the counter glass; the desk hides below y 186
-	// The five chairs of the waiting room, left to right.
-	chairSpots = []spot{{122, 110}, {154, 110}, {180, 110}, {206, 110}, {232, 110}}
+	// The five chairs of the waiting room, left to right. A seated sprite's
+	// body is 24 px wide, so the slots are at least 24 px apart (no two
+	// patients overlap), and the last slot keeps the patient and their "z"
+	// bubble left of x 258, where the post of the counter frame starts. That
+	// puts the seated patients up to 5 px left of their chairs.
+	chairSpots = []spot{{122, 110}, {150, 110}, {176, 110}, {202, 110}, {226, 110}}
 	// Where sleepers lie on the hallway floor, in front of the ward doors.
 	hallwaySpots = []spot{{548, 176}, {598, 176}, {648, 176}, {548, 198}, {598, 198}}
 )
@@ -56,14 +60,24 @@ var stampRects = []struct {
 // on the screen, not in the room, so it never pans.
 var tabRect = rect{160, 253, 160, 17}
 
+// The glass opening of the counter window, in world pixels: the posts' centre
+// lines are x 261 and 459, the top bar y 61, and the counter covers y 190
+// and below. Every guest on the window row is drawn only inside it.
+var windowGlass = rect{261, 61, 198, 129}
+
 // The layers that make up a patient, back to front. Awake and asleep differ
 // only in the eyes, the mouth and the zzz.
 var (
-	cecilyAwake   = []string{"fill", "lineart", "detail", "eyes_normal", "mouth_smile"}
 	fisherAwake   = []string{"fill", "lineart", "detail", "eyes_normal", "mouth_neutral"}
 	patientAsleep = []string{"fill", "lineart", "detail", "eyes_closed", "mouth_slack", "fx_zzz"}
 	hallwayLayers = []string{"fill", "lineart", "eyes_closed", "fx_zzz"}
 )
+
+// windowAwake is the awake layer list of a window sprite: every visitor has
+// their own mouth (Visitor.Mouth).
+func windowAwake(v Visitor) []string {
+	return []string{"fill", "lineart", "detail", "eyes_normal", v.Mouth}
+}
 
 // eyesFor is the layer list with the eyes shut when blink is true: the
 // eyes_normal layer is swapped for eyes_closed.
@@ -85,10 +99,17 @@ var (
 	glassLayers = []string{"dust", "glare", "bezel"} // "reflection" is for day 3
 )
 
+// deskLayers are the layers of the desk sheet for a day: the same three as
+// the room, plus that day's memo ("memo_day1" ... "memo_day3").
+func deskLayers(day int) []string {
+	return []string{"fill", "lineart", "detail", fmt.Sprintf("memo_day%d", day)}
+}
+
 // DeskArt is every sheet the day scenes draw, plus the font.
 type DeskArt struct {
-	room, desk, glass, window, waiting, hallway, computer, icons *sprites.Sheet
-	font                                                         *Font
+	room, desk, glass, waiting, hallway, computer, icons *sprites.Sheet
+	window                                               map[string]*sprites.Sheet // by Visitor.Sprite
+	font                                                 *Font
 }
 
 // LoadDeskArt loads the sheets and the font.
@@ -99,13 +120,21 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		name  string
 	}{
 		{&a.room, "reception_bg"}, {&a.desk, "desk"}, {&a.glass, "screen_glass"},
-		{&a.window, "cecily"}, {&a.waiting, "waiting_fisher"}, {&a.hallway, "hallway_sleeper"},
+		{&a.waiting, "waiting_fisher"}, {&a.hallway, "hallway_sleeper"},
 		{&a.computer, "computer"}, {&a.icons, "ui_icons"},
 	} {
 		var err error
 		if *l.sheet, err = LoadSheet(fsys, l.name); err != nil {
 			return nil, fmt.Errorf("day art: %w", err)
 		}
+	}
+	a.window = make(map[string]*sprites.Sheet)
+	for _, name := range windowSprites() {
+		sheet, err := LoadSheet(fsys, name)
+		if err != nil {
+			return nil, fmt.Errorf("day art: %w", err)
+		}
+		a.window[name] = sheet
 	}
 	var err error
 	if a.font, err = LoadFont(); err != nil {
@@ -119,6 +148,7 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 type painter struct {
 	art    *DeskArt
 	screen *ebiten.Image
+	day    int           // which day's memo the desk shows
 	elapse time.Duration // time since the scene started, for the boil
 	err    error
 }
@@ -142,12 +172,31 @@ func (p *painter) room(sh *Shift, cam int) {
 	// window patient's body below its top edge. With no shift (the top-10
 	// after the day ended) the room is empty.
 	if sh != nil {
-		for _, g := range sh.Guests {
-			p.guest(sh, g, cam)
+		// Guests who stand or sit first, then those still walking, so a
+		// guest passing a chair is drawn over the one sitting there.
+		for _, walking := range []bool{false, true} {
+			for _, g := range sh.Guests {
+				if (g.steps > 0) == walking {
+					p.guest(sh, g, cam)
+				}
+			}
 		}
 	}
 	// The desk shares the room's origin, so it pans with it.
-	p.sheet(p.art.desk, roomLayers, -cam, 0)
+	p.sheet(p.art.desk, deskLayers(p.day), -cam, 0)
+}
+
+// sheetIn draws like sheet, but only inside the clip rectangle (screen
+// pixels): everything outside it is left alone.
+func (p *painter) sheetIn(clip rect, s *sprites.Sheet, layers []string, x, y int) {
+	r := image.Rect(clip.x, clip.y, clip.x+clip.w, clip.y+clip.h).Intersect(p.screen.Bounds())
+	if r.Empty() {
+		return
+	}
+	full := p.screen
+	p.screen = full.SubImage(r).(*ebiten.Image) // draws keep screen coordinates
+	p.sheet(s, layers, x, y)
+	p.screen = full
 }
 
 // guest draws one guest as the shift says they look.
@@ -157,15 +206,25 @@ func (p *painter) guest(sh *Shift, g *Guest, cam int) {
 	case LookStanding:
 		blink := sh.Blinking(g)
 		if int(g.y) == windowSpot.y { // on the window row: the big sprite
-			p.sheet(p.art.window, eyesFor(cecilyAwake, blink), x, y)
+			p.windowGuest(g, eyesFor(windowAwake(g.Visitor), blink), x, y, cam)
 		} else {
 			p.sheet(p.art.waiting, eyesFor(fisherAwake, blink), x, y)
 		}
+	case LookDozing:
+		p.windowGuest(g, patientAsleep, x, y, cam)
 	case LookAsleep:
 		p.sheet(p.art.waiting, patientAsleep, x, y)
 	case LookHallway:
 		p.sheet(p.art.hallway, hallwayLayers, x, y)
 	}
+}
+
+// windowGuest draws a guest on the window row, clipped to the glass opening
+// so they slide in and out from behind the posts instead of walking over
+// the wall.
+func (p *painter) windowGuest(g *Guest, layers []string, x, y, cam int) {
+	clip := rect{windowGlass.x - cam, windowGlass.y, windowGlass.w, windowGlass.h}
+	p.sheetIn(clip, p.art.window[g.Sprite], layers, x, y)
 }
 
 // glass is the dust and bezel over the whole screen. It never pans.
@@ -217,15 +276,18 @@ func (p *painter) tab(label string) {
 	p.textCentered(label, tabRect.x+tabRect.w/2, 261, colPaper)
 }
 
-// toast shows the last message just above the tab.
+// toast shows the last message in a black bar at the top, between the two HUD
+// plates. It is the one strip of the screen where the approved views have
+// nothing but ceiling at every camera position (the bottom strip holds the
+// stamps, the tray and the bell, and they pan).
 func (p *painter) toast(msg string) {
 	if msg == "" {
 		return
 	}
 	w := p.art.font.Width(msg) + 12
-	r := rect{ScreenW/2 - w/2, 236, w, 14}
+	r := rect{ScreenW/2 - w/2, 10, w, 14}
 	p.fill(r, colInk)
-	p.textCentered(msg, ScreenW/2, 240, colPaper)
+	p.textCentered(msg, ScreenW/2, 14, colPaper)
 }
 
 // noRoomBox is the "no room" alert (the Figma view's box: 223 x 92).

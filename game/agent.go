@@ -44,10 +44,14 @@ type Options struct {
 	Scores  string // the scores file (without it scores stay in memory)
 	Score   int    // today's score at the start (day.top10 saves it)
 	Sleepy  bool   // patients fall asleep within a second and sleep long
+
+	// Fullscreen is an ordinary option for players, so it also works
+	// without -agent.
+	Fullscreen bool
 }
 
-// ParseOptions reads the flags. Every flag except -agent is ignored (and
-// reset) when -agent is missing, so a player can't trip the backdoor.
+// ParseOptions reads the flags. Every flag except -agent and -fullscreen is
+// ignored (and reset) when -agent is missing, so a player can't trip the backdoor.
 func ParseOptions(args []string) (Options, error) {
 	var o Options
 	fs := flag.NewFlagSet("danmin", flag.ContinueOnError)
@@ -69,6 +73,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Scores, "scores", "", "scores file to use (default: none, kept in memory)")
 	fs.IntVar(&o.Score, "score", 0, "today's score at the start")
 	fs.BoolVar(&o.Sleepy, "sleepy", false, "patients fall asleep fast and sleep long")
+	fs.BoolVar(&o.Fullscreen, "fullscreen", false, "start in fullscreen (F11 or Alt+Enter toggles it)")
 	if err := fs.Parse(args); err != nil {
 		return Options{}, err
 	}
@@ -78,7 +83,7 @@ func ParseOptions(args []string) (Options, error) {
 		}
 	})
 	if !o.Enabled {
-		return Options{}, nil
+		return Options{Fullscreen: o.Fullscreen}, nil
 	}
 	return o, nil
 }
@@ -322,8 +327,10 @@ func (a *Agent) runCommands(env *Env) {
 			}
 		case "shot", "shot4":
 			a.pending = append(a.pending, output{cmd.Op, cmd.Path})
+			return // the commands after it run next frame, so it shows the state before them
 		case "dump":
 			a.pending = append(a.pending, output{"dump", cmd.Path})
+			return
 		}
 	}
 }
@@ -436,6 +443,7 @@ type Dump struct {
 	Staff     []DumpStaff   `json:"staff"`
 	Alerts    []string      `json:"alerts"`
 	Message   string        `json:"message"`
+	Dozing    string        `json:"dozing"` // the day 1 guest asleep at the window, "" otherwise
 	Tab       string        `json:"computerTab"`
 	Top10     []DumpScore   `json:"top10"` // as the top-10 scene showed it
 	ShiftOver bool          `json:"shiftOver"`
@@ -508,6 +516,7 @@ type DumpScore struct {
 
 var lookNames = map[Look]string{
 	LookHidden: "hidden", LookStanding: "standing", LookAsleep: "asleep", LookHallway: "hallway",
+	LookDozing: "dozing",
 }
 
 // BuildDump collects the state. The hospital part comes from Snapshot, so
@@ -575,6 +584,9 @@ func (d *Dump) addShift(sh *Shift) {
 	d.Score, d.Served, d.Total = sh.Score(), sh.Served(), sh.Total()
 	d.ShiftSecs, d.ShiftOver = sh.Seconds(), sh.Over()
 	d.Message = sh.Message()
+	if g := sh.Dozing(); g != nil {
+		d.Dozing = g.Name
+	}
 	for _, g := range sh.Guests {
 		d.Queue = append(d.Queue, DumpGuest{
 			ID: g.ID(), Name: g.Name, Status: g.status.String(),

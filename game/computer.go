@@ -53,8 +53,16 @@ var (
 // roomCard is where room number i (0, 1, 2) is shown on the BEDS tab.
 func roomCard(i int) rect { return rect{40 + 136*i, 64, 128, 44} }
 
-// hallwayRow is where the k-th sleeper with no bed is shown (two fit).
-func hallwayRow(k int) rect { return rect{40, 132 + 16*k, 290, 16} }
+// hallwayRows rows fit between the HALLWAY header and STAFF ON SHIFT; the
+// 16 px icons are stacked 14 px apart so the second one ends at y 162, just
+// above the header at 163. The first row is exactly as in the approved view.
+const (
+	hallwayRows  = 2
+	hallwayPitch = 14
+)
+
+// hallwayRow is where the k-th sleeper with no bed is shown.
+func hallwayRow(k int) rect { return rect{40, 132 + hallwayPitch*k, 290, hallwayPitch} }
 
 // computerScene is the flip-up patient computer over the reception. The
 // day goes on behind it: patients still fall asleep while you look at it.
@@ -82,7 +90,8 @@ func (s *computerScene) Enter(env *Env) error {
 	return nil
 }
 
-func (s *computerScene) Exit() {}
+// Exit forgets the open tab, so the next visit (and the dump) starts on BEDS.
+func (s *computerScene) Exit() { s.env.Tab = "" }
 
 func (s *computerScene) Update() error {
 	if s.drawErr != nil {
@@ -116,7 +125,7 @@ func (s *computerScene) click(x, y int) {
 		return
 	}
 	for k, g := range waiting {
-		if k < 2 && hallwayRow(k).has(x, y) {
+		if k < hallwayRows && hallwayRow(k).has(x, y) {
 			att, err := s.shift.Dispatch(g)
 			s.afterDispatch(att, err)
 			return
@@ -134,7 +143,7 @@ func (s *computerScene) afterDispatch(att Attendance, err error) {
 }
 
 func (s *computerScene) Draw(screen *ebiten.Image) {
-	p := &painter{art: s.art, screen: screen, elapse: time.Duration(s.ticks) * time.Second / 60}
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
 	p.terminal(s.shift, int(s.env.CameraX), "V CLOSE COMPUTER V")
 	p.terminalHeader(fmt.Sprintf("DAY %d  %s", s.shift.Day, s.env.Clock), s.env.Tab)
 	if s.env.Tab == TabBeds {
@@ -206,9 +215,12 @@ func (p *painter) beds(sh *Shift) {
 
 	waiting := sh.Waiting()
 	p.text(fmt.Sprintf("HALLWAY  ASLEEP, NO BED (%d)", len(waiting)), textLeft, 121, colPaper)
+	if more := len(waiting) - hallwayRows; more > 0 {
+		p.textRight(fmt.Sprintf("+%d MORE", more), textRight, 121, colDim)
+	}
 	for k, g := range waiting {
-		if k >= 2 {
-			break // two rows fit above STAFF ON SHIFT
+		if k >= hallwayRows {
+			break
 		}
 		row := hallwayRow(k)
 		p.icon("sleeper", row.x, row.y)

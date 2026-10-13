@@ -20,12 +20,17 @@ const (
 	toastSeconds = 3 // how long a message stays on the screen
 	endDelay     = 4 // seconds between the last patient and the end of the shift
 	walkStep     = 3 // pixels a guest walks per tick
+
+	// The day 1 tutorial: Old Cecily has been at the window this many game
+	// seconds when she nods off.
+	nodOffAfter = 2.0
 )
 
 // Errors the desk reports for clicks that do nothing.
 var (
 	ErrNoOneAtWindow   = errors.New("nobody is waiting at the window")
 	ErrNothingToAttend = errors.New("that patient does not need staff")
+	ErrDozing          = errors.New("the patient at the window is asleep: wake them first")
 )
 
 // guestStatus is where a visitor is in their visit.
@@ -116,6 +121,9 @@ type Shift struct {
 	message   string
 	messageAt float64
 	alert     *Alert
+	dozing    *Guest  // the day 1 tutorial guest while they are asleep at the window
+	windowAt  float64 // when the first guest reached the window, 0 = not yet
+	tutorial  bool    // the nod-off has happened (it only happens once)
 	allDoneAt float64 // seconds when the last guest was served, 0 = not yet
 	over      bool
 }
@@ -176,6 +184,9 @@ func (s *Shift) Stamps() []StampRecord { return s.stamps }
 
 // Message is the line shown after the last click, "" when it has faded.
 func (s *Shift) Message() string {
+	if s.dozing != nil { // the tutorial hint stays until the player wakes them
+		return strings.ToUpper(s.dozing.Name) + " DOZED OFF MID-JOKE. CLICK HER."
+	}
 	if s.message == "" || s.Seconds()-s.messageAt > toastSeconds {
 		return ""
 	}
@@ -218,11 +229,49 @@ func (s *Shift) Update() {
 		}
 	}
 	s.layout()
+	s.tutorialStep(now)
 
 	if s.alert != nil && s.stateOf(s.alert.Guest) != hospital.AsleepInHallway {
 		s.alert = nil // they woke up or got a bed: nothing left to warn about
 	}
 	s.checkEnd(now)
+}
+
+// tutorialStep is the scripted moment of day 1 (Game Design -> design log):
+// a few seconds after Old Cecily reaches the window she nods off mid-joke.
+// It happens once, and only on day 1.
+func (s *Shift) tutorialStep(now float64) {
+	if s.Day != 1 || s.tutorial || s.served > 0 {
+		return
+	}
+	g := s.Guests[0]
+	if g.status != guestWaiting || !s.atWindow(g) {
+		return
+	}
+	if s.windowAt == 0 {
+		s.windowAt = now
+	}
+	if now-s.windowAt >= nodOffAfter {
+		s.dozing = g
+		s.tutorial = true
+	}
+}
+
+// Dozing is the guest who nodded off at the window, or nil.
+func (s *Shift) Dozing() *Guest { return s.dozing }
+
+// Wake is the player's click on the guest who nodded off. This is a moment
+// of the game, not of the hospital: the guest has not been admitted yet, so
+// the hospital knows nothing about them and has no episode to attend. That
+// is why this only clears a flag and calls no Hospital method (Attend would
+// fail with ErrPatientNotFound for a patient who is not admitted).
+func (s *Shift) Wake(g *Guest) error {
+	if s.dozing != g {
+		return fmt.Errorf("%s: %w", g.Name, ErrNothingToAttend)
+	}
+	s.dozing = nil
+	s.say("%s WAKES UP", g.Name)
+	return nil
 }
 
 // arrive lets a guest walk in: from the right if the window is free, from
@@ -289,6 +338,7 @@ const (
 	LookStanding             // awake, standing or sitting
 	LookAsleep               // asleep where they sit, nobody has come yet
 	LookHallway              // asleep on the hallway floor with no bed
+	LookDozing               // asleep at the window (the day 1 tutorial)
 )
 
 // LookOf decides how to draw a guest from the hospital's snapshot.
@@ -302,6 +352,9 @@ func (s *Shift) LookOf(g *Guest) Look {
 		}
 		return LookStanding
 	case guestWaiting:
+		if g == s.dozing {
+			return LookDozing
+		}
 		return LookStanding
 	}
 	switch s.stateOf(g) {
@@ -444,10 +497,16 @@ func (s *Shift) Stamp(st Stamp) error {
 	if g == nil || !s.atWindow(g) {
 		return ErrNoOneAtWindow
 	}
+	if g == s.dozing {
+		return ErrDozing
+	}
 	right := g.RightStamp() == st
 	if right {
 		s.addScore(pointsRightStamp)
 	}
+	// Decided (Alejo, 2026-10-13): a wrong ADMIT still admits the patient.
+	// The citation is flavour, and the wrong admission costs a bed, which is
+	// its own consequence; only the points differ.
 	if st == StampAdmit {
 		if err := s.ward.Admit(g.patient); err != nil {
 			return fmt.Errorf("admitting %s: %w", g.Name, err)
@@ -485,6 +544,9 @@ func (s *Shift) Dispatch(g *Guest) (Attendance, error) {
 		sl.Attended = true
 		a.Attender = who
 		s.busyUntil[who] = s.Seconds() + busySeconds
+		// Decided (Alejo, 2026-10-13): attending a sleeper in the hallway
+		// still scores the 50 points; getting them staff is the right call
+		// whether or not there was a bed.
 		s.addScore(pointsAttend)
 	}
 	// RegisterEpisode already gave a room if one was free; AssignRoom tells
@@ -584,13 +646,14 @@ func (s *Shift) GuestByPatient(id string) *Guest {
 	return nil
 }
 
-// Blinking (Alejo, 2026-10-13): awake guests close their eyes for a moment
-// every few seconds while they wait. The drawing swaps the eyes_normal
+// Blinking (Alejo, 2026-10-13, "the chars are blinking too quickly"): awake
+// guests close their eyes for a quarter of a second every 4 to 8 seconds
+// while they wait. The drawing swaps the eyes_normal
 // layer for eyes_closed.
 const (
-	blinkFor    = 0.14 // game seconds the eyes stay shut
-	blinkMin    = 2.0  // shortest time between two blinks
-	blinkSpread = 3.0  // blinks come every blinkMin to blinkMin+blinkSpread seconds
+	blinkFor    = 0.25 // game seconds the eyes stay shut
+	blinkMin    = 4.0  // shortest time between two blinks
+	blinkSpread = 4.0  // blinks come every blinkMin to blinkMin+blinkSpread seconds (4 to 8)
 )
 
 // blinker is one guest's blink timer. The gap to the next blink comes from

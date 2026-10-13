@@ -35,6 +35,11 @@ type Visitor struct {
 	Age   int
 	Level hospital.NarcolepsyLevel
 
+	// Sprite is the sheet of this person at the window (assets/sprites/
+	// <Sprite>.json) and Mouth the layer they wear while awake.
+	Sprite string
+	Mouth  string
+
 	// ReferralOK is true when the referral is valid (Game Design -> What
 	// each stamp means). Problem says what is wrong when it is not.
 	ReferralOK bool
@@ -71,31 +76,31 @@ var days = []DayRules{
 	{
 		Rooms: 3, ShiftSeconds: 180, ArrivalGap: 30,
 		Visitors: []Visitor{
-			{Name: "Old Cecily", Age: 71, Level: hospital.Severe, ReferralOK: true},
-			{Name: "Matty", Age: 12, Level: hospital.Moderate, ReferralOK: true},
-			{Name: "Wren Calloway", Age: 34, Level: hospital.Mild, Problem: "Settler ID expired"},
-			{Name: "Hank Shoals", Age: 58, Level: hospital.Severe, ReferralOK: true},
-			{Name: "Ivy Marsh", Age: 26, Level: hospital.Moderate, ReferralOK: true},
+			{Name: "Old Cecily", Sprite: "cecily", Mouth: "mouth_smile", Age: 71, Level: hospital.Severe, ReferralOK: true},
+			{Name: "Matty", Sprite: "matty", Mouth: "mouth_neutral", Age: 12, Level: hospital.Moderate, ReferralOK: true},
+			{Name: "Wren Calloway", Sprite: "wren_calloway", Mouth: "mouth_neutral", Age: 34, Level: hospital.Mild, Problem: "Settler ID expired"},
+			{Name: "Hank Shoals", Sprite: "hank_shoals", Mouth: "mouth_neutral", Age: 58, Level: hospital.Severe, ReferralOK: true},
+			{Name: "Ivy Marsh", Sprite: "ivy_marsh", Mouth: "mouth_smile", Age: 26, Level: hospital.Moderate, ReferralOK: true},
 		},
 	},
 	{
 		Rooms: 3, ShiftSeconds: 180, ArrivalGap: 26,
 		Visitors: []Visitor{
-			{Name: "Tobias Reef", Age: 45, Level: hospital.Moderate, ReferralOK: true},
-			{Name: "Nell Garrow", Age: 63, Level: hospital.Severe, ReferralOK: true},
-			{Name: "Ozzie Pike", Age: 19, Level: hospital.Mild, Problem: "no stamp from Dr. Barrow"},
-			{Name: "Dot Harlan", Age: 52, Level: hospital.Moderate, ReferralOK: true},
-			{Name: "Marcus Trell", Age: 41, Level: hospital.Severe, Problem: "name does not match the ID"},
-			{Name: "June Alder", Age: 30, Level: hospital.Mild, ReferralOK: true},
+			{Name: "Tobias Reef", Sprite: "tobias_reef", Mouth: "mouth_neutral", Age: 45, Level: hospital.Moderate, ReferralOK: true},
+			{Name: "Nell Garrow", Sprite: "nell_garrow", Mouth: "mouth_neutral", Age: 63, Level: hospital.Severe, ReferralOK: true},
+			{Name: "Ozzie Pike", Sprite: "ozzie_pike", Mouth: "mouth_smile", Age: 19, Level: hospital.Mild, Problem: "no stamp from Dr. Barrow"},
+			{Name: "Dot Harlan", Sprite: "dot_harlan", Mouth: "mouth_smile", Age: 52, Level: hospital.Moderate, ReferralOK: true},
+			{Name: "Marcus Trell", Sprite: "marcus_trell", Mouth: "mouth_neutral", Age: 41, Level: hospital.Severe, Problem: "name does not match the ID"},
+			{Name: "June Alder", Sprite: "june_alder", Mouth: "mouth_smile", Age: 30, Level: hospital.Mild, ReferralOK: true},
 		},
 	},
 	{
 		Rooms: 2, ShiftSeconds: 150, ArrivalGap: 32,
 		Visitors: []Visitor{
-			{Name: "Old Cecily", Age: 71, Level: hospital.Severe, ReferralOK: true, Returning: true},
-			{Name: "Silas Brook", Age: 37, Level: hospital.Moderate, ReferralOK: true},
-			{Name: "Pearl Wick", Age: 29, Level: hospital.Mild, Problem: "diagnosis is not a sleep disorder"},
-			{Name: "Hank Shoals", Age: 58, Level: hospital.Severe, ReferralOK: true},
+			{Name: "Old Cecily", Sprite: "cecily", Mouth: "mouth_smile", Age: 71, Level: hospital.Severe, ReferralOK: true, Returning: true},
+			{Name: "Silas Brook", Sprite: "silas_brook", Mouth: "mouth_neutral", Age: 37, Level: hospital.Moderate, ReferralOK: true},
+			{Name: "Pearl Wick", Sprite: "pearl_wick", Mouth: "mouth_smile", Age: 29, Level: hospital.Mild, Problem: "diagnosis is not a sleep disorder"},
+			{Name: "Hank Shoals", Sprite: "hank_shoals", Mouth: "mouth_neutral", Age: 58, Level: hospital.Severe, ReferralOK: true},
 		},
 	},
 }
@@ -109,4 +114,20 @@ func RulesForDay(day int) (DayRules, error) {
 		return DayRules{}, fmt.Errorf("day %d: want a day from 1 to %d", day, len(days))
 	}
 	return days[day-1], nil
+}
+
+// windowSprites lists the sheet name of every visitor of every day, once
+// each, so the art loader can read them all.
+func windowSprites() []string {
+	var names []string
+	seen := make(map[string]bool)
+	for _, d := range days {
+		for _, v := range d.Visitors {
+			if !seen[v.Sprite] {
+				seen[v.Sprite] = true
+				names = append(names, v.Sprite)
+			}
+		}
+	}
+	return names
 }

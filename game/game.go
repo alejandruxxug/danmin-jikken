@@ -3,6 +3,8 @@ package game
 import (
 	"errors"
 	"fmt"
+	"image/color"
+	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -14,6 +16,8 @@ type Game struct {
 	env    *Env
 	scenes *SceneManager
 	agent  *Agent // nil unless -agent was passed
+
+	canvas *ebiten.Image // the 480x270 picture every scene draws on
 }
 
 // New builds the game from the command-line options and enters the first
@@ -77,7 +81,14 @@ func (g *Game) Update() error {
 			return err
 		}
 	}
-	g.env.Clock.Advance(g.env.ClockRate * g.env.Speed / 60)
+	if g.env.Input.FullscreenPressed() {
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+	}
+	// The clock stops on the top-10: the shift is over, so it must not run
+	// on past midnight while the scores are on the screen.
+	if g.scenes.ID() != SceneDayTop10 {
+		g.env.Clock.Advance(g.env.ClockRate * g.env.Speed / 60)
+	}
 	if sh := g.env.Shift(); sh != nil {
 		sh.Update()
 		if sh.Over() {
@@ -89,22 +100,58 @@ func (g *Game) Update() error {
 	return err
 }
 
-// Draw paints the 480x270 screen. In test mode it then saves the
-// screenshots the agent asked for.
+// Draw paints the 480x270 picture on the canvas, saves the screenshots the
+// agent asked for (they are always of the canvas, at 1x or x4, whatever the
+// window looks like), then puts the canvas on the screen.
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.scenes.Draw(screen)
-	if g.agent != nil {
-		g.agent.AfterDraw(g, screen)
+	if g.canvas == nil {
+		g.canvas = ebiten.NewImage(ScreenW, ScreenH)
 	}
+	g.scenes.Draw(g.canvas)
+	if g.agent != nil {
+		g.agent.AfterDraw(g, g.canvas)
+	}
+	scale, offX, offY := fitScreen(screen.Bounds().Dx(), screen.Bounds().Dy())
+	var op ebiten.DrawImageOptions
+	op.GeoM.Scale(float64(scale), float64(scale))
+	op.GeoM.Translate(float64(offX), float64(offY))
+	op.Filter = ebiten.FilterNearest // whole-number scale + nearest = crisp pixels
+	screen.Fill(color.Black)         // the bars around the picture
+	screen.DrawImage(g.canvas, &op)
 }
 
-// Layout fixes the game at 480x270 whatever the window size.
+// fitScreen says how to show the 480x270 picture on a screen of w x h real
+// pixels: the biggest whole-number scale that fits (never below 1), and the
+// offset that centres it. A whole number keeps every game pixel the same
+// size, so the picture stays sharp at any monitor size; the rest of the
+// screen is left black (letterboxing).
+func fitScreen(w, h int) (scale, offX, offY int) {
+	scale = max(1, min(w/ScreenW, h/ScreenH))
+	return scale, (w - ScreenW*scale) / 2, (h - ScreenH*scale) / 2
+}
+
+// Layout is the whole-pixel version for tools that ask for it; LayoutF below
+// is the one Ebitengine uses.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return ScreenW, ScreenH
+	return outsideWidth, outsideHeight
 }
 
-// Run opens the window (480x270 at x4) and plays until the player or the
-// agent quits. It stops the ward's goroutines on the way out.
+// LayoutF gives the game as many pixels as the window really has (the size
+// in points times the monitor's scale factor, 2 on a Retina screen), so the
+// canvas is scaled by fitScreen and not by Ebitengine, which would stretch
+// it by a fraction. It also tells the input where the picture sits, to turn
+// mouse positions back into 480x270 game pixels.
+func (g *Game) LayoutF(outsideWidth, outsideHeight float64) (float64, float64) {
+	factor := ebiten.Monitor().DeviceScaleFactor()
+	w, h := int(math.Ceil(outsideWidth*factor)), int(math.Ceil(outsideHeight*factor))
+	scale, offX, offY := fitScreen(w, h)
+	g.env.Input.SetView(scale, offX, offY)
+	return float64(w), float64(h)
+}
+
+// Run opens the window (480x270 at x4; F11 or Alt+Enter, or -fullscreen,
+// makes it fullscreen) and plays until the player or the agent quits. It
+// stops the ward's goroutines on the way out.
 func Run(opts Options) error {
 	g, err := New(opts)
 	if err != nil {
@@ -112,7 +159,7 @@ func Run(opts Options) error {
 	}
 	ebiten.SetWindowSize(ScreenW*4, ScreenH*4)
 	ebiten.SetWindowTitle("断眠実験 DANMIN JIKKEN")
-	ebiten.SetScreenFilterEnabled(false) // nearest-neighbour: crisp pixels, no blur
+	ebiten.SetFullscreen(opts.Fullscreen)
 
 	runErr := ebiten.RunGame(g)
 	g.scenes.Close()
