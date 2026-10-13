@@ -85,6 +85,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-input <file>` | Plays a script of inputs (below) | Clicks and keys without a human |
 | `-shot <file.png>` | Saves a screenshot at **1× (480×270)**, plus `-shot4` at ×4 to compare with the Figma view | The agent *sees* the screen |
 | `-dump <file.json>` | Writes the game state: scene, day, clock, patients (state, room), rooms, scores, flags | Check logic, not only pixels |
+| `-pan X` | Camera x at the start, 0–240 (default 120 = the Figma frame's crop). Reception only | Shots line up with the Figma view, or show the far ends of the room |
 | `-nocrt` | Turns the day CRT filter off (Art Direction → Day screen) | Screenshots line up pixel for pixel with the Figma views |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
@@ -94,6 +95,8 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 wait 30            # frames
 key Space
 click 212 140      # 1× game coordinates (Figma px ÷ 4)
+mouse 5 135        # hold the cursor there; within 48 px of a side it pans the camera
+pan 240            # put the camera at x = 240 right away
 shot after_admit.png
 dump after_admit.json
 ```
@@ -103,7 +106,7 @@ dump after_admit.json
 | id | Scene | Status |
 |---|---|---|
 | `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour) |
-| `day.reception` | FNAF desk, front view | placeholder, but runs the ward (patients fall asleep behind the blank screen; `-dump` shows them) |
+| `day.reception` | FNAF desk, front view | **built to the approved v3 Figma view** (room, desk, patients awake/asleep from `Snapshot`, edge pan, screen glass). No HUD text yet, no CRT shader. `-dump` has `cameraX` and the patients |
 | `day.computer` | Patient computer open | planned |
 | `night` | Night VN, first beat (`night.<beat>` for a specific one) | planned |
 | `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) | planned |
@@ -116,7 +119,8 @@ An id that is not registered stops the game with `unknown scene "<id>"` and exit
 game/go.mod             module danmingame, requires danmin via replace
 game/cmd/danmin/        main: flags in, game.Run out
 game/scene.go           Scene interface, SceneManager, Env (shared clock/ward/input/day/flags)
-game/scenes.go          placeholder title + day.reception
+game/scenes.go          placeholder title
+game/reception.go       day.reception: layered room + desk, queue, patients, edge pan, screen glass
 game/ward.go            Ward: simulation goroutines + Drain() + Snapshot()
 game/input.go           Input: real keys/mouse + injected ones from the backdoor
 game/clock.go           in-game clock (HH:MM)
