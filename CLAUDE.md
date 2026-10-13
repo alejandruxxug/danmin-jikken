@@ -21,6 +21,7 @@ Guidance for Claude Code sessions in this repo. Alejo (the student) gives short 
 | `docs/Danmin Jikken – Architecture.md` | Writing code: packages, OOP mapping, goroutines, the assignment checklist |
 | `docs/Danmin Jikken – Art Direction.md` | Anything visual: resolution, palette, day/night looks, line boil, sprite layers |
 | `docs/Danmin Jikken – Story.md` | Anything narrative: setting, cast, the illness, the twist, beat sheet |
+| `docs/Danmin Jikken – Script.md` | The night scripts: hub with every decision, route, flag and ending, linking to Prologue / Night 1 / Night 2 / Night 3 |
 
 Scope board (Alejo's In/Later/Cut picks): https://claude.ai/artifact/8K8TSeebvPn6K8z1d3cdU3
 

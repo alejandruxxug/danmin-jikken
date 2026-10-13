@@ -15,6 +15,7 @@
 |---|---|
 | [[Danmin Jikken – Game Design]] | Core loop, the 20-minute budget, the day desk, the night scenes, endings, the **design log** |
 | [[Danmin Jikken – Story]] | Premise, cast, the twist options, a beat sheet per night, word budget |
+| [[Danmin Jikken – Script]] | The night scripts (Prologue, Night 1–3, endings) + every decision, route and flag, all linked |
 | [[Danmin Jikken – Art Direction]] | Anime pixel art, resolution, palette + the red rule, the sprite layer system, references |
 | [[Danmin Jikken – Build Plan]] | 🗓️ Milestones M0–M8 to Oct 19, parallel lanes for several sessions, progress log |
 | [[Danmin Jikken – Architecture]] | Go + Ebitengine, how every OOP concept maps to the game, goroutine patients, packages, the assignment checklist |
