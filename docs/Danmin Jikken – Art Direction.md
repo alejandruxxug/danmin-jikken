@@ -19,6 +19,7 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 
 - **In pixel art:** 3 frames of the line-art layer, each with 1-px wobbles in different places. Fills and eyes stay put; only the outlines move.
 - **In code:** the sprite compositor cycles `lineart_0/1/2` on a timer. Cheap, and every character gets it automatically.
+- **Two speeds (Alejo, 2026-10-13):** *"characters to have the boil line run at normal fps but backgrounds and all that stuff slower so it shows the instability, focus and cool things"*. **Characters** (patients, staff) boil at **125 ms/frame (8 fps)**; **backgrounds, the desk, props and UI** boil **slower, 375 ms/frame** (starting value, tunable). The people twitch, the room breathes, and the eye goes to the people. Done in code with one per-sprite speed table; the art keeps its 125 ms frames. The screen glass doesn't boil.
 - **Escalation idea:** the boil gets faster or wider each day, and on day 3 it's visibly wrong.
 - **Night:** steadier, Slay the Princess-style lines, so the night feels *more real* than the day.
 
