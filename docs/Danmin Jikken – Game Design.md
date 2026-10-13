@@ -199,3 +199,5 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Beds panel and Top-10 views approved**; the glass smudge stays on the terminal; the 03:17 ghost row looks exactly like the real rows | Alejo |
 | 2026-10-13 | **Fonts: the UI uses a ready-made open-licensed pixel font (Silkscreen, the Figma placeholder). Only the nurses' handwriting is drawn in Aseprite: Hana = neat joined cursive, Mayu = psycho style, jagged separate letters** | Alejo: "Only drawn are the letters (to distinguish hana (cursive) with mayus (pshycho style) so joined and apart letters". Lets day 3's "Hana's reports in Mayu's handwriting" read at a glance |
 | 2026-10-13 | **No room alert view approved** | Alejo |
+| 2026-10-13 | **Day 1 tutorial is scripted: Old Cecily nods off at the window mid-joke**; you click her (learn the mechanic), she wakes, then you stamp her. Needed because only admitted patients have goroutines now | Alejo: yes to the scripted nod-off |
+| 2026-10-13 | **Score: 100 per right stamp, 50 per attended sleeper; one top-10 row per shift** | Builder's proposal, Alejo: "keep it" |
