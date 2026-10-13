@@ -78,9 +78,9 @@ Everything patient-related lives here. *(Exact screens wait on the hospital part
 - Day 2: *"Patients from [town] go to Ward C."* (There is no Ward C on the map.)
 - Day 3: *"Do not wake them."*
 
-### 📜 What each stamp means (proposal, waiting for Alejo)
+### 📜 What each stamp means
 
-> ⚠️ **The player must be told these rules before Day 1** (Alejo, 2026-10-13). Right now the orientation reel is one line, so nobody would know what a "valid referral" is. See *How the rules get explained* below.
+> ✅ **Approved by Alejo (2026-10-13).** ⚠️ **The player must be told these rules before Day 1** (Alejo, 2026-10-13). Right now the orientation reel is one line, so nobody would know what a "valid referral" is. See *How the rules get explained* below.
 
 **A referral is valid when all of these hold:**
 1. The name on the referral matches the **Settler ID**.
@@ -192,3 +192,5 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Window patient = 96×128 waist-up** (not 64×64); **text, signs, eyes and mouths don't boil**, only outlines do | Alejo, reviewing reception desk v1. Readability; the day 3 breakdown can make text wobble later |
 | 2026-10-13 | **Old Cecily must read clearly old**: white/grey hair, deep wrinkles, a fish-seller apron | Alejo: v1 looked too young |
 | 2026-10-13 | **Day palette gets 2–3 whitish desaturated greens** (fills only; outlines stay black; night unchanged) | Alejo: "something is getting very lost on the white on white" |
+| 2026-10-13 | **Desk rules approved**: valid referral = name matches ID, ID not expired, Dr. Barrow's stamp, sleep-disorder diagnosis; ADMIT / REFER / DISCHARGE as in *What each stamp means*; explained by the orientation reel before Day 1 | Alejo: "yes those rules work" |
+| 2026-10-13 | **Day palette with the three greens approved** | Alejo: "i like the pallete now" |
