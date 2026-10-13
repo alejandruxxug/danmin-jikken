@@ -253,31 +253,38 @@ Alejo, 2026-10-13: the UI uses the Silkscreen pixel font; **the only lettering d
 
 | | `assets/src/hand_hana.aseprite` | `assets/src/hand_mayu.aseprite` |
 |---|---|---|
-| Look | Neat, small, slanted, **joined** cursive. Tidy, clinical, tired | **Apart**, jagged, uneven sizes and baselines, too much pressure. Still readable |
-| Ink | Black `#0b0b0c`; the join hairlines are mid grey `#6b6b70` | Black; pressure smear mid grey `#6b6b70`, ink bleed dark grey `#2e2e33` |
-| x-height | 5 px | 5 px (letters jump ±1 px) |
+| Look | Neat, small, **joined** cursive with **looped capitals**. Tidy, clinical, tired | Her own erratic hand: **some letters apart, some joined**, sharp, uneven sizes, tilted capitals, jumping baselines. Still readable |
+| Ink | Black `#0b0b0c`; join hairlines light grey `#b9b9b4` | Black only |
+| x-height | 5 px | 5 px (some letters 6) |
 | Word space | 3 px | 4 px |
+| Gap between letters that don't join | 1 px | 2 px |
 
-**Night look:** read on off-white paper at night, so black ink + greys, **no red** (red is blood only).
+Why Mayu mixes them (Alejo, 2026-10-13): *"mayu should have some letters in cursive"*, *"since the psycho minds tend to write some letters apart and some letters joined"*. Her joins are **her own** (a sharp rising stroke), never Hana's forms, so the two hands stay easy to tell apart on day 3.
+
+**Night look:** read on off-white paper at night, so black ink + greys, **no red** (red is blood only). No boil.
 
 **Size: cap height 7 px.** On a 96×64 note, 7-px capitals with 5-px lowercase is the smallest size where a, e, s and o stay apart with a 1-px pen. Lines sit **11 px apart** (5 lines, about 15–18 characters each).
 
-**Format: one layer per glyph, 1 frame, a 12×12 cell.** The layer name is the character itself, so `./assets/export.sh` gives json keys like `"a#0"`, `"Y#0"`, `"?#0"`, `"…#0"`. 70 glyphs: A–Z, a–z, 0–9, `. , ! ? ' : - …`. There's no space glyph: use the word space above. No boil: the night's lines hold still.
+**Format: one layer per glyph, 1 frame, a 12×12 cell.** The layer name is the character itself, so `./assets/export.sh` gives json keys like `"a#0"`, `"Y#0"`, `"?#0"`, `"…#0"`. Both sheets have A–Z, a–z, 0–9 and `. , ! ? ' : - …` (70 glyphs). Mayu's also has a 71st layer, **`join`**: her connector stroke. There's no space glyph: use the word space above.
 
-**Metrics** (same for both hands):
-- **Baseline = cell row 8.** Draw the glyph cell at `(penX, baselineY − 8)`.
-- Capitals and ascenders reach cell row 2. Descenders go down to row 10 (Mayu's jumping letters can reach row 11).
-- **Advance:** each layer's **user data** says `adv=N;join=0|1` (exported in the json's `meta.layers[].data`). After drawing a glyph, move the pen by `adv`. No kerning table.
+**Metrics** (both hands):
+- **Baseline = cell row 8.** Draw a glyph cell at `(penX, baselineY − 8 + jitterY)`.
+- Capitals and ascenders reach cell row 2 (Mayu's taller letters reach row 1). Descenders go down to row 10.
+- Each layer's **user data** is `adv=N;join=0|1` (in the json's `meta.layers[].data`). `adv` is how far the pen moves after the glyph. `join=1` means the glyph *can* join its neighbour.
 
-**Hana's joins** (how the cursive connects):
-- Every lowercase letter (`join=1`) starts with a **lead-in pixel at column 0, cell row 7** and ends with an **exit pixel on its last column, cell row 7**. Row 7 is one row above the baseline, so letter bottoms stay apart.
-- For a joining letter, `adv` = exit column + 1, so the next letter's lead-in lands right next to the exit and the two connect. The pen just adds `adv`, and the joins happen by themselves.
-- Capitals don't join. They're slanted, so their `adv` is the width of their lower rows (6–8) and their tops overhang the next letter. Digits and punctuation get 1 px of air.
-- The slant is 1 px to the right for every 3 rows above the baseline. It's already drawn into the sheet.
+**Layout, letter by letter** (inside a word; the word space resets everything):
+1. Draw the glyph, then `pen += adv`.
+2. Decide whether it joins the next letter. A pair can only join when **both** glyphs have `join=1`.
+   - **Hana:** always joins then. Her lowercase letters (and the capitals with a tail) carry their own lead-in pixel at column 0, **cell row 7**, and exit pixel on their last column, row 7. `adv` ends right at the exit, so the next lead-in lands next to it and they connect. Row 7 is one row above the baseline, so letter bottoms stay apart and the word stays readable.
+   - **Mayu:** joins only when **a seeded coin flip says yes and the current joined run is shorter than 3 letters**. When she joins, draw her `join` glyph at the pen (a 2-px rising stroke from the baseline to row 7), then `pen += 2`. Her letters carry no lead-in or exit of their own.
+3. If they don't join: `pen += gap` (Hana 1, Mayu 2). For Mayu, a join and a gap are the same width, so the coin never changes how a line wraps.
+4. **Mayu's jitter (Alejo: yes):** every letter gets a random `jitterY` of −1, 0 or +1 px.
+5. **Seeding:** all of Mayu's random choices come from one RNG seeded with a hash of the note's text (FNV-1a) plus the word's index. The same note looks exactly the same every time it's shown, and word wrap can measure a word with the same choices it later draws.
+6. Word wrap: greedy, by word width.
 
-**Mayu:** every glyph has `join=0` and `adv` = ink width + 2 (letters apart). Her uneven baselines and heavier letters are already drawn into the sheet. The game can add ±1 px of random jitter per letter if it wants her even more manic.
+**What's baked into the sheets** (not the game's job): Hana's slant (capitals lean 1 px for every 3 rows; lowercase only at the ascender tops). Mayu's uneven sizes (some letters 1 px taller) and the tilt of her capitals, digits and tall letters.
 
-**Previews:** `assets/preview/hand_hana_note_x4.png` (*"Your stamp on bed 4 was wrong."*), `hand_mayu_note_x4.png` (*"Did you hear about Cecily?"*), `hand_compare_x4.png` (the same line in both hands), `hand_hana_glyphs_x4.png`, `hand_mayu_glyphs_x4.png`.
+**Previews:** `assets/preview/hand_hana_note_x4.png` (*"Your stamp on bed 4 was wrong."*), `hand_mayu_note_x4.png` (*"Did you hear about Cecily?"*), `hand_compare_x4.png` (the same line in both hands), `hand_hana_glyphs_x4.png`, `hand_mayu_glyphs_x4.png`. v1 copies are in `assets/preview/v1/`. The previews use exactly the rules above.
 
 ### ⚠️ MCP gotchas (found while testing, 2026-10-13)
 
@@ -313,3 +320,5 @@ Alejo, 2026-10-13: the UI uses the Silkscreen pixel font; **the only lettering d
 | 2026-10-13 | M3 review: **`Day – Beds panel` and `Top-10` approved** (Alejo). Fingerprint smudge on the terminal: keep it. Ghost 03:17 row: identical to the real rows | ✅ Exported `computer`, `ui_icons`. `Day – No room alert` was rebuilt after a Figwright batch timeout; waiting for Alejo |
 | 2026-10-13 | **`Day – No room alert` approved** (Alejo) | ✅ Exported `hallway_sleeper`. All 3 M3 views approved |
 | 2026-10-13 | **Handwriting sheets:** `hand_hana` (neat slanted joined cursive, mid-grey join hairlines at cell row 7) and `hand_mayu` (apart, jagged, jumping baselines, heavy strokes with grey smear and bleed). 70 glyphs each, one layer per glyph in a 12×12 cell, cap height 7, baseline cell row 8, `adv`/`join` in layer user data. Night ink only, no red. Layout rules in Pipeline → Handwriting glyph sheets. Previews: `assets/preview/hand_hana_note_x4.png`, `hand_mayu_note_x4.png`, `hand_compare_x4.png`, `hand_*_glyphs_x4.png` | **Waiting for Alejo's approval** |
+| 2026-10-13 | Handwriting v1 review (Alejo): Hana needs flourishes, looped cursive capitals, not slanted print; her lowercase merged at 1× (*"wrong"* read as *"wcong"*, *"was"* as *"wus"*). Mayu: *"mayu should have some letters in cursive"*, *"since the psycho minds tend to write some letters apart and some letters joined"*; her grey pressure blocks read as glitches; the game jitters her letters ±1 px (*yes*) | Not approved → v2 |
+| 2026-10-13 | **Handwriting v2.** Hana: 26 looped cursive capitals (the ones with a tail join the next letter), lowercase opened up (a, e, o, r, s, w, n, u redrawn), join hairlines moved to cell row 7 and made light grey, slant kept off the small letters. Mayu: her own erratic joins through a separate `join` connector glyph (seeded coin per pair, runs of at most 3), no grey pressure, uneven sizes + tilted capitals/tall letters, ±1 px jitter at layout. Layout rules rewritten in Pipeline → Handwriting glyph sheets. Previews: `assets/preview/hand_compare_x4.png`, `hand_hana_note_x4.png`, `hand_mayu_note_x4.png`, `hand_*_glyphs_x4.png` (v1 in `assets/preview/v1/`) | **Waiting for Alejo's approval** |
