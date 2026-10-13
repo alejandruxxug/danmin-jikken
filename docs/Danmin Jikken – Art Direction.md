@@ -247,6 +247,38 @@ Aseprite's standard **json-array** format. `encoding/json` reads it directly:
 - Frame numbers in the json start at **0**. (The MCP tools count frames from **1**.)
 - Look a frame up by `"<layer>#<frame>"`. Every layer has an entry for every frame, so the game never needs special cases. Repeated frames point to the same rectangle.
 
+### ✍️ Handwriting glyph sheets (the nurses' notes)
+
+Alejo, 2026-10-13: the UI uses the Silkscreen pixel font; **the only lettering drawn in Aseprite is the two nurses' handwriting**, so a player knows whose note it is at a glance (day 3: Hana's reports keep coming, in Mayu's hand).
+
+| | `assets/src/hand_hana.aseprite` | `assets/src/hand_mayu.aseprite` |
+|---|---|---|
+| Look | Neat, small, slanted, **joined** cursive. Tidy, clinical, tired | **Apart**, jagged, uneven sizes and baselines, too much pressure. Still readable |
+| Ink | Black `#0b0b0c`; the join hairlines are mid grey `#6b6b70` | Black; pressure smear mid grey `#6b6b70`, ink bleed dark grey `#2e2e33` |
+| x-height | 5 px | 5 px (letters jump ±1 px) |
+| Word space | 3 px | 4 px |
+
+**Night look:** read on off-white paper at night, so black ink + greys, **no red** (red is blood only).
+
+**Size: cap height 7 px.** On a 96×64 note, 7-px capitals with 5-px lowercase is the smallest size where a, e, s and o stay apart with a 1-px pen. Lines sit **11 px apart** (5 lines, about 15–18 characters each).
+
+**Format: one layer per glyph, 1 frame, a 12×12 cell.** The layer name is the character itself, so `./assets/export.sh` gives json keys like `"a#0"`, `"Y#0"`, `"?#0"`, `"…#0"`. 70 glyphs: A–Z, a–z, 0–9, `. , ! ? ' : - …`. There's no space glyph: use the word space above. No boil: the night's lines hold still.
+
+**Metrics** (same for both hands):
+- **Baseline = cell row 8.** Draw the glyph cell at `(penX, baselineY − 8)`.
+- Capitals and ascenders reach cell row 2. Descenders go down to row 10 (Mayu's jumping letters can reach row 11).
+- **Advance:** each layer's **user data** says `adv=N;join=0|1` (exported in the json's `meta.layers[].data`). After drawing a glyph, move the pen by `adv`. No kerning table.
+
+**Hana's joins** (how the cursive connects):
+- Every lowercase letter (`join=1`) starts with a **lead-in pixel at column 0, cell row 7** and ends with an **exit pixel on its last column, cell row 7**. Row 7 is one row above the baseline, so letter bottoms stay apart.
+- For a joining letter, `adv` = exit column + 1, so the next letter's lead-in lands right next to the exit and the two connect. The pen just adds `adv`, and the joins happen by themselves.
+- Capitals don't join. They're slanted, so their `adv` is the width of their lower rows (6–8) and their tops overhang the next letter. Digits and punctuation get 1 px of air.
+- The slant is 1 px to the right for every 3 rows above the baseline. It's already drawn into the sheet.
+
+**Mayu:** every glyph has `join=0` and `adv` = ink width + 2 (letters apart). Her uneven baselines and heavier letters are already drawn into the sheet. The game can add ±1 px of random jitter per letter if it wants her even more manic.
+
+**Previews:** `assets/preview/hand_hana_note_x4.png` (*"Your stamp on bed 4 was wrong."*), `hand_mayu_note_x4.png` (*"Did you hear about Cecily?"*), `hand_compare_x4.png` (the same line in both hands), `hand_hana_glyphs_x4.png`, `hand_mayu_glyphs_x4.png`.
+
 ### ⚠️ MCP gotchas (found while testing, 2026-10-13)
 
 | Gotcha | Do this |
@@ -280,3 +312,4 @@ Aseprite's standard **json-array** format. `encoding/json` reads it directly:
 | 2026-10-13 | **M3 views** in Figma (page *Day*): `Day – Beds panel` (6:50: the terminal over the room, tabs, 3 room cards, hallway list with CALL STAFF, staff on shift), `Day – No room alert` (6:51: room panned right, a patient asleep in front of the ward doors, NO ROOM AVAILABLE box with CALL STAFF / OPEN BEDS), `Top-10` (6:52: OS usernames, scores, times, and the 03:17 *"why did you let me sleep"* row). Notes 6:142–6:144. UI text is a Figma placeholder (Silkscreen 32). Exports: `assets/preview/figma/day_beds_panel.png`, `day_no_room_alert.png`, `top10.png` | **Waiting for Alejo's approval** |
 | 2026-10-13 | M3 review: **`Day – Beds panel` and `Top-10` approved** (Alejo). Fingerprint smudge on the terminal: keep it. Ghost 03:17 row: identical to the real rows | ✅ Exported `computer`, `ui_icons`. `Day – No room alert` was rebuilt after a Figwright batch timeout; waiting for Alejo |
 | 2026-10-13 | **`Day – No room alert` approved** (Alejo) | ✅ Exported `hallway_sleeper`. All 3 M3 views approved |
+| 2026-10-13 | **Handwriting sheets:** `hand_hana` (neat slanted joined cursive, mid-grey join hairlines at cell row 7) and `hand_mayu` (apart, jagged, jumping baselines, heavy strokes with grey smear and bleed). 70 glyphs each, one layer per glyph in a 12×12 cell, cap height 7, baseline cell row 8, `adv`/`join` in layer user data. Night ink only, no red. Layout rules in Pipeline → Handwriting glyph sheets. Previews: `assets/preview/hand_hana_note_x4.png`, `hand_mayu_note_x4.png`, `hand_compare_x4.png`, `hand_*_glyphs_x4.png` | **Waiting for Alejo's approval** |
