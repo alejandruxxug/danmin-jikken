@@ -113,7 +113,7 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 1]] + 
 `→ route = hana`
 
 `if find_hana:`
-[BG: supply room. One bulb. Hana counting pills into tiny cups.]
+[BG: supply room. One bulb. Hana drawing white liquid out of a pale can into a syringe.]
 
 **Hana** *(flat)*: You're not supposed to be out of bed, Four.
 
@@ -123,7 +123,9 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 1]] + 
 
 **Hana** *(tired)*: Sit.
 
-*She doesn't look up from the pills.*
+*She doesn't look up from the syringe. She finds a vein without looking. She's done this a lot.*
+
+**Hana** *(flat)*: Pale MSTR. Driftwell's. It keeps the white place away. For a while.
 
 **Hana** *(tired)*: I've been awake fourteen days. Do you know why?
 

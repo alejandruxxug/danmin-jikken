@@ -105,6 +105,20 @@ Four sprite characters plus desk-only patients drawn as smaller portraits.
 - **The nurses refuse to sleep** because sleep is where it lives. That's why they're crazy, and why love is the only thing keeping them going.
 - **You** have been under since the gurney. Every night you wake up a little less.
 
+### 💉 Pale MSTR: how the nurses fight it
+
+**Yumetsuki lives in sleep, so the only weapon is never sleeping.** Coffee stopped working weeks ago. Now the nurses **inject Pale MSTR straight into their veins**: a white energy drink in a pale can (Alejo, 2026-10-13; a Fallout-style parody, like Nuka-Cola).
+
+| | |
+|---|---|
+| **The can** | Pale white, a thin black logo: **PALE MSTR**. Tagline: *"Zero Sugar. Zero Sleep."* |
+| **It works** | As long as it's in your blood, the white place can't pull you under |
+| **It's burning them up** | The shaking hands, laughing at nothing, the hallucinations. Some of Mayu's slips are the drink talking |
+| **The Fallout twist** | It's a **Driftwell product**. They made the illness *and* sell the only thing that holds it back |
+| **Hana** | Fourteen days on it. On night 3 her floor is covered in cans, and **the newest ones are still sealed**: she stopped. That's how she lost the fight |
+
+**Where it shows up:** night 1, a can and a syringe next to Mayu's coffee · night 2, Hana drawing it into a syringe in the supply room · night 3, the cans on Hana's floor, and Barrow bragging about it.
+
 ### 💘 The triangle: who falls for you
 
 Two nurses, both falling for you. They're best friends, and that's what makes it hurt.

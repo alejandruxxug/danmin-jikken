@@ -42,6 +42,10 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 2]] + 
 
 *Fourteen days awake, and now she'll never have to fight it again.*
 
+*The floor is covered in pale cans. Dozens.*
+
+*The newest ones are still sealed. She stopped.*
+
 *On the desk there's an envelope. It says* **Four**.
 
 ## Choice 4
@@ -114,6 +118,8 @@ Don't be sad, okay? Be happy. Be happy with Mayu!
 **Dr. Barrow** *(smile)*: S-317 isn't something we found. It's something we made. And we needed people nobody would check on.
 
 **Dr. Barrow** *(smile)*: Who checks on a sleepy fisherman?
+
+**Dr. Barrow** *(smile)*: And the nurses' little white drink? Ours too. We sell the cure to the problem. That's just good business.
 
 **Dr. Barrow** *(smile)*: The dream is the cure. As long as you never leave it. Tonight we make your rest permanent.
 

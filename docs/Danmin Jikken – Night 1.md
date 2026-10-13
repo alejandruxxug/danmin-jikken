@@ -33,6 +33,12 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Prologue]] +
 
 **Mayu** *(laugh)*: Don't look at my hands! Long shift. Long… lots of shifts.
 
+[FX: on the counter, next to the coffee pot: a pale can with a thin black logo, and a syringe]
+
+*Next to the coffee pot there's a pale can.* PALE MSTR. *And a syringe.*
+
+**Mayu** *(smile)*: Oh, that? Nurse stuff! Coffee stopped working weeks ago.
+
 **Mayu** *(soft)*: You know, it's nice. Having someone new. Someone who stays.
 
 **Mayu** *(blank)*: If you ever left, I'd…
