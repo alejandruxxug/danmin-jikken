@@ -8,8 +8,8 @@ Back to [[Danmin Jikken]]
 
 | | ☀️ Day | 🌙 Night |
 |---|---|---|
-| **Look** | **Black outlines, white fill.** Flat, clean, no shading, like a 1950s company pamphlet or a colouring book | **It comes alive:** Slay the Princess greyscale. Heavy shadows, hatching, sketchy texture |
-| **Colours** | 2: black + off-white | All greys + **blood red** |
+| **Look** | **Black outlines, white and pale-green fills.** Flat, clean, no shading, like a 1950s company pamphlet or a colouring book | **It comes alive:** Slay the Princess greyscale. Heavy shadows, hatching, sketchy texture |
+| **Colours** | Black + off-white + 3 pale hospital greens (fills only) | All greys + **blood red** |
 | **Feeling** | Cheerful, sterile, corporate. Driftwell's version of the world | The real world under it |
 | **Red** | **Never.** (Until day 3, when it leaks in and the game breaks.) | Blood, and the twisted stuff only |
 
@@ -139,6 +139,13 @@ Alejo, 2026-10-13: the cut from the day shift into each night **flickers a bit, 
 | Off-white | `#ecece6` | ✅ fill | ✅ highlights |
 | 🩸 **Blood red** | `#8a0303` | ❌ | ✅ blood only |
 | 🩸 Dark blood | `#4a0000` | ❌ | ✅ blood shading |
+| 🌿 Pale mint | `#dde5d9` | ✅ fills: walls, glass, apron | ❌ |
+| 🌿 Sage | `#c3d1c0` | ✅ fills: floor, clothes | ❌ |
+| 🌿 Deep sage | `#9fb19f` | ✅ fills: seats, frames, shadow side, the floor grid | ❌ |
+
+**Day greens** (Alejo, 2026-10-13: *"something is getting very lost on the white on white … allow some whiteish desaturated greens"*). Pale, desaturated, slightly cool hospital greens, used **only as fills** to separate planes (walls vs floor vs desk vs people). Outlines stay black, off-white stays the brightest value, nothing saturated. Appended to the end of `danmin.hex` so the old indexes don't move.
+- **Under the CRT:** the scanlines and vignette darken them a little; the planes stay readable.
+- **In the strobe (inverted):** they don't turn pink. Inverting a pale colour makes it dark, so the greens become **dark muted plum** (`#221a26`, `#3c2e3f`, `#604e60`) under white lines. It reads as a bruised, night-like version of the room, which suits the strobe. Preview: `assets/preview/reception_v2_view_inverted_x4.png`.
 
 *Proposal: add 1–2 more greys if the StP shading needs them.*
 
@@ -247,3 +254,5 @@ Aseprite's standard **json-array** format. `encoding/json` reads it directly:
 | 2026-10-13 | Day outlines **squiggle** (line boil, 3 frames ~8 fps) | Alejo: "to give the unsettling effect" |
 | 2026-10-13 | **Tool connected: Aseprite 1.3.18.6** (built from source) + `aseprite` MCP (diivi/aseprite-mcp, 116 tools). Pipeline tested end to end on a 32×32 boil test head: draw → preview → `export.sh` → per-layer sheet + json | Works. Alejo: everything in Aseprite, exported as spritesheets |
 | 2026-10-13 | **Day – Reception desk v1** (M2). Sprites: `reception_bg` 720×270 (fill, lineart ×3, detail: waiting room with benches + window to the sea + DRIFT OFF WELL! poster, HALCYON REST entrance, notice board, fountain, WARDS A-B doors, PALE MSTR poster), `desk` 720×270 (fill, lineart ×3, detail: glass window, counter with the day-1 rules memo + ADMIT/DISCHARGE/REFER cubbies, phone, in-tray, stamps, bell, mug), `cecily` 96×128 (fill ×3, lineart ×3, detail, eyes_normal, eyes_closed, mouth_smile, mouth_slack, fx_zzz), `waiting_fisher` 32×64 (same layer set, mouth_neutral). All tag `boil`, 3 × 125 ms, only `#0b0b0c` + `#ecece6`. Figma file *Danmin-Jikken*, page *Day*: frame `Day – Reception desk` (2:9) + `Day – Reception desk · full pan (reference)` (3:25) + note (3:32) | **Waiting for Alejo's approval** |
+| 2026-10-13 | v1 review (Alejo): white on white gets lost, Cecily doesn't read old, the floor grid pulls the eye | Not approved. Decided: window patient stays 96×128, only outlines boil (text/signs/eyes/mouths stay still), panorama stays 720×270, no pan arrows (edge panning like FNAF) |
+| 2026-10-13 | **Reception desk v2.** 3 day greens added to the palette as fills (walls mint, floor sage, seats/frames/kickplates deep sage, glass mint, clothes sage/mint). Old Cecily redrawn: messy white hair out of the scarf, deep smile and marionette lines, jowls, small tired eyes with heavy lids and bags, sage cardigan with rolled deep-sage cuffs, stained mint apron, striped rag over the shoulder. Floor grid now thin deep-sage lines (2 across + 7 radial) instead of black. Fills under outlines boil with them. Same Figma frames updated (2:9, 3:25, note 3:32). Before: `assets/preview/v1/`, after: `assets/preview/*_x4.png` | **Waiting for Alejo's approval** |
