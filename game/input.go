@@ -62,6 +62,22 @@ func floorDiv(a, b int) int {
 	return q
 }
 
+// AnyKeyPressed is true on the frame any key goes down, except the
+// fullscreen keys (F11, Alt), which must not start the game.
+func (in *Input) AnyKeyPressed() bool {
+	for k := range in.keys {
+		if k != ebiten.KeyF11 {
+			return true
+		}
+	}
+	for _, k := range inpututil.AppendJustPressedKeys(nil) {
+		if k != ebiten.KeyF11 && k != ebiten.KeyAlt && k != ebiten.KeyAltLeft && k != ebiten.KeyAltRight {
+			return true
+		}
+	}
+	return false
+}
+
 // FullscreenPressed is true on the frame F11 or Alt+Enter goes down.
 func (in *Input) FullscreenPressed() bool {
 	altEnter := ebiten.IsKeyPressed(ebiten.KeyAlt) && in.KeyPressed(ebiten.KeyEnter)

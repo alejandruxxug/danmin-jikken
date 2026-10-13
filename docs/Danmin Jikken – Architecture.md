@@ -111,7 +111,7 @@ dump after_admit.json
 
 | id | Scene | Status |
 |---|---|---|
-| `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour) |
+| `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour); any key or click starts day 1 until the real title (M7) |
 | `day.reception` | FNAF desk, front view | **built** (approved views). On day 1 Old Cecily nods off at the window a few seconds after she arrives (`-day 1 -seed 7 -frames 260` shows it; the dump's `dozing` names her and her look is `dozing`; `click 240 110` wakes her; `stamp` is refused until then). Each visitor has their own window sprite, the desk memo changes per day, window guests are clipped to the glass. Queue walks up, the window patient + ADMIT / DISCHARGE / REFER stamps (cubby or stamp handle), sleepers in the chairs, hallway sleepers, HUD (DAY plate, PATIENTS n/N, computer tab), the no-room alert, line boil (characters 125 ms, room and props 375 ms), walk bob, blinking. Starts the shift if none is running |
 | `day.computer` | Patient computer open, BEDS tab (RECORDS / SLEEP LOGS / WARD FEED are placeholders until M4) | **built**. Rooms, hallway sleepers + CALL STAFF, staff busy/free. Shares the reception's running shift; `-clock`, `-day`, `-sleepy` apply |
 | `day.top10` | Top-10 clerks (end of every shift) | **built**. Stops the shift, saves today's score to the scores file, shows ranks + the ghost row. `-score N -scores f.txt` reaches it directly |

@@ -13,12 +13,19 @@ var (
 	paletteInk = color.RGBA{0x0b, 0x0b, 0x0c, 0xff} // assets/palette/danmin.hex, entry 1
 )
 
-// titleScene is the empty title screen.
-type titleScene struct{}
+// titleScene is the empty title screen. Until the real title exists (M7),
+// any key or click starts day 1 so the game can be played.
+type titleScene struct{ env *Env }
 
-func (titleScene) Enter(*Env) error { return nil }
-func (titleScene) Update() error    { return nil }
-func (titleScene) Exit()            {}
-func (titleScene) Draw(screen *ebiten.Image) {
+func (s *titleScene) Enter(env *Env) error { s.env = env; return nil }
+func (s *titleScene) Update() error {
+	if _, _, clicked := s.env.Input.Click(); clicked || s.env.Input.AnyKeyPressed() {
+		s.env.Day = 1
+		s.env.SwitchTo(SceneDayReception)
+	}
+	return nil
+}
+func (s *titleScene) Exit() {}
+func (s *titleScene) Draw(screen *ebiten.Image) {
 	screen.Fill(paletteInk)
 }

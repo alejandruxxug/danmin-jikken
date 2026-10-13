@@ -140,7 +140,7 @@ func TestSwitchToIsAppliedAfterUpdate(t *testing.T) {
 
 func registerScenes(env *Env) *SceneManager {
 	m := NewSceneManager(env)
-	m.Register(SceneTitle, func() Scene { return titleScene{} })
+	m.Register(SceneTitle, func() Scene { return &titleScene{} })
 	m.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	m.Register(SceneDayComputer, func() Scene { return &computerScene{} })
 	m.Register(SceneDayTop10, func() Scene { return &top10Scene{} })

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // The blink is slow and sleepy (design log, 2026-10-13): 0.25 s shut, every
@@ -195,5 +197,23 @@ func TestClockStopsOnTop10(t *testing.T) {
 	}
 	if g.env.Clock.String() != before {
 		t.Errorf("clock moved from %s to %s on the top-10", before, g.env.Clock)
+	}
+}
+
+// Until the real title exists, a click or a key on it starts day 1.
+func TestTitleStartsDayOne(t *testing.T) {
+	env := &Env{Input: NewInput(), Day: 3}
+	s := &titleScene{}
+	if err := s.Enter(env); err != nil {
+		t.Fatal(err)
+	}
+	s.Update()
+	if env.nextScene != "" {
+		t.Fatal("the title must wait for input")
+	}
+	env.Input.InjectKey(ebiten.KeySpace)
+	s.Update()
+	if env.nextScene != SceneDayReception || env.Day != 1 {
+		t.Errorf("next %q day %d, want day.reception day 1", env.nextScene, env.Day)
 	}
 }

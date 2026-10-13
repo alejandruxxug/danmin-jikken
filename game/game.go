@@ -42,7 +42,7 @@ func New(opts Options) (*Game, error) {
 		ClockRate: 1,
 	}
 	g := &Game{env: env, scenes: NewSceneManager(env)}
-	g.scenes.Register(SceneTitle, func() Scene { return titleScene{} })
+	g.scenes.Register(SceneTitle, func() Scene { return &titleScene{} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
 	g.scenes.Register(SceneDayTop10, func() Scene { return &top10Scene{} })
