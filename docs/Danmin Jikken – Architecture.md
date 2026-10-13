@@ -90,7 +90,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-scores <file>` | Scores file to read and write. Without it the top-10 keeps scores in memory (the real `danmin_scores.txt` is never touched in test mode) | Top-10 and the ghost row on a scratch file |
 | `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |
 | `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
-| `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11 and Alt+Enter toggle it too, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
+| `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11, Alt+Enter and Cmd+F toggle it too; the window opens at the biggest whole-number scale that fits 90% of the screen and can be resized, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
 **Input script** (one command per line, `#` = comment):

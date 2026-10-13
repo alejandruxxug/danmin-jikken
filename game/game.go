@@ -130,6 +130,19 @@ func fitScreen(w, h int) (scale, offX, offY int) {
 	return scale, (w - ScreenW*scale) / 2, (h - ScreenH*scale) / 2
 }
 
+// pickScale is the biggest whole-number scale from x1 to x4 whose window
+// fits in 90% of the monitor (w x h in points), leaving room for the menu
+// bar and the dock. It is never below x1.
+func pickScale(monW, monH int) int {
+	best := 1
+	for k := 2; k <= 4; k++ {
+		if ScreenW*k*10 <= monW*9 && ScreenH*k*10 <= monH*9 {
+			best = k
+		}
+	}
+	return best
+}
+
 // Layout is the whole-pixel version for tools that ask for it; LayoutF below
 // is the one Ebitengine uses.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -149,15 +162,20 @@ func (g *Game) LayoutF(outsideWidth, outsideHeight float64) (float64, float64) {
 	return float64(w), float64(h)
 }
 
-// Run opens the window (480x270 at x4; F11 or Alt+Enter, or -fullscreen,
-// makes it fullscreen) and plays until the player or the agent quits. It
+// Run opens the window (the biggest whole-number scale that fits the screen;
+// F11, Alt+Enter or Cmd+F, or -fullscreen, makes it fullscreen) and plays until the player or the agent quits. It
 // stops the ward's goroutines on the way out.
 func Run(opts Options) error {
 	g, err := New(opts)
 	if err != nil {
 		return err
 	}
-	ebiten.SetWindowSize(ScreenW*4, ScreenH*4)
+	// The window is the biggest whole-number size that fits the screen, and
+	// can be resized (the picture stays whole-number scaled with black bars).
+	monW, monH := ebiten.ScreenSizeInFullscreen()
+	scale := pickScale(monW, monH)
+	ebiten.SetWindowSize(ScreenW*scale, ScreenH*scale)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("断眠実験 DANMIN JIKKEN")
 	ebiten.SetFullscreen(opts.Fullscreen)
 

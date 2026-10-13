@@ -56,7 +56,7 @@ docs/              design docs (game design, story, art direction, architecture,
 ## Game notes
 
 - **Font:** the game's UI text uses **Silkscreen** (Jason Kottke), licensed under the SIL Open Font License 1.1. The font and its licence text are in `game/fonts/` (`Silkscreen-Regular.ttf`, `OFL.txt`).
-- **Fullscreen:** F11 or Alt+Enter toggles it, or start with `-fullscreen`. The 480x270 picture is scaled by a whole number (x8 on a 4K screen) and centred with black bars, so the pixels stay crisp at any screen size.
+- **Fullscreen:** F11, Alt(Option)+Enter or Cmd+F toggles it (macOS keeps F11), or start with `-fullscreen`. The 480x270 picture is scaled by a whole number (x8 on a 4K screen) and centred with black bars, so the pixels stay crisp at any screen size.
 - **Scores:** `danmin_scores.txt`, next to the executable, one row per line: `<name> <score> <HH:MM> [message]`. The name is the OS username (`os/user`, "clerk" if unknown). A row with score `---` is the ghost row the game adds between runs.
 - **Ward and goroutines in the game:** a patient only enters the hospital when the player stamps ADMIT, and only then gets a goroutine. The goroutine announces that the patient fell asleep; the player's click calls `RegisterEpisode`, so the next staff member in line attends and a room is assigned if one is free.
 

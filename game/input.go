@@ -78,10 +78,12 @@ func (in *Input) AnyKeyPressed() bool {
 	return false
 }
 
-// FullscreenPressed is true on the frame F11 or Alt+Enter goes down.
+// FullscreenPressed is true on the frame F11, Alt+Enter or Cmd+F goes down.
+// macOS keeps F11 for itself, so Option+Enter and Cmd+F are there too.
 func (in *Input) FullscreenPressed() bool {
 	altEnter := ebiten.IsKeyPressed(ebiten.KeyAlt) && in.KeyPressed(ebiten.KeyEnter)
-	return in.KeyPressed(ebiten.KeyF11) || altEnter
+	cmdF := ebiten.IsKeyPressed(ebiten.KeyMeta) && in.KeyPressed(ebiten.KeyF)
+	return in.KeyPressed(ebiten.KeyF11) || altEnter || cmdF
 }
 
 // Click returns the 1x game position of a left click on this frame.

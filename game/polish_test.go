@@ -217,3 +217,20 @@ func TestTitleStartsDayOne(t *testing.T) {
 		t.Errorf("next %q day %d, want day.reception day 1", env.nextScene, env.Day)
 	}
 }
+
+func TestPickScale(t *testing.T) {
+	cases := []struct{ w, h, want int }{
+		{3840, 2160, 4}, // 4K: x4 is 1920x1080
+		{1920, 1080, 3}, // x4 would not fit with the menu bar: x3 = 1440x810
+		{1440, 900, 2},  // a small MacBook: x3 is 810 high, over 90% of 900
+		{1512, 982, 2},  // x3 is 1440 wide, over 90% of 1512
+		{1728, 1117, 3},
+		{800, 600, 1},
+		{0, 0, 1},
+	}
+	for _, c := range cases {
+		if got := pickScale(c.w, c.h); got != c.want {
+			t.Errorf("pickScale(%d, %d) = %d, want %d", c.w, c.h, got, c.want)
+		}
+	}
+}
