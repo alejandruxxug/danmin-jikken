@@ -63,29 +63,31 @@ Alejo, 2026-10-13: the whole **day shift** is shown through an old **CRT screen*
 
 ## ⚡ Day to night strobe
 
-Alejo, 2026-10-13: the cut from the day shift into each night is a **strobe that starts as almost nothing, builds until it's overwhelming, and then you fall into the night** through white-ish flashes.
+Alejo, 2026-10-13: the cut from the day shift into each night **flickers a bit, then a stun sound hits and the screen goes into a full strobe, with the colours inverted**: the day is almost all white, so inverting turns it black. Then you fall into the night through white-ish flashes.
 
 | Phase | Time | What you see | Sound |
 |---|---|---|---|
-| **1 · Flicker** | ~1.5 s | The day keeps going, but the desk lamp dips **once or twice**, one frame each. Half the players won't be sure they saw it. The line boil speeds up a little | The fluorescent hum skips |
-| **2 · Build** | ~2 s | Flashes come in, each **brighter, bigger and longer** than the last: white frames, then **single frames of the night** (the grey ward, bed 4, a face) cut into the day | The hum turns into a rising buzz, a heartbeat under it |
-| **3 · Peak** | ~0.5 s | **Full white** | Silence |
-| **4 · Fall** | ~2 s | The night comes up **through over-exposed white**: grey shapes bleeding in, the view **drifting downward** as if you're sinking into the bed, 2–3 fading afterimage flashes | The ward monitor's beep, far away, getting closer |
+| **1 · Flicker** | ~1.5 s | The day keeps going, but the CRT flickers: the lamp dips once or twice, one frame each, the picture jitters. Half the players won't be sure they saw it | The fluorescent hum skips |
+| **2 · Stun + full strobe** | ~1 s | **The stun sound hits, and the screen strobes between the day and its inverse**: white desk ↔ **black desk with white lines**. Single frames of the night (the grey ward, bed 4, a face) flash in between, also inverted | **The stun:** a sharp hit, then a high **ringing whine** (like after an explosion in a film), with every other sound muffled underneath it, and a heartbeat |
+| **3 · White** | ~0.5 s | Full white | Only the ringing, fading |
+| **4 · Fall** | ~2 s | The night comes up **through over-exposed white**: grey shapes bleeding in, the view **drifting downward** as if you're sinking into the bed, 2–3 fading afterimage flashes | The ringing fades out; the ward monitor's beep comes in, far away, getting closer |
+
+**Why inverting:** the day is ~90 % off-white, so swapping black ↔ white turns the whole screen dark in one frame. It's the hardest-hitting flash the day can do, and it's free: the same image with the palette swapped.
 
 **It gets worse every night:**
 
-| | Length | Feel |
+| | Strobe length | Feel |
 |---|---|---|
-| Into night 1 | ~5 s | Gentle. A couple of flickers, a short build |
-| Into night 2 | ~6 s | The night frames last longer; you can almost read them |
-| Into night 3 | ~7 s | Violent. The flashes are red-tinged (red has leaked into day 3 anyway) and the fall is the longest |
+| Into night 1 | ~0.6 s | The stun lands, short, and it's over before you understand it |
+| Into night 2 | ~0.8 s | The inverted night frames last long enough to almost read |
+| Into night 3 | ~1 s | The most violent. The inverted frames are red-tinged (red has leaked into day 3) |
 
-**⚠️ Flashing safety (non-negotiable for a public game):**
-- **At most 3 big flashes per second, ever.** The build gets more intense through **brightness, size and length**, not speed. (The 3-per-second limit is the standard rule for avoiding photosensitive seizures.)
-- **Title-screen warning**, next to the content warning: *"This game contains flashing lights."*
-- **Settings → Reduce flashing:** swaps the strobe for a slow white fade with the same timing and sound, so nobody misses a story beat.
+**⚠️ Flashing safety** (full-screen black/white inversion is the flash type most likely to trigger photosensitive seizures; Alejo chose the full strobe, 2026-10-13, so these two stay):
+- **Title-screen warning**, next to the content warning: *"This game contains strong flashing lights."*
+- **Settings → Reduce flashing:** swaps the strobe for a single slow invert-and-fade with the same timing and the same stun sound, so nobody misses a beat.
+- Keep the full strobe itself **≤ ~1 s** (the table above already does).
 
-**In code:** one `Transition` scene between day and night, driven by a small table of keyframes per night (time → flash brightness/size, which night frame to show). The night frames are ordinary exported sprites. Reachable with the agent backdoor: `-scene transition.night1` (2, 3).
+**In code:** one `Transition` scene between day and night, driven by a small table of keyframes per night (time → normal / inverted / white / night frame). Inverting is the CRT shader's job (one `invert` number), so no extra art. The night frames are ordinary exported sprites. Reachable with the agent backdoor: `-scene transition.night1` (2, 3).
 
 **In the scripts:** `[FX: STROBE IN]` at the top of each night. The other direction, night → day, stays the **eyes close → hard cut to white** from the scripts.
 
