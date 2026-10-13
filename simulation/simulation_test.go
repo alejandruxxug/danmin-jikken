@@ -169,3 +169,33 @@ func TestSnapshotWhileRunning(t *testing.T) {
 		}
 	}
 }
+
+// With ManualAttend the goroutine only announces the attacks: the hospital
+// records no episode and the patient is never put to sleep by the goroutine.
+func TestManualAttendLeavesTheAttackToTheListener(t *testing.T) {
+	h, ps := newWard(t, 1, 1, threeStaff()...)
+	events := make(chan Event, 16)
+	err := Run(context.Background(), h, ps, Config{Seed: 1, Attacks: 2, Sleep: instant,
+		ManualAttend: true, Events: events})
+	if err != nil {
+		t.Fatalf("Run returned %v", err)
+	}
+	close(events)
+	var fell, woke int
+	for ev := range events {
+		if ev.Kind == FellAsleep {
+			fell++
+		} else {
+			woke++
+		}
+	}
+	if fell != 2 || woke != 2 {
+		t.Errorf("events: %d fell asleep, %d woke up, want 2 and 2", fell, woke)
+	}
+	if got := len(h.History()); got != 0 {
+		t.Errorf("%d episodes recorded, want 0 (nobody attended)", got)
+	}
+	if st := h.Snapshot().Patients[0].State; st != hospital.Awake {
+		t.Errorf("patient state = %v, want awake", st)
+	}
+}

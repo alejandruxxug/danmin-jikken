@@ -53,6 +53,14 @@ type Config struct {
 	Attacks   int           // attacks per patient; 0 or less means until ctx is cancelled
 	Locations []string      // where patients can fall asleep; empty means "hallway"
 
+	// ManualAttend leaves the attack to whoever listens to Events. The
+	// patient still waits, sends FellAsleep, sleeps and sends WokeUp, but the
+	// goroutine does not call RegisterEpisode: the listener decides if and
+	// when staff come (the game does it when the player clicks). If nobody
+	// attended, the patient is still awake in the hospital's eyes and the
+	// wake-up finds nothing to do, which is fine.
+	ManualAttend bool
+
 	// Sleep waits for d or until ctx is cancelled. Nil uses a real timer;
 	// tests replace it so they never wait.
 	Sleep func(ctx context.Context, d time.Duration) error
@@ -106,15 +114,21 @@ func runPatient(ctx context.Context, h *hospital.Hospital, p *hospital.Patient, 
 			return cancelled(err)
 		}
 		location := cfg.Locations[rng.Intn(len(cfg.Locations))]
-		if err := h.RegisterEpisode(p, location); err != nil {
-			return err
+		if !cfg.ManualAttend {
+			if err := h.RegisterEpisode(p, location); err != nil {
+				return err
+			}
 		}
 		send(ctx, cfg.Events, Event{PatientID: p.ID(), Kind: FellAsleep, Location: location})
 
 		if err := cfg.Sleep(ctx, randomUpTo(rng, cfg.MaxAsleep)); err != nil {
 			return cancelled(err)
 		}
-		if err := h.WakePatient(p); err != nil {
+		err := h.WakePatient(p)
+		if cfg.ManualAttend && errors.Is(err, hospital.ErrNotAsleep) {
+			err = nil // nobody attended this attack, so there is nobody to wake
+		}
+		if err != nil {
 			return err
 		}
 		send(ctx, cfg.Events, Event{PatientID: p.ID(), Kind: WokeUp})
