@@ -34,9 +34,9 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 
 **Translating Slay the Princess into pixels:** StP is hand-drawn charcoal, so the pixel version gets its texture from **hatching and dither patterns** (like Return of the Obra Dinn) and uneven, sketchy outlines, not smooth gradients. That's the hardest part of the art and where most of the review rounds will go.
 
-## ⚡ Day → night: the strobe (Alejo, 2026-10-13)
+## ⚡ Day to night strobe
 
-The cut from the day shift into each night is a **strobe that starts as almost nothing, builds until it's overwhelming, and then you fall into the night** through white-ish flashes.
+Alejo, 2026-10-13: the cut from the day shift into each night is a **strobe that starts as almost nothing, builds until it's overwhelming, and then you fall into the night** through white-ish flashes.
 
 | Phase | Time | What you see | Sound |
 |---|---|---|---|

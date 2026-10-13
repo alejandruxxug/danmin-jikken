@@ -9,7 +9,7 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Prologue]] +
 
 ## Waking up
 
-[FX: **STROBE IN**, gentle. See [[Danmin Jikken – Art Direction#⚡ Day → night: the strobe (Alejo, 2026-10-13)]]. Fall into the grey]
+[FX: **STROBE IN**, gentle. See [[Danmin Jikken – Art Direction#⚡ Day to night strobe]]. Fall into the grey]
 [BG: ward C, dark. A row of beds. You're sitting up in one.]
 [SFX: a monitor beeping, far away]
 
