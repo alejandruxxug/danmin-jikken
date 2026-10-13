@@ -34,10 +34,14 @@ func New(opts Options) (*Game, error) {
 		Input:   NewInput(),
 		Sprites: fsys,
 		CameraX: DefaultCameraX,
+
+		ClockRate: 1,
 	}
 	g := &Game{env: env, scenes: NewSceneManager(env)}
 	g.scenes.Register(SceneTitle, func() Scene { return titleScene{} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
+	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
+	g.scenes.Register(SceneDayTop10, func() Scene { return &top10Scene{} })
 
 	first := SceneTitle
 	if opts.Enabled {
@@ -47,6 +51,18 @@ func New(opts Options) (*Game, error) {
 		}
 		g.agent = agent
 		first = opts.Scene
+	} else {
+		// A real player: the scores live next to the executable, and the
+		// ghost row may appear between runs. Test mode keeps its hands off
+		// that file unless -scores names another one.
+		path, err := DefaultScoresPath()
+		if err != nil {
+			return nil, err
+		}
+		env.ScoresPath = path
+		if err := EnsureGhost(path, Username()); err != nil {
+			return nil, err
+		}
 	}
 	if err := g.scenes.Switch(first); err != nil {
 		return nil, err
@@ -61,7 +77,13 @@ func (g *Game) Update() error {
 			return err
 		}
 	}
-	g.env.Clock.Advance(g.env.Speed / 60) // one in-game minute per second at x1
+	g.env.Clock.Advance(g.env.ClockRate * g.env.Speed / 60)
+	if sh := g.env.Shift(); sh != nil {
+		sh.Update()
+		if sh.Over() {
+			g.env.SwitchTo(SceneDayTop10) // the shift is over: show the scores
+		}
+	}
 	err := g.scenes.Update()
 	g.env.Input.endFrame()
 	return err
@@ -94,6 +116,7 @@ func Run(opts Options) error {
 
 	runErr := ebiten.RunGame(g)
 	g.scenes.Close()
+	_ = g.env.StopShift() // the goroutines must not outlive the window
 	if runErr != nil && !errors.Is(runErr, ebiten.Termination) {
 		return fmt.Errorf("running the game: %w", runErr)
 	}

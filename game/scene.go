@@ -17,9 +17,11 @@ const (
 const (
 	SceneTitle        = "title"
 	SceneDayReception = "day.reception"
+	SceneDayComputer  = "day.computer"
+	SceneDayTop10     = "day.top10"
 )
 
-// Env is what every scene shares: the clock, the ward, the input, the
+// Env is what every scene shares: the clock, the shift, the input, the
 // day and the story flags. The scene manager owns one.
 type Env struct {
 	Seed    int64
@@ -28,7 +30,7 @@ type Env struct {
 	CRT     bool // the day CRT filter; no filter exists yet, so nothing reads it
 	Clock   *Clock
 	Flags   map[string]bool
-	Scores  map[string]int
+	Scores  map[string]int // points of each shift, keyed "day1", "day2", ...
 	Input   *Input
 	Sprites fs.FS // the embedded assets/sprites folder
 
@@ -37,37 +39,67 @@ type Env struct {
 	// and the camera stays where it was when the desk scenes switch.
 	CameraX float64
 
-	ward      *Ward
-	nextScene string // set by SwitchTo, applied when Update ends
+	ClockRate  float64    // in-game minutes per second at x1; the shift sets it
+	Sleepy     bool       // test mode: patients fall asleep fast and sleep long
+	ScoresPath string     // the scores file; "" keeps scores in memory only
+	Tab        string     // the open tab of the patient computer
+	Ranked     []ScoreRow // the top-10 as the last top-10 scene showed it
+	KeepClock  bool       // test mode: the next shift starts at Clock, not 09:00
+
+	art   *DeskArt
+	shift *Shift
+	// nextScene is set by SwitchTo, applied when Update ends
+	nextScene string
 }
 
-// Ward returns the running ward, or nil when no scene has started one.
-func (e *Env) Ward() *Ward { return e.ward }
+// Art loads the day sheets and the font the first time it is asked.
+func (e *Env) Art() (*DeskArt, error) {
+	if e.art == nil {
+		art, err := LoadDeskArt(e.Sprites)
+		if err != nil {
+			return nil, err
+		}
+		e.art = art
+	}
+	return e.art, nil
+}
 
-// StartWard builds the ward for the current seed and starts its goroutines.
-// A scene that needs patients calls it in Enter; StopWard in Exit.
-func (e *Env) StartWard() error {
-	if e.ward != nil {
+// Shift returns the running shift, or nil when no day scene has started one.
+func (e *Env) Shift() *Shift { return e.shift }
+
+// StartShift builds today's queue and ward and starts the clock at nine.
+// A day scene calls it in Enter; it does nothing if a shift is running, so
+// the reception, the computer and the top-10 can all be entered directly.
+func (e *Env) StartShift() error {
+	if e.shift != nil {
 		return nil
 	}
-	w, err := NewWard(e.Seed, e.Speed)
+	sh, err := NewShift(e.Day, e.Seed, e.Speed, e.Sleepy, e.Scores)
 	if err != nil {
 		return err
 	}
-	w.Start()
-	e.ward = w
+	e.shift = sh
+	e.ClockRate = shiftMinutes / float64(sh.Rules.ShiftSeconds)
+	if !e.KeepClock {
+		e.Clock = NewClock(9, 0)
+	}
+	e.KeepClock = false
 	return nil
 }
 
-// StopWard stops the patients' goroutines and forgets the ward.
-func (e *Env) StopWard() error {
-	if e.ward == nil {
+// StopShift stops the patients' goroutines and forgets the shift. The
+// points stay in Scores.
+func (e *Env) StopShift() error {
+	if e.shift == nil {
 		return nil
 	}
-	err := e.ward.Stop()
-	e.ward = nil
+	err := e.shift.Stop()
+	e.shift = nil
 	return err
 }
+
+// shiftMinutes is how much clock a shift covers: 09:00 to 17:00.
+const shiftMinutes = 8 * 60
 
 // SwitchTo asks the manager to change scene after this frame's Update.
 func (e *Env) SwitchTo(id string) { e.nextScene = id }

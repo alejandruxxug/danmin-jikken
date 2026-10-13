@@ -39,8 +39,11 @@ type Options struct {
 	NoCRT   bool
 	Quit    bool
 	Frames  int
-	Pan     int  // camera x at the start (used only when PanSet)
-	PanSet  bool // -pan was given; without it the camera starts at 120
+	Pan     int    // camera x at the start (used only when PanSet)
+	PanSet  bool   // -pan was given; without it the camera starts at 120
+	Scores  string // the scores file (without it scores stay in memory)
+	Score   int    // today's score at the start (day.top10 saves it)
+	Sleepy  bool   // patients fall asleep within a second and sleep long
 }
 
 // ParseOptions reads the flags. Every flag except -agent is ignored (and
@@ -63,6 +66,9 @@ func ParseOptions(args []string) (Options, error) {
 	fs.BoolVar(&o.Quit, "quit", false, "exit when the script (or -frames) ends")
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
 	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
+	fs.StringVar(&o.Scores, "scores", "", "scores file to use (default: none, kept in memory)")
+	fs.IntVar(&o.Score, "score", 0, "today's score at the start")
+	fs.BoolVar(&o.Sleepy, "sleepy", false, "patients fall asleep fast and sleep long")
 	if err := fs.Parse(args); err != nil {
 		return Options{}, err
 	}
@@ -79,11 +85,12 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op   string // "wait", "key", "click", "mouse", "pan", "shot" or "dump"
-	N    int    // wait: frames; pan: camera x
-	Key  ebiten.Key
-	X, Y int    // click, mouse: 1x game coordinates
-	Path string // shot, dump: output file
+	Op    string // "wait", "key", "click", "mouse", "pan", "stamp", "shot" or "dump"
+	N     int    // wait: frames; pan: camera x
+	Stamp Stamp  // stamp: which one
+	Key   ebiten.Key
+	X, Y  int    // click, mouse: 1x game coordinates
+	Path  string // shot, dump: output file
 }
 
 // ParseScript reads an input script, one command per line:
@@ -93,7 +100,9 @@ type Command struct {
 //	click 212 140   1x game coordinates
 //	mouse 5 135     hold the cursor there (edge of the screen pans the camera)
 //	pan 0           put the camera at x = 0 (0 to 240)
-//	shot out.png
+//	stamp admit     use a stamp on the window patient (admit, refer, discharge)
+//	shot out.png    (1x)
+//	shot4 out.png   (x4, to compare with the Figma views)
 //	dump out.json
 //
 // Everything after '#' is a comment. Errors name the line.
@@ -160,7 +169,21 @@ func parseCommand(words []string) (Command, error) {
 			return cmd, fmt.Errorf("pan %q: want a number from 0 to %d", args[0], MaxCameraX)
 		}
 		cmd.N = n
-	case "shot", "dump":
+	case "stamp":
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("stamp needs admit, refer or discharge")
+		}
+		switch strings.ToLower(args[0]) {
+		case "admit":
+			cmd.Stamp = StampAdmit
+		case "refer":
+			cmd.Stamp = StampRefer
+		case "discharge":
+			cmd.Stamp = StampDischarge
+		default:
+			return cmd, fmt.Errorf("stamp %q: want admit, refer or discharge", args[0])
+		}
+	case "shot", "shot4", "dump":
 		if len(args) != 1 {
 			return cmd, fmt.Errorf("%s needs one file name", cmd.Op)
 		}
@@ -196,6 +219,9 @@ type Agent struct {
 // and reads the input script.
 func newAgent(opts Options, env *Env) (*Agent, error) {
 	if opts.Day > 0 {
+		if _, err := RulesForDay(opts.Day); err != nil {
+			return nil, fmt.Errorf("-day: %w", err)
+		}
 		env.Day = opts.Day
 	}
 	if opts.Clock != "" {
@@ -204,6 +230,12 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 			return nil, err
 		}
 		env.Clock = clock
+		env.KeepClock = true
+	}
+	env.ScoresPath = opts.Scores
+	env.Sleepy = opts.Sleepy
+	if opts.Score > 0 {
+		env.Scores[fmt.Sprintf("day%d", env.Day)] = opts.Score
 	}
 	if opts.Seed != 0 {
 		env.Seed = opts.Seed
@@ -284,8 +316,12 @@ func (a *Agent) runCommands(env *Env) {
 			env.Input.InjectMouse(cmd.X, cmd.Y)
 		case "pan":
 			env.CameraX = float64(cmd.N)
-		case "shot":
-			a.pending = append(a.pending, output{"shot", cmd.Path})
+		case "stamp":
+			if sh := env.Shift(); sh != nil {
+				_ = sh.Stamp(cmd.Stamp) // nobody at the window: nothing happens, as for a click
+			}
+		case "shot", "shot4":
+			a.pending = append(a.pending, output{cmd.Op, cmd.Path})
 		case "dump":
 			a.pending = append(a.pending, output{"dump", cmd.Path})
 		}
@@ -387,6 +423,22 @@ type Dump struct {
 	Rooms    []DumpRoom     `json:"rooms"`
 	Scores   map[string]int `json:"scores"`
 	Flags    []string       `json:"flags"`
+
+	// The day at the desk (empty when no shift is running).
+	Score     int           `json:"score"`
+	Served    int           `json:"served"`
+	Total     int           `json:"total"`
+	ShiftSecs float64       `json:"shiftSeconds"`
+	Queue     []DumpGuest   `json:"queue"`
+	Stamps    []DumpStamp   `json:"stamps"`
+	Sleepers  []DumpSleeper `json:"sleepers"`
+	Hallway   []string      `json:"hallway"` // sleepers with no bed, by name
+	Staff     []DumpStaff   `json:"staff"`
+	Alerts    []string      `json:"alerts"`
+	Message   string        `json:"message"`
+	Tab       string        `json:"computerTab"`
+	Top10     []DumpScore   `json:"top10"` // as the top-10 scene showed it
+	ShiftOver bool          `json:"shiftOver"`
 }
 
 // DumpPatient is one patient, with the enums written as text.
@@ -407,9 +459,60 @@ type DumpRoom struct {
 	Occupants []string `json:"occupants"`
 }
 
+// DumpGuest is one visitor of the day's queue, with the data the desk
+// decides from.
+type DumpGuest struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Status     string `json:"status"`
+	ReferralOK bool   `json:"referralOK"`
+	Problem    string `json:"problem"`
+	Returning  bool   `json:"returning"`
+	RightStamp string `json:"rightStamp"`
+	Look       string `json:"look"`
+	Blinking   bool   `json:"blinking"`
+	X          int    `json:"x"`
+	Y          int    `json:"y"`
+}
+
+// DumpStamp is one stamp the player used.
+type DumpStamp struct {
+	Patient string `json:"patient"`
+	Stamp   string `json:"stamp"`
+	Right   bool   `json:"right"`
+}
+
+// DumpSleeper is a patient who fell asleep and has not woken up yet.
+type DumpSleeper struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Location string  `json:"location"`
+	Attended bool    `json:"attended"`
+	Seconds  float64 `json:"secondsAsleep"`
+}
+
+// DumpStaff is one attender and whether they are busy.
+type DumpStaff struct {
+	Name string `json:"name"`
+	Busy bool   `json:"busy"`
+}
+
+// DumpScore is one row of the top-10.
+type DumpScore struct {
+	Rank    string `json:"rank"`
+	Name    string `json:"name"`
+	Score   string `json:"score"`
+	Time    string `json:"time"`
+	Message string `json:"message"`
+}
+
+var lookNames = map[Look]string{
+	LookHidden: "hidden", LookStanding: "standing", LookAsleep: "asleep", LookHallway: "hallway",
+}
+
 // BuildDump collects the state. The hospital part comes from Snapshot, so
-// it is safe to call while the patient goroutines run. With no ward the
-// patient and room lists are empty.
+// it is safe to call while the patient goroutines run. With no shift the
+// day's lists are empty.
 func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d := Dump{
 		Scene:    sceneID,
@@ -422,9 +525,17 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 		Rooms:    []DumpRoom{},
 		Scores:   env.Scores,
 		Flags:    []string{},
+		Queue:    []DumpGuest{},
+		Stamps:   []DumpStamp{},
+		Sleepers: []DumpSleeper{},
+		Hallway:  []string{},
+		Staff:    []DumpStaff{},
+		Alerts:   []string{},
+		Top10:    []DumpScore{},
+		Tab:      env.Tab,
 	}
-	if env.ward != nil {
-		snap := env.ward.Snapshot()
+	if sh := env.shift; sh != nil {
+		snap := sh.ward.Snapshot()
 		for _, p := range snap.Patients {
 			d.Patients = append(d.Patients, DumpPatient{
 				ID: p.ID, Name: p.Name, Level: p.Level.String(),
@@ -441,6 +552,14 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 				State: r.State.String(), Occupants: occupants,
 			})
 		}
+		d.addShift(sh)
+	}
+	for i, r := range env.Ranked {
+		row := DumpScore{Rank: fmt.Sprint(i + 1), Name: r.Name, Score: fmt.Sprint(r.Score), Time: r.Time, Message: r.Message}
+		if r.Ghost {
+			row.Rank, row.Score = "-", "---"
+		}
+		d.Top10 = append(d.Top10, row)
 	}
 	for name, on := range env.Flags {
 		if on {
@@ -449,6 +568,41 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	}
 	sort.Strings(d.Flags) // map order is random; sorted keeps dumps comparable
 	return d
+}
+
+// addShift fills in the day-at-the-desk fields.
+func (d *Dump) addShift(sh *Shift) {
+	d.Score, d.Served, d.Total = sh.Score(), sh.Served(), sh.Total()
+	d.ShiftSecs, d.ShiftOver = sh.Seconds(), sh.Over()
+	d.Message = sh.Message()
+	for _, g := range sh.Guests {
+		d.Queue = append(d.Queue, DumpGuest{
+			ID: g.ID(), Name: g.Name, Status: g.status.String(),
+			ReferralOK: g.ReferralOK, Problem: g.Problem, Returning: g.Returning,
+			RightStamp: g.RightStamp().String(), Look: lookNames[sh.LookOf(g)], Blinking: sh.Blinking(g),
+			X: int(g.x), Y: int(g.y),
+		})
+	}
+	for _, st := range sh.Stamps() {
+		d.Stamps = append(d.Stamps, DumpStamp{Patient: st.Patient, Stamp: st.Stamp.String(), Right: st.Right})
+	}
+	for _, g := range sh.Guests {
+		if sl := sh.sleepers[g.ID()]; sl != nil {
+			d.Sleepers = append(d.Sleepers, DumpSleeper{
+				ID: g.ID(), Name: g.Name, Location: sl.Location,
+				Attended: sl.Attended, Seconds: sh.SleptFor(g),
+			})
+		}
+	}
+	for _, g := range sh.Waiting() {
+		d.Hallway = append(d.Hallway, g.Name)
+	}
+	for _, name := range sh.StaffNames() {
+		d.Staff = append(d.Staff, DumpStaff{Name: name, Busy: sh.Busy(name)})
+	}
+	if a := sh.Alert(); a != nil {
+		d.Alerts = append(d.Alerts, "no room: "+a.Guest.Name)
+	}
 }
 
 func writeDump(path string, d Dump) error {

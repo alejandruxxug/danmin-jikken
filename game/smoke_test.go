@@ -41,7 +41,7 @@ func TestSmokeAgentRun(t *testing.T) {
 	if err := json.Unmarshal(data, &d); err != nil {
 		t.Fatal(err)
 	}
-	if d.Scene != SceneDayReception || d.Seed != 7 || len(d.Patients) != 5 {
+	if d.Scene != SceneDayReception || d.Seed != 7 || len(d.Queue) != 5 {
 		t.Errorf("dump = %+v", d)
 	}
 	if _, err := os.Stat(shot); err != nil {

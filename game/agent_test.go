@@ -131,18 +131,23 @@ func TestBuildDumpWithoutWard(t *testing.T) {
 	}
 }
 
-func TestBuildDumpWithWard(t *testing.T) {
-	w, err := NewWard(7, 1)
+func TestBuildDumpWithShift(t *testing.T) {
+	scores := map[string]int{}
+	sh, err := NewShift(1, 7, 1, false, scores)
 	if err != nil {
 		t.Fatal(err)
 	}
-	env := &Env{Day: 1, Seed: 7, Clock: NewClock(9, 0), Flags: map[string]bool{}, Scores: map[string]int{}, ward: w}
+	defer sh.Stop()
+	env := &Env{Day: 1, Seed: 7, Clock: NewClock(9, 0), Flags: map[string]bool{}, Scores: scores, shift: sh}
 	d := BuildDump(env, SceneDayReception, 1)
-	if len(d.Patients) != 5 || len(d.Rooms) != 3 {
-		t.Fatalf("got %d patients and %d rooms, want 5 and 3", len(d.Patients), len(d.Rooms))
+	if len(d.Queue) != 5 || len(d.Rooms) != 3 || d.Total != 5 {
+		t.Fatalf("got %d in the queue and %d rooms, want 5 and 3", len(d.Queue), len(d.Rooms))
 	}
-	if d.Patients[0].State != "awake" || d.Patients[0].Level != "severe" {
-		t.Errorf("patient 0 = %+v", d.Patients[0])
+	if len(d.Patients) != 0 {
+		t.Errorf("%d patients in the hospital before anyone is stamped, want 0", len(d.Patients))
+	}
+	if d.Queue[0].RightStamp != "ADMIT" || d.Queue[2].RightStamp != "REFER" || d.Queue[0].Status != "coming" {
+		t.Errorf("queue = %+v", d.Queue)
 	}
 	data, err := json.Marshal(d)
 	if err != nil {
@@ -154,6 +159,22 @@ func TestBuildDumpWithWard(t *testing.T) {
 	}
 	if back.Rooms[0].Number != 101 || back.Rooms[0].State != "available" {
 		t.Errorf("room 0 = %+v", back.Rooms[0])
+	}
+	if len(back.Staff) != 3 || back.Staff[1].Name != "Nurse Mayu" {
+		t.Errorf("staff = %+v", back.Staff)
+	}
+}
+
+func TestParseStampCommand(t *testing.T) {
+	cmds, err := ParseScript(strings.NewReader("stamp admit\nstamp REFER\nshot4 a.png\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cmds[0].Stamp != StampAdmit || cmds[1].Stamp != StampRefer || cmds[2].Op != "shot4" {
+		t.Errorf("cmds = %+v", cmds)
+	}
+	if _, err := ParseScript(strings.NewReader("stamp nothing\n")); err == nil {
+		t.Error("an unknown stamp should fail")
 	}
 }
 
