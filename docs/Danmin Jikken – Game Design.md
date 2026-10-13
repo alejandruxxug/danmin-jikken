@@ -107,7 +107,7 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | **Sleep** | You followed every rule | You become a patient |
 | **3:17** *(secret?)* | Specific flags | The meta ending |
 
-**Superseded by story v2:** four endings, Wake / Sleep / Despair / 3:17, decided by the final gurney choice (close your eyes or keep them open) + flags. Full table in [[Danmin Jikken – Story]] → Endings.
+**Superseded by story v3:** five endings, Sleep / Wake / Despair / Forever / 3:17, decided by the final gurney choice (close your eyes or keep them open) + flags. Full table in [[Danmin Jikken – Story]] → Endings.
 
 ## 📜 Design log
 
@@ -137,3 +137,4 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Open source, public repo from the first commit. Code MIT, art + story CC BY-NC 4.0** | Alejo. Claude flagged that the solution is public before the Oct 19 deadline (classmates can copy); his call |
 | 2026-10-13 | **A Despair ending: you end your own life, mirroring Hana** (reached by never opening her letter + pushing Mayu away) | Alejo: "an ending where despair sits in and we end up killing ourselves". Off-screen, under the title-screen content warning |
 | 2026-10-13 | **The day is the dream.** The game opens greyscale on a gurney, nurses count you down, your eyes close → the white day. You're only truly awake at night; the last scene is the gurney again (close your eyes or keep them open) | Alejo: "the time we're really awake would be at night… the day would be like a false". Story v2 in [[Danmin Jikken – Story]] |
+| 2026-10-13 | **Love routes (story v3):** choices decide who confesses on night 2 (Mayu / Hana / nobody). Hana dies on every route (heartbreak, found night 3). Mayu's love slips and she corrects herself. On Hana's route Mayu kills Hana, sedates you for good and hangs herself → **FOREVER** ending (seen through your closing eyes, hard cut at the drop) | Alejo: "if she knows that she can't have you, we also get it… and then she kills herself". 5 endings now |
