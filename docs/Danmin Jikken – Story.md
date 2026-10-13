@@ -152,13 +152,12 @@ Every night = **you wake up → a goal → choices → a horror beat → someone
 
 **The game ends where it began, on the gurney.** The first scene and the last are the same scene, and this time you know what closing your eyes means.
 
-### 🏁 Endings (5)
+### 🏁 Endings (4)
 
 | Ending | Reached by | What happens |
 |---|---|---|
 | **Sleep** 🤍 | Close your eyes (Mayu or Nobody route) | **White.** *"Welcome to your first day at Halcyon Rest!"* Day 1 starts again. On Mayu's route she's at the next desk, smiling: a love ending, and the worst one. On the Nobody route, the next desk is empty |
-| **Wake** 🌅 | Keep your eyes open (Mayu route; or Nobody route with `read_letter`) | You grab the rail and sit up. Grey, cold, real. You stop the procedure. Bittersweet: you're awake, and Hana isn't |
-| **Despair** 🖤 | Keep your eyes open on the Nobody route **without** reading Hana's letter | Alejo's idea. Awake, alone, infected. Nobody loved you and you never read why Hana did it. You copy her. Off-screen: the gurney is empty, the lights go out, the text box types the first line of her letter, the one you never read |
+| **Wake** 🌅 | Keep your eyes open (Mayu or Nobody route) | You grab the rail and sit up. Grey, cold, real. You stop the procedure. Bittersweet: you're awake, and Hana isn't |
 | **Forever** ⛓️ | **Hana's route, always**, whatever you choose on the gurney | Keep your eyes open and Mayu closes them for you, raising the sedation: *"Shh. I'm sorry. Now nobody can take you."* **While you fall asleep**, through the narrowing gap of your eyelids, you see her **hang herself**. As she drops, **hard cut to black: FOREVER ENDING** |
 | **3:17** 🕒 *(secret)* | Keep your eyes open + `stamped_self = DISCHARGE` + `read_letter` (Mayu or Nobody route) | You wake, and the game "falls asleep" for real. `sleep_log_317.txt` appears in the game folder, written by Hana. The meta ending (twist C) |
 
@@ -166,7 +165,7 @@ Every night = **you wake up → a goal → choices → a horror beat → someone
 
 The game is public and open source, so this has to be done with care (DDLC is the model):
 - **A content warning on the title screen** (DDLC has one): *"This game contains depictions of suicide, self-harm and death."*
-- **Hana's death and Despair are off-screen:** rooms, letters, empty beds. Never a body or a method.
+- **Hana's death is off-screen:** rooms, letters, empty beds. Never a body or a method.
 - **Mayu's death in Forever is the one we show, and only up to the drop:** a dark silhouette through your closing eyelids, then the hard cut to black. No body, no aftermath. The cut is the scare.
 - **Hana's letter (heartbreak routes) is about you, not about how.**
 
@@ -176,10 +175,9 @@ The game is public and open source, so this has to be done with care (DDLC is th
 |---|---|
 | Keep Hana's name? | Hana (花, "flower"), Rin, Shiori, or yours |
 | Can you escape Forever? | **Always Forever** (written that way: Alejo described it as the route's ending) **or** survivable if you caught Mayu's handwriting |
-| Is 5 endings OK? | Keep all 5 (most are one scene on the shared gurney) **or** cut the 3:17 secret |
 | The gurney: what's the procedure? | Unnamed "permanent rest" (recommended) **or** a named Driftwell surgery |
 
-**Answered 2026-10-13:** confessions depend on choices ✅ · pushing Hana away + confronting Mayu = no confession ✅ · Hana dies on every route ✅ · Mayu slips into psychopathic love and corrects herself ✅ · confession night 2, body night 3 ✅ · Hana's reason is heartbreak only ✅ · on Hana's route Mayu murders her, then puts you under and hangs herself → FOREVER ✅
+**Answered 2026-10-13:** confessions depend on choices ✅ · pushing Hana away + confronting Mayu = no confession ✅ · Hana dies on every route ✅ · Mayu slips into psychopathic love and corrects herself ✅ · confession night 2, body night 3 ✅ · Hana's reason is heartbreak only ✅ · on Hana's route Mayu murders her, then puts you under and hangs herself → FOREVER ✅ · **4 endings: Sleep, Wake, Forever, 3:17 secret (Despair cut)** ✅
 
 **Word budget:** ~2,200 words now (~400 / 750 / 900 + 60 for the gurney opening), because each route has its own confession and letter. One playthrough only sees one route, so the run still fits the 20 minutes.
 
