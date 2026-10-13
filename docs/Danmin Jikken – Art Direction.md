@@ -63,7 +63,22 @@ Alejo, 2026-10-13: the whole **day shift** is shown through an old **CRT screen*
 | **Vignette** | Corners ~35 % darker, centre untouched | Pulls the eye to the desk and the patient |
 | **Fisheye (barrel)** | **Small**: the corners bend in a few pixels | Enough to feel like curved glass. Text and stamps in the middle must stay perfectly readable |
 | **Flicker** | Barely: brightness ±2 %, now and then | Shares the hum with the strobe's flicker phase |
-| **No colour fringing** | — | The day stays black + white. Chromatic aberration would add colours |
+| **No colour fringing** | — | The day stays in its palette (black, off-white, the pale greens). Chromatic aberration would add colours |
+
+### 🪟 Screen glass overlay
+
+Alejo, 2026-10-13: *"add like an overlay so it looks like we are looking through a screen"*. The scanlines alone read as a filter; the day should feel like **you are watching it on a monitor**, with glass between you and the room.
+
+| Layer | What it looks like | Notes |
+|---|---|---|
+| **Bezel** | Rounded screen corners: a thin black edge that curves in at the 4 corners, like an old monitor's glass meeting its frame | Only the corners and a 2–3 px edge. Nothing covers the desk or the patient |
+| **Glare** | One or two soft diagonal light streaks on the glass, top-left, very faint (off-white, ~8–12 % opacity) | Sits *on* the glass, so it doesn't pan with the room. It never crosses text you must read |
+| **Dust / smudge** | A few faint specks and one fingerprint smudge | Very subtle. Day 3 can add more (the screen is getting dirty, like the desk breaking) |
+| **Reflection (optional)** | A ghost of a dark shape on the glass, barely visible | A horror hook: on day 3 it could be a silhouette standing behind *you* |
+
+**How it's made:** one **480×270 overlay sprite**, `assets/src/screen_glass.aseprite`, drawn in Aseprite with palette colours (layers `bezel`, `glare`, `dust`, `reflection`, hidden ones allowed per day). The game draws it **on top of everything, before the CRT shader**, and it does **not** pan. Night has no glass, same as the rest of the CRT.
+
+**Figma views:** the overlay goes on top of the day views as its own layer, so the approval shows it.
 
 **It breaks down with the days** (same escalation as the line boil):
 - Day 1: clean CRT.
