@@ -90,9 +90,9 @@ Everything patient-related lives here. *(Exact screens wait on the hospital part
 
 | Stamp | When | What happens in the model |
 |---|---|---|
-| **ADMIT** | Valid referral **and** the sleep log shows episodes | `AssignRoom`; if every room is full → "no room", they wait in the hallway |
+| **ADMIT** | Valid referral **and** the sleep log shows episodes | `AdmitPatient`, then `AssignRoom` when they fall asleep; if every room is full → "no room", they wait in the hallway (`PatientsInHallway`) |
 | **REFER** | Something is wrong with the papers (no referral, no stamp, names don't match, expired ID) | Sent back to their clinic for proper papers. Not admitted |
-| **DISCHARGE** | A **returning** patient (wristband) whose sleep log has no new episodes | `WakePatient` / frees their room, they go home |
+| **DISCHARGE** | A **returning** patient (wristband) whose sleep log has no new episodes | The model has **no discharge method** (and `hospital/` is frozen), so this is game-side only: they leave the queue. If they're asleep in a room, `WakePatient` frees it first |
 
 Each day's memo adds one rule on top of these (day 2: *Shoal patients → Ward C*; day 3: *Do not wake them*).
 
