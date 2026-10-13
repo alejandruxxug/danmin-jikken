@@ -1,0 +1,11 @@
+{ "frames": [
+  { "filename": "lineart#0", "frame": {"x":0,"y":0,"w":4,"h":4}, "duration": 125 },
+  { "filename": "lineart#1", "frame": {"x":4,"y":0,"w":4,"h":4}, "duration": 125 },
+  { "filename": "lineart#2", "frame": {"x":8,"y":0,"w":4,"h":4}, "duration": 125 },
+  { "filename": "eyes_sleepy#0", "frame": {"x":0,"y":0,"w":4,"h":4}, "duration": 125 },
+  { "filename": "eyes_sleepy#1", "frame": {"x":0,"y":0,"w":4,"h":4}, "duration": 125 },
+  { "filename": "eyes_sleepy#2", "frame": {"x":0,"y":0,"w":4,"h":4}, "duration": 125 }
+ ],
+ "meta": { "size": {"w":12,"h":4},
+   "layers": [ {"name":"lineart"}, {"name":"eyes_sleepy"} ],
+   "frameTags": [ {"name":"boil","from":0,"to":2,"direction":"forward"} ] } }

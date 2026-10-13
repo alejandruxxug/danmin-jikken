@@ -50,7 +50,7 @@ Every lane owns its folders and doesn't touch the others', so sessions never ove
 | Decision | Plan | Status |
 |---|---|---|
 | GUI engine | **Ebitengine** | ✅ Not on the brief's list, but Alejo says the professor doesn't mind (2026-10-13) |
-| Go version | Core stays `go 1.21` (std lib only). The game goes in its own module (`game/go.mod`) because Ebitengine needs a newer Go | Planned for M2 |
+| Go version | Core stays `go 1.21` (std lib only). The game goes in its own module (`game/go.mod`) because Ebitengine needs a newer Go | ✅ Done 2026-10-13: `game/go.mod` is `go 1.27` |
 | Separation | The game reads the model only through `Hospital`'s methods and never changes `hospital/` | Rule |
 
 ## ✅ Progress log
@@ -60,3 +60,4 @@ Every lane owns its folders and doesn't touch the others', so sessions never ove
 | 2026-10-13 | M0: `hospital/` (Person, Patient, Doctor, Orderly, Room, EpisodeRecord, Hospital, Attender, typed states, sentinel errors), `main.go` demo, 8 tests (3 required + MyEpisodes, SevereReport by day, polymorphic dispatch, wake frees room, 10 goroutines for 3 rooms), README, AI_USAGE.md started |
 | 2026-10-13 | Art pipeline: Aseprite built + `aseprite` MCP connected and tested; `assets/export.sh` exports every `assets/src/*.aseprite` to a per-layer spritesheet + json in `game/assets/sprites/` |
 | 2026-10-13 | M1: `simulation/` (one goroutine per patient, injected seed + sleep, `context` to stop, events channel), `Nurse` as the 3rd Attender, shared `episodeLog` with its own mutex, `Hospital.Snapshot()` for race-free reads, `main.go` runs the concurrent demo after Section 6. 18 tests (12 hospital, 6 simulation); `go run -race .` and `go test -race ./...` clean. **`hospital/` frozen** (Alejo confirmed, 2026-10-13): the game lane reads it only through `Hospital` methods and `Snapshot` |
+| 2026-10-13 | M2 skeleton (no visuals yet): `game/` module (Ebitengine v2.10.5, `replace danmin => ../`), 480×270 window at ×4 with nearest-neighbour, Scene + SceneManager (`title`, `day.reception` as blank placeholders), Ward bridge (goroutines → events drained in `Update`, `Snapshot` for reads, stopped by context on scene exit), Aseprite sheet+json loader with `//go:embed`, the whole agent backdoor in `game/agent.go`. Tests for the loader, the input-script parser, the dump and the ward; `-agent -scene day.reception -seed 7 -frames 30 -dump … -quit` runs. Reception visuals wait for the approved Figma view; **M2 not ticked** |

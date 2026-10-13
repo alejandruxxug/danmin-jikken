@@ -9,7 +9,7 @@ Back to [[Danmin Jikken]] · Repo: `~/Documents/Uni/4th Semester/Langs&Compilers
 | Piece | Choice | Why |
 |---|---|---|
 | Language | **Go 1.27** (installed) | The assignment |
-| Engine | **Ebitengine** (not added yet) | Pure-Go 2D, built for pixel art, scales 480×270 crisply |
+| Engine | **Ebitengine v2.10.5** in its own module `game/` (`go 1.27`, `replace danmin => ../`) | Pure-Go 2D, built for pixel art, scales 480×270 crisply |
 | Story script | Small custom format (or embedded Go data) | Two parsers in one project is overkill. Decide when writing night 1 |
 | Assets | Drawn in Aseprite (`assets/src/*.aseprite`), exported by `assets/export.sh` to spritesheets + json in `game/assets/sprites/`, embedded with `//go:embed` | One binary for the demo machine, nothing to lose. The sheets live inside `game/` because `go:embed` can't reach `../`. Format: [[Danmin Jikken – Art Direction]] |
 
@@ -100,13 +100,32 @@ dump after_admit.json
 
 **Scene ids** (every new scene adds its row; the builder agent keeps this current):
 
-| id | Scene |
-|---|---|
-| `title` | Title, 断眠実験 + dagger |
-| `day.reception` | FNAF desk, front view |
-| `day.computer` | Patient computer open |
-| `night` | Night VN, first beat (`night.<beat>` for a specific one) |
-| `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) |
+| id | Scene | Status |
+|---|---|---|
+| `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour) |
+| `day.reception` | FNAF desk, front view | placeholder, but runs the ward (patients fall asleep behind the blank screen; `-dump` shows them) |
+| `day.computer` | Patient computer open | planned |
+| `night` | Night VN, first beat (`night.<beat>` for a specific one) | planned |
+| `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) | planned |
+
+An id that is not registered stops the game with `unknown scene "<id>"` and exit code 1.
+
+**What exists in `game/` (M2 skeleton, 2026-10-13):**
+
+```
+game/go.mod             module danmingame, requires danmin via replace
+game/cmd/danmin/        main: flags in, game.Run out
+game/scene.go           Scene interface, SceneManager, Env (shared clock/ward/input/day/flags)
+game/scenes.go          placeholder title + day.reception
+game/ward.go            Ward: simulation goroutines + Drain() + Snapshot()
+game/input.go           Input: real keys/mouse + injected ones from the backdoor
+game/clock.go           in-game clock (HH:MM)
+game/agent.go           the whole backdoor: flags, input script, -shot, -dump
+game/assets.go          //go:embed of assets/sprites
+game/sprites/           loader for the Aseprite sheet + json (+ testdata fixture)
+```
+
+Notes on the backdoor as built: `-shot`, `-shot4` and `-dump` are written when the run ends (after `-frames N`, or when the `-input` script ends, or after one frame if neither is given); `shot`/`dump` lines inside a script write mid-run. Without `-quit` the window stays open after the run ends. `-speed N` multiplies both the clock and the patients' timers. `-seed 0` means a random seed.
 
 ## ✅ Assignment checklist
 

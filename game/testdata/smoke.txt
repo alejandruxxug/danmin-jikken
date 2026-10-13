@@ -1,0 +1,6 @@
+# A tiny script for the agent tests and the smoke test.
+wait 5
+key Space
+click 212 140     # 1x game coordinates
+shot smoke_shot.png
+dump smoke_dump.json
