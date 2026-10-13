@@ -168,3 +168,4 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Night models are very detailed**: the 256 px VN sprites get full detail (hair strands, folds, faces), not the simple day line art | Alejo: "on night cycle i want the models to be very detailed" |
 | 2026-10-13 | **Window patient = 96×128 waist-up** (not 64×64); **text, signs, eyes and mouths don't boil**, only outlines do | Alejo, reviewing reception desk v1. Readability; the day 3 breakdown can make text wobble later |
 | 2026-10-13 | **Old Cecily must read clearly old**: white/grey hair, deep wrinkles, a fish-seller apron | Alejo: v1 looked too young |
+| 2026-10-13 | **Day palette gets 2–3 whitish desaturated greens** (fills only; outlines stay black; night unchanged) | Alejo: "something is getting very lost on the white on white" |
