@@ -77,72 +77,88 @@ Four sprite characters plus desk-only patients drawn as smaller portraits.
 
 **Open question for Alejo:** *is it spreading by itself, or is someone spreading it?*
 
-## 📖 Main storyline: draft v1 (2026-10-13)
+## 📖 Main storyline: draft v2 (2026-10-13)
 
-> Built on Alejo's two ideas: **one night we investigate a nurse who stopped reporting, and find she killed herself before Yumetsuki could take her, so she wouldn't hurt anyone**; and **a DDLC-style love triangle around the protagonist**. Everything else is a proposal to cut or rewrite.
+> Alejo's ideas: **a nurse who stopped reporting, found dead by her own hand so Yumetsuki couldn't use her**; **a DDLC love triangle**; **a Despair ending**; and (v2) **the game opens with you on a gurney being wheeled in. You close your eyes, and the white day is the dream. You're only really awake at night.** Everything else is a proposal to cut or rewrite.
+
+### 🛏️ The frame: the day is the dream
+
+**Cold open (0:45).** Black. Then **greyscale** (the night look, so the first thing you see is the *real* world): a ceiling sliding past, lights flickering overhead, squeaking wheels. You're on a **gurney**. Two nurses lean over you: Mayu smiling too much, Hana with tired eyes. Hana: *"Count back from ten for me."* The countdown types into the text box… **10… 9… 8…** and your eyes close (eyelids close in from the top and bottom of the screen).
+
+**Then: WHITE.** Driftwell's cheerful orientation reel: *"Welcome to your first day at Halcyon Rest!"* You're the new admissions clerk. Players think the gurney was a weird intro. It wasn't.
+
+| | ☀️ Day | 🌙 Night |
+|---|---|---|
+| **What it really is** | **The dream.** Driftwell sedates the infected and keeps them dreaming a happy, useful life (a job!) while the trial studies them (twist A) | **You, awake.** The sedation wears off. You're in **bed 4 of Ward C**, and you *think* you're the clerk staying late |
+| **Why it looks like that** | Flat, white, perfect, and **the lines won't hold still** (line boil) because a dream can't hold its shape | Grey, heavy, real. Red is real blood |
+| **The patients at the desk** | The other Ward C patients, dreaming the same place | Their real beds, their real heart lines on the ward monitor |
+| **The rules memo** | Driftwell telling you how to be a good patient, disguised as a job | — |
+
+**Clues hidden in plain sight:** at night you're in a hospital gown, and your wristband says **BED 4**. Hana's night 1 note says *"Your stamp on bed 4 was wrong"*: bed 4 is you. The ward monitor always shows one more line than there are patients: yours.
 
 ### 🧬 The rule that makes it all work
 
-**Yumetsuki only takes you when you finally sleep after fighting it.** The infected who sleep normally just get "sleepy" (the patients). But someone who **resists** for days builds it up, and when they finally drop, **something else wakes up in their body at 3:17**. It walks, and it hurts whoever is near. Driftwell knows: Ward C is where they keep the ones who woke up wrong.
+**Yumetsuki lives in the dream.** Every hour you spend in the white day, it has a little more of you. If someone stays under too long, **something else wakes up in their body at 3:17**, walks, and hurts whoever is near. Driftwell keeps them under on purpose, because that's what they're studying.
 
-That one rule explains everything:
-- **The nurses refuse to sleep** because they've seen what wakes up. That's why they're crazy.
-- **Hana's choice** (night 2): she couldn't stay awake any longer, and she knew what she'd become. So she made sure she would never wake up as *it*.
-- **Your final choice** (night 3): you're infected too, and you've been "too busy to sleep" all game.
+- **The nurses refuse to sleep** because sleep is where it lives. That's why they're crazy.
+- **Hana** caught it too. She could feel herself going under for good, and she knew what would wake up. So she made sure it never would (night 2).
+- **You** have been under since the gurney. Every night you wake up a little less.
 
-### 💘 The triangle
+### 💘 The triangle: sleep or wake
 
-Two nurses, two kinds of love, both aimed at you, the new clerk. They're best friends, and that's what makes it hurt.
+Two nurses, two kinds of love, both aimed at you. They're best friends, and that's what makes it hurt.
 
-| | **Nurse Mayu** | **Nurse Hana** (花) *(new)* |
+| | **Nurse Mayu** | **Nurse Hana** (花) |
 |---|---|---|
 | Type | DDLC's sunny one (Sayori energy) | The quiet, serious one (Yuri/Natsuki energy) |
-| With you | Brings you coffee, laughs at everything, too close too fast | Barely talks, leaves you notes, corrects your paperwork |
-| Secret | Hasn't slept in 19 days. Afraid of being left alone | Was in love with you since day 1, and knew she was running out of time |
-| Night 3 | Her last lucid moment: she wants you to stay awake *with her* forever | Her letter: she wants you to **sleep, get treated, and live** |
+| With you | Brings you coffee, laughs at everything, too close too fast. Plays along when you say you're "the clerk" | Barely talks, leaves you notes, corrects you. **Never plays along** |
+| Secret | Hasn't slept in 19 days, and she's losing. She'd rather be in the dream with you than awake alone | In love with you since the gurney. Knew she was running out of time |
+| What she wants for you | **Close your eyes.** Stay in the white day, where you're happy, and she'll come too | **Wake up.** Her letter: *"Don't let them put you back under."* |
 
-**The triangle is the final choice.** Mayu wants you to stay (stay awake, stay with her, never sleep). Hana wants you to let go (admit yourself and live). Both are love. One of them is the illness talking.
+**The triangle *is* the final choice.** Mayu offers the comfortable lie, Hana the painful truth. Both are love. One of them is the illness talking.
 
 ### 🌙 What you actually do each night
 
-Every night = **a goal + 2–3 choices + one horror beat**. No exploring: linear scenes, like DDLC.
+Every night = **you wake up → a goal → 2–3 choices → a horror beat → someone puts you back to sleep** (that's the cut back to day). Linear scenes, like DDLC.
 
-| | ☀️ The day before (sets it up) | 🌙 The night: your goal | Choices (→ flags) | Horror beat | How it ends |
+| | ☀️ The day before (dream) | 🌙 The night: your goal | Choices (→ flags) | Horror beat | How it ends |
 |---|---|---|---|---|---|
-| **1** | You meet both nurses at shift change. Old Cecily makes you laugh, then falls asleep mid-joke. Matty is admitted | **Walk out at closing.** Mayu catches you at the door: coffee, chatter, she's flirty. Hana walks past and leaves a note on your desk: *"Your stamp on bed 4 was wrong. Fix it tomorrow."* | Stay and talk to Mayu **or** go read Hana's note (`liked_mayu` / `liked_hana`) | On the ward monitor, Matty's line goes flat for 3 s and comes back. **First red** | You leave. In your pocket: Hana's note has a second line you didn't see before: *"Don't stay late."* |
-| **2** | New rule: *"Shoal patients → Ward C."* Every sleep log says **3:17**. **Hana didn't clock in.** Her name is on the shift board but her line on the computer is blank | **Find out why Hana stopped reporting.** Mayu says she's "just tired", but her reports *are* being filed: in **Mayu's** handwriting. You stay late on purpose and go to the nurses' quarters | Ask Mayu straight **or** sneak into Hana's room (`confronted_mayu` / `searched_room`); read Hana's shift log or not (`read_log`) | **Kanashibari:** in Hana's room you can't move, a figure stands in the doorway, the text box types by itself. You wake on the floor at 3:18 | **Hana is dead.** She did it herself, before she could sleep. On her desk: her shift log (the days she counted awake, 14) and **a sealed letter with your name on it.** Mayu, at the door: *"I didn't want you to be sad. So I kept her going."* |
-| **3** | Rule: *"Do not wake them."* Red leaks into the day; the desk breaks. The last patient's Settler ID has **your name** (OS username). Your own sleep log: **you haven't slept since day 1** | **Get to Ward C and get out.** Mayu walks you there: she's barely holding on, sweet and frightening. Barrow explains Driftwell's trial (twist A). You finally open **Hana's letter** | Open the letter now **or** let Mayu talk first; **final stamp on your own file: ADMIT** (sleep, get treated) **or DISCHARGE** (stay awake, with Mayu) | At 3:17 every patient in Ward C sits up at once | Ending, from your stamp + flags (below) |
+| **1** | First day. Old Cecily makes you laugh, then falls asleep mid-joke. Matty is admitted | **"Go home."** You think it's closing time. Mayu at the station, flirty: *"Off home already? You always say that."* Hana leaves a note: *"Your stamp on bed 4 was wrong."* | Stay and talk to Mayu **or** read Hana's note (`liked_mayu` / `liked_hana`) | The ward monitor: Matty's line goes flat for 3 s. Then you count the lines: **one too many. First red** | You never reach the door. Mayu, gently: *"Sleep tight."* A pinch in your arm. **White** |
+| **2** | New rule: *"Shoal patients → Ward C."* Every sleep log says **3:17**. **Hana didn't clock in**: her line on the computer is blank | **Find out why Hana stopped reporting.** Her reports are still being filed, in **Mayu's** handwriting. You get out of bed and go to the nurses' quarters | Ask Mayu straight **or** sneak into Hana's room (`confronted_mayu` / `searched_room`); read Hana's shift log or not (`read_log`) | **Kanashibari:** half awake, half dreaming, you can't move. A figure in the doorway. The text box types by itself | **Hana is dead.** She did it herself, before she went under for good. Her shift log (14 days awake) and **a sealed letter with your name on it.** Mayu: *"I didn't want you to be sad. So I kept her going."* She sedates you, crying. **White** |
+| **3** | Rule: *"Do not wake them."* Red leaks into the day; the desk breaks. **The last patient is you**: your Settler ID, your name (OS username). You stamp your own file: ADMIT or DISCHARGE (`stamped_self`) | You wake **on the gurney again**, being wheeled to Ward C's procedure room: Driftwell's "permanent rest". Barrow explains the trial (twist A). Mayu walks beside you, holding your hand | Open Hana's letter **or** let Mayu talk (`read_letter`). Then Barrow: *"Count back from ten."* **Close your eyes** (Mayu) **or keep them open** (Hana) | At 3:17 every bed in Ward C sits up at once | Ending, from your choice + flags (below) |
 
-### 🏁 Endings (redrawn around the triangle)
+**The game ends where it began, on the gurney.** The first scene and the last are the same scene, and this time you know what closing your eyes means.
+
+### 🏁 Endings
 
 | Ending | Reached by | What happens |
 |---|---|---|
-| **Wake** 🌅 | ADMIT yourself + read Hana's letter (`read_log` or `searched_room`) | You sleep, under Ward C staff who finally know what they're doing. Bittersweet: Hana's last wish worked. Mayu is admitted too. |
-| **Stay** 🩸 | DISCHARGE yourself (Mayu's route) | You and Mayu stay awake together. The credits roll while the screen keeps "falling asleep" and jolting back. Then 3:17. The worst ending, and it feels like a love ending. |
-| **3:17** 🕒 *(secret)* | ADMIT, but with `confronted_mayu` and `liked_hana` | The game "falls asleep" for real. `sleep_log_317.txt` appears in the game folder, written by Hana. The meta ending (twist C). |
-| **Despair** 🖤 | You **never opened Hana's letter** and you **pushed Mayu away** (didn't stay with her night 1, confronted her night 2) | Alejo's idea (2026-10-13). You're alone, infected, and you only know half of Hana's story: *that* she did it, not *why*. You copy her. It mirrors Hana: she did it to protect everyone, you do it because you gave up. Off-screen like hers: the stamp falls, the desk light goes out, the text box types her letter's first line, which you'll never read. The darkest ending, and the one that tells players to go back and open the letter. |
+| **Wake** 🌅 | Keep your eyes open (and not Despair's flags). With `read_letter`, Hana's last line plays | You grab the rail and sit up. Grey, cold, real. You stop the procedure. Bittersweet: Hana's wish worked. Mayu is finally made to sleep, under real care |
+| **Sleep** 🤍 | Close your eyes (Mayu's route) | **White.** *"Welcome to your first day at Halcyon Rest!"* Day 1 starts again, and Mayu is at the next desk now, smiling. It feels like a love ending. It's the worst one |
+| **Despair** 🖤 | Keep your eyes open, but you **never opened Hana's letter** and **pushed Mayu away** (no `liked_mayu`, `confronted_mayu`) | Alejo's idea. You're awake, alone and infected, and you know *that* Hana did it but not *why*. You copy her. It mirrors Hana: she did it to protect everyone, you do it because you gave up. Off-screen: the gurney is empty, the lights go out, the text box types the first line of her letter, the one you never read. The ending that sends players back to open it |
+| **3:17** 🕒 *(secret)* | Keep your eyes open + `stamped_self = DISCHARGE` + `liked_hana` | You wake, and the game "falls asleep" for real. `sleep_log_317.txt` appears in the game folder, written by Hana. The meta ending (twist C) |
 
-### ✍️ Handling Hana's death
+### ✍️ Handling the deaths
 
-It's the emotional centre, so do it the DDLC way, with care:
+They're the emotional centre, so do them the DDLC way, with care:
 - **A content warning on the title screen** (DDLC has one): *"This game contains depictions of suicide and self-harm."* Needed in a public, open-source game.
-- **Off-screen.** We find the room, the log, the letter. The art shows the room and what she left, not her body or how. The horror is in the letter and in Mayu, not in gore.
-- Her reason is in her own words: she did it **to protect people**, not because she gave up. The ending only lets her "win" if you choose to live.
+- **Off-screen.** Rooms, objects, letters, empty beds. Never a body or a method. The horror is in the letter and in Mayu, not in gore.
+- **Hana's reason is in her own words:** she did it to protect people. Despair is the ending where you miss that.
 
 ### ❓ For Alejo to decide
 
 | Question | Options |
 |---|---|
-| Do we keep Hana's name? | Hana (花, "flower"), Rin, Shiori, or yours |
+| Keep Hana's name? | Hana (花, "flower"), Rin, Shiori, or yours |
 | How much romance? | Light (looks, notes, coffee) **or** a real confession scene night 1 |
 | Can the player save Hana? | No (recommended: it hits harder, and 20 min is short) **or** a hidden route |
-| Is Mayu a villain? | No (recommended: she's sick and lonely, just like DDLC's girls) **or** she knew what Hana planned |
+| Is Mayu a villain? | No (recommended: she's sick and lonely, like DDLC's girls) **or** she helped Driftwell |
+| 4 endings (budget said 2–3)? | Keep all 4 (Sleep, Wake, Despair are cheap: mostly one scene each) **or** cut the 3:17 secret |
+| The gurney: what's the procedure? | Unnamed "permanent rest" (recommended) **or** a named Driftwell surgery |
 
-| 4 endings now (budget said 2–3) | Keep all 4 **or** merge **Stay** into **Despair** (both are "you didn't let go") |
+**Word budget check:** still ~1,500 words across the nights (~400 / 450 / 650) + ~60 for the gurney opening. Night 2 carries the most writing.
 
-**Word budget check:** still ~1,500 words across the nights (~400 / 450 / 650). Night 2 carries the most writing.
-
-## 🗒️ Beat sheet: earlier version (before the triangle and Hana; kept for reference)
+## 🗒️ Beat sheet: earliest version (before the triangle, Hana and the dream frame; kept for reference)
 
 
 | Segment                     | Beats                                                                                                                                                                                                |

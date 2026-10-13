@@ -22,6 +22,8 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 - **Escalation idea:** the boil gets faster or wider each day, and on day 3 it's visibly wrong.
 - **Night:** steadier, Slay the Princess-style lines, so the night feels *more real* than the day.
 
+**Why the day looks like this (story v2, 2026-10-13):** the day is a **dream**. Flat, white, too perfect, and the lines can't hold still. The night is the real world, which is why the game's **very first frame is greyscale** (the gurney). See [[Danmin Jikken – Story]].
+
 **The switch is the scare:** the same character, same pose, goes from flat line art at the desk to shaded, textured and bloody at night. One sprite set covers both (see the layer system below).
 
 **References:**
