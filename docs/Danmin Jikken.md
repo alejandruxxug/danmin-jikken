@@ -65,6 +65,6 @@
 - [x] **Solo or team:** solo
 - [x] **GUI engine:** Ebitengine. Not on the brief's list, but Alejo says the professor doesn't mind (2026-10-13)
 - [x] **Scope:** everything In, the full game (2026-10-13). See [[Danmin Jikken – Build Plan]]
-- [ ] **Sprite tool:** which vector pixel-art tool are you connecting?
+- [x] **Sprite tool:** ✅ **Aseprite** + the `aseprite` MCP (2026-10-13). Pipeline in [[Danmin Jikken – Art Direction]]
 - [x] **Title:** 断眠実験 Danmin Jikken (2026-10-13)
 - [x] **Disease name:** ✅ **Yumetsuki (夢憑き)** (what the Shoals call it) + **S-317** (Driftwell's code). Alejo, 2026-10-13. See [[Danmin Jikken – Story]].
