@@ -79,7 +79,7 @@ Four sprite characters plus desk-only patients drawn as smaller portraits.
 
 ## 📖 Main storyline: draft v3 (2026-10-13)
 
-> Alejo's ideas: **a nurse who stopped reporting, found dead by her own hand so Yumetsuki couldn't use her**; **a DDLC love triangle**; **a Despair ending**; and (v2) **the game opens with you on a gurney being wheeled in. You close your eyes, and the white day is the dream. You're only really awake at night.** (v3) **confessions depend on your choices, Hana dies on every route, and on Hana's route Mayu kills her, puts you under and hangs herself: the FOREVER ending.** Everything else is a proposal to cut or rewrite.
+> Alejo's ideas: **a nurse who stopped reporting, found dead by her own hand so Yumetsuki couldn't use her**; **a DDLC love triangle**; **a Despair ending** (later cut); and (v2) **the game opens with you on a gurney being wheeled in. You close your eyes, and the white day is the dream. You're only really awake at night.** (v3) **confessions depend on your choices, Hana dies on every route, and on Hana's route Mayu kills her, puts you under and hangs herself: the FOREVER ending.** Everything else is a proposal to cut or rewrite.
 
 ### 🛏️ The frame: the day is the dream
 
