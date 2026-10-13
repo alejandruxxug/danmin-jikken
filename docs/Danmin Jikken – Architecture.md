@@ -85,6 +85,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-input <file>` | Plays a script of inputs (below) | Clicks and keys without a human |
 | `-shot <file.png>` | Saves a screenshot at **1× (480×270)**, plus `-shot4` at ×4 to compare with the Figma view | The agent *sees* the screen |
 | `-dump <file.json>` | Writes the game state: scene, day, clock, patients (state, room), rooms, scores, flags | Check logic, not only pixels |
+| `-nocrt` | Turns the day CRT filter off (Art Direction → Day screen) | Screenshots line up pixel for pixel with the Figma views |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
 **Input script** (one command per line, `#` = comment):

@@ -34,6 +34,33 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 
 **Translating Slay the Princess into pixels:** StP is hand-drawn charcoal, so the pixel version gets its texture from **hatching and dither patterns** (like Return of the Obra Dinn) and uneven, sketchy outlines, not smooth gradients. That's the hardest part of the art and where most of the review rounds will go.
 
+## 📺 Day screen: CRT, vignette, fisheye (Alejo, 2026-10-13)
+
+The whole **day shift** is shown through an old **CRT screen**: like watching Driftwell's orientation reel that never ends. **The night has none of it.** No glass between you and the real world, so the night is flat, sharp and full screen. The jump from curved, glowing day to raw night is part of the strobe's punch.
+
+| Effect | Amount | Notes |
+|---|---|---|
+| **Scanlines** | 1 dark line per game pixel row (every 4 screen px), ~15 % darker | Over the ×4 image, so they line up with the pixels |
+| **Phosphor glow** | Soft bloom on the off-white, small | Makes the white feel like light, not paper |
+| **Vignette** | Corners ~35 % darker, centre untouched | Pulls the eye to the desk and the patient |
+| **Fisheye (barrel)** | **Small**: the corners bend in a few pixels | Enough to feel like curved glass. Text and stamps in the middle must stay perfectly readable |
+| **Flicker** | Barely: brightness ±2 %, now and then | Shares the hum with the strobe's flicker phase |
+| **No colour fringing** | — | The day stays black + white. Chromatic aberration would add colours |
+
+**It breaks down with the days** (same escalation as the line boil):
+- Day 1: clean CRT.
+- Day 2: a slow **rolling bar** passes every so often.
+- Day 3: **tracking errors**, the picture tears sideways for a frame, and red bleeds through (red leaks into day 3 anyway).
+- **The strobe** into each night starts as the CRT losing its signal.
+
+**Palette rule still holds:** the *art* (every sprite and background) uses only the palette. The CRT is a **screen filter on top**, so its in-between greys at the edges are fine.
+
+**In code:** one Ebitengine **Kage shader** run on the final ×4 image, day scenes only. It takes 4 numbers (scanline strength, vignette, curve amount, day number for the breakdown), so it stays small enough to explain in the defense.
+
+**Settings → CRT effect:** on by default, with an off switch (some players find curved, flickering text hard to read).
+
+**Figma views:** Figma can't bend the image, so day views get a **vignette + scanline overlay** layer on top and a note *"+ fisheye in game"*. The approval is about the layout; the bend gets checked in the game.
+
 ## ⚡ Day to night strobe
 
 Alejo, 2026-10-13: the cut from the day shift into each night is a **strobe that starts as almost nothing, builds until it's overwhelming, and then you fall into the night** through white-ish flashes.
