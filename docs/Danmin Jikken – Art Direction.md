@@ -122,6 +122,10 @@ Alejo, 2026-10-13: the cut from the day shift into each night **flickers a bit, 
 
 **256 px is the cap** (Alejo, 2026-10-13). On a 270-px-tall screen a 256 sprite stands floor to almost ceiling, and the text box covers the legs, like DDLC. The face gets roughly 50–60 px, enough for anime eyes.
 
+**Night models are very detailed** (Alejo, 2026-10-13): the night VN sprites (Mayu, Hana, …, 160×256) get hair strands, cloth folds, detailed anime faces and full greyscale shading, the Slay the Princess look. Nothing like the simple day line art: the jump from flat day to rich night is the point.
+
+**The reception is a panorama:** the day desk background is **720×270** (the FNAF 2 pan, see [[Danmin Jikken – Game Design]]); the screen shows 480 of it at a time.
+
 **Same pixel scale everywhere:** sprites are drawn at 1× in the 480×270 world and scaled ×4 with everything else. Mixing pixel sizes looks pasted on.
 
 ## 🎨 Palette: `assets/palette/danmin.hex`
@@ -203,7 +207,7 @@ the game cuts frames out of the sheet with SubImage and stacks layers (internal/
 | Expression variants | Separate layers, **hidden** while drawing is fine (hidden layers still export) | `eyes_closed` hidden |
 | Frames | Line boil = **3 frames, 125 ms each** (8 fps), tag `boil`. Other animations get their own tag | tags `boil`, `nod_off`, `blink` |
 | Static layers | Same art on every frame: use **linked cels**; the export stores a repeated frame only once | `eyes_normal` |
-| Canvas | 1× size. VN sprite **160×256**, portrait **64×64**, document **96×64**, background **480×270** | |
+| Canvas | 1× size. VN sprite **160×256**, portrait **64×64**, document **96×64**, background **480×270** (the reception panorama is **720×270**) | |
 | Colours | Only `assets/palette/danmin.hex`. Set it with `set_palette` right after `create_canvas` (first entry transparent `#00000000`) | |
 
 ### 📦 What the game reads (`mina.json`)
@@ -229,6 +233,8 @@ Aseprite's standard **json-array** format. `encoding/json` reads it directly:
 | A failed tool can still come back as success, with the error only in its text ("Failed to …") | Read every result message |
 | MCP `export_spritesheet` **flattens all layers into one picture** | Don't use it for game sprites. Always `./assets/export.sh`. (It's fine for a quick look) |
 | Only one session should write to a given `.aseprite` at a time | It's one binary file; two sessions writing it means one loses its work |
+| Figwright `apply_style_to_node` times out ("Unable to establish connection to Figma") | The palette colour styles exist in the Figma file (`Danmin/…`), but HUD shapes are painted with the exact palette hex for now |
+| A fill under a boiling outline must boil too | A linked fill shows white specks or grey gaps when the outline wobbles 1–2 px. Make the fill a 3-frame layer computed from each frame's own outline |
 
 **ComfyUI (optional, later):** night backgrounds only, downscaled and forced onto the palette by a script, then **imported into an `.aseprite` file** (`import_image_as_layer`) and cleaned up there, so it goes through the same export. Not for characters.
 
@@ -240,3 +246,4 @@ Aseprite's standard **json-array** format. `encoding/json` reads it directly:
 | 2026-10-13 | Style locked: day = black outlines + white fill; night = Slay the Princess greyscale + red | From Alejo's StP reference board |
 | 2026-10-13 | Day outlines **squiggle** (line boil, 3 frames ~8 fps) | Alejo: "to give the unsettling effect" |
 | 2026-10-13 | **Tool connected: Aseprite 1.3.18.6** (built from source) + `aseprite` MCP (diivi/aseprite-mcp, 116 tools). Pipeline tested end to end on a 32×32 boil test head: draw → preview → `export.sh` → per-layer sheet + json | Works. Alejo: everything in Aseprite, exported as spritesheets |
+| 2026-10-13 | **Day – Reception desk v1** (M2). Sprites: `reception_bg` 720×270 (fill, lineart ×3, detail: waiting room with benches + window to the sea + DRIFT OFF WELL! poster, HALCYON REST entrance, notice board, fountain, WARDS A-B doors, PALE MSTR poster), `desk` 720×270 (fill, lineart ×3, detail: glass window, counter with the day-1 rules memo + ADMIT/DISCHARGE/REFER cubbies, phone, in-tray, stamps, bell, mug), `cecily` 96×128 (fill ×3, lineart ×3, detail, eyes_normal, eyes_closed, mouth_smile, mouth_slack, fx_zzz), `waiting_fisher` 32×64 (same layer set, mouth_neutral). All tag `boil`, 3 × 125 ms, only `#0b0b0c` + `#ecece6`. Figma file *Danmin-Jikken*, page *Day*: frame `Day – Reception desk` (2:9) + `Day – Reception desk · full pan (reference)` (3:25) + note (3:32) | **Waiting for Alejo's approval** |
