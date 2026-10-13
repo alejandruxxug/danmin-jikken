@@ -165,3 +165,4 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | `go run .` prints Section 6, then the concurrent demo (6 patients, 24 episodes) | Alejo: keep both. Section 6 output stays unchanged; the goroutines are visible without a flag |
 | 2026-10-13 | **Score = correct choices; top-10 uses OS usernames** | Alejo: "Points are correct choices and top 10 is OS usernames" |
 | 2026-10-13 | **Top-10 twist: the save file talks back.** `danmin_scores.txt` gets a 03:17 row you never played, with a message | Alejo wanted "something very DDLC style"; picked this over the board slowly filling with his username |
+| 2026-10-13 | **Night models are very detailed**: the 256 px VN sprites get full detail (hair strands, folds, faces), not the simple day line art | Alejo: "on night cycle i want the models to be very detailed" |
