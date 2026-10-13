@@ -67,10 +67,12 @@ Alejo, 2026-10-13: the cut from the day shift into each night **flickers a bit, 
 
 | Phase | Time | What you see | Sound |
 |---|---|---|---|
-| **1 · Flicker** | ~1.5 s | The day keeps going, but the CRT flickers: the lamp dips once or twice, one frame each, the picture jitters. Half the players won't be sure they saw it | The fluorescent hum skips |
-| **2 · Stun + full strobe** | ~1 s | **The stun sound hits, and the screen strobes between the day and its inverse**: white desk ↔ **black desk with white lines**. Single frames of the night (the grey ward, bed 4, a face) flash in between, also inverted | **The stun:** a sharp hit, then a high **ringing whine** (like after an explosion in a film), with every other sound muffled underneath it, and a heartbeat |
+| **1 · Flicker** | ~1.5 s | The day keeps going, but the picture **inverts for a single frame**, once or twice, and the CRT jitters. Half the players won't be sure they saw it | The fluorescent hum skips |
+| **2 · Stun + full strobe** | ~1 s | **The stun sound hits, and the strobe starts: the picture flips normal ↔ inverted, over and over**. White desk ↔ **black desk with white lines**. Some flips land on a frame of the night instead (the grey ward, bed 4, a face), inverted too | **The stun:** a sharp hit, then a high **ringing whine** (like after an explosion in a film), with every other sound muffled underneath it, and a heartbeat |
 | **3 · White** | ~0.5 s | Full white | Only the ringing, fading |
 | **4 · Fall** | ~2 s | The night comes up **through over-exposed white**: grey shapes bleeding in, the view **drifting downward** as if you're sinking into the bed, 2–3 fading afterimage flashes | The ringing fades out; the ward monitor's beep comes in, far away, getting closer |
+
+**The strobe *is* the inversion** (Alejo, 2026-10-13): every flash, from the first flicker to the last, is the picture flipping between normal and inverted. Nothing else flashes, no white or black frames laid on top.
 
 **Why inverting:** the day is ~90 % off-white, so swapping black ↔ white turns the whole screen dark in one frame. It's the hardest-hitting flash the day can do, and it's free: the same image with the palette swapped.
 
