@@ -51,4 +51,5 @@ Back to [[Danmin Jikken – Script]] · Next: ☀️ Day 1, then [[Danmin Jikken
 **Notes**
 - Mayu talks the most; Hana says exactly one real line. That's both of them in miniature.
 - Hana's *"Count back from ten"* comes back word for word in [[Danmin Jikken – Night 3#Choice 5]], from Barrow.
+- ⚠️ **To do (Alejo, 2026-10-13): the orientation reel must explain the desk rules** before Day 1: what a valid referral is, ADMIT / REFER / DISCHARGE, clicking a sleeper. ~4 short cards, ~30 s. The rules themselves: [[Danmin Jikken – Game Design#📜 What each stamp means (proposal, waiting for Alejo)]].
 - No red here. The first red is on the monitor in [[Danmin Jikken – Night 1]].

@@ -78,6 +78,29 @@ Everything patient-related lives here. *(Exact screens wait on the hospital part
 - Day 2: *"Patients from [town] go to Ward C."* (There is no Ward C on the map.)
 - Day 3: *"Do not wake them."*
 
+### 📜 What each stamp means (proposal, waiting for Alejo)
+
+> ⚠️ **The player must be told these rules before Day 1** (Alejo, 2026-10-13). Right now the orientation reel is one line, so nobody would know what a "valid referral" is. See *How the rules get explained* below.
+
+**A referral is valid when all of these hold:**
+1. The name on the referral matches the **Settler ID**.
+2. The Settler ID is **not expired**.
+3. It carries **Dr. Barrow's stamp** (Driftwell's head of the sleep unit; he writes every referral).
+4. The diagnosis is a **sleep disorder** (narcolepsy, cataplexy, "sleep attacks").
+
+| Stamp | When | What happens in the model |
+|---|---|---|
+| **ADMIT** | Valid referral **and** the sleep log shows episodes | `AssignRoom`; if every room is full → "no room", they wait in the hallway |
+| **REFER** | Something is wrong with the papers (no referral, no stamp, names don't match, expired ID) | Sent back to their clinic for proper papers. Not admitted |
+| **DISCHARGE** | A **returning** patient (wristband) whose sleep log has no new episodes | `WakePatient` / frees their room, they go home |
+
+Each day's memo adds one rule on top of these (day 2: *Shoal patients → Ward C*; day 3: *Do not wake them*).
+
+**How the rules get explained (before Day 1):**
+- **The orientation reel** (end of the [[Danmin Jikken – Prologue]]) grows from one line to ~4 short cards, Driftwell's cheerful voice: what the desk is, what makes a referral valid, the three stamps, "click a sleeping patient to call staff". ~30 s, skippable on a second run.
+- **The rules memo** stays pinned on the desk, so the player can re-read it any time.
+- **Day 1's first patient is the tutorial**: a clean, valid case to ADMIT, then Old Cecily falls asleep mid-joke (teaches the click).
+
 **Stamps:** ADMIT · DISCHARGE · REFER. Wrong stamps get a citation slip (Papers, Please style), but that's flavour. **No game over at the desk**, because the run has to fit in 20 minutes.
 
 **The sleep mechanic, i.e. the assignment working in front of the room:**
