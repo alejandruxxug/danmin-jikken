@@ -87,6 +87,9 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-dump <file.json>` | Writes the game state: scene, day, clock, patients (state, room), rooms, scores, flags | Check logic, not only pixels |
 | `-pan X` | Camera x at the start, 0–240 (default 120 = the Figma frame's crop). Reception only | Shots line up with the Figma view, or show the far ends of the room |
 | `-nocrt` | Turns the day CRT filter off (Art Direction → Day screen) | Screenshots line up pixel for pixel with the Figma views |
+| `-scores <file>` | Scores file to read and write. Without it the top-10 keeps scores in memory (the real `danmin_scores.txt` is never touched in test mode) | Top-10 and the ghost row on a scratch file |
+| `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |
+| `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
 **Input script** (one command per line, `#` = comment):
@@ -97,7 +100,9 @@ key Space
 click 212 140      # 1× game coordinates (Figma px ÷ 4)
 mouse 5 135        # hold the cursor there; within 48 px of a side it pans the camera
 pan 240            # put the camera at x = 240 right away
+stamp admit        # use a stamp on the window patient (admit, refer, discharge); same as clicking it
 shot after_admit.png
+shot4 after_admit_x4.png
 dump after_admit.json
 ```
 
@@ -106,8 +111,9 @@ dump after_admit.json
 | id | Scene | Status |
 |---|---|---|
 | `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour) |
-| `day.reception` | FNAF desk, front view | **built to the approved v3 Figma view** (room, desk, patients awake/asleep from `Snapshot`, edge pan, screen glass). No HUD text yet, no CRT shader. `-dump` has `cameraX` and the patients |
-| `day.computer` | Patient computer open | planned |
+| `day.reception` | FNAF desk, front view | **built** (approved views). Queue walks up, the window patient + ADMIT / DISCHARGE / REFER stamps (cubby or stamp handle), sleepers in the chairs, hallway sleepers, HUD (DAY plate, PATIENTS n/N, computer tab), the no-room alert, line boil (characters 125 ms, room and props 375 ms), walk bob, blinking. Starts the shift if none is running |
+| `day.computer` | Patient computer open, BEDS tab (RECORDS / SLEEP LOGS / WARD FEED are placeholders until M4) | **built**. Rooms, hallway sleepers + CALL STAFF, staff busy/free. Shares the reception's running shift; `-clock`, `-day`, `-sleepy` apply |
+| `day.top10` | Top-10 clerks (end of every shift) | **built**. Stops the shift, saves today's score to the scores file, shows ranks + the ghost row. `-score N -scores f.txt` reaches it directly |
 | `night` | Night VN, first beat (`night.<beat>` for a specific one) | planned |
 | `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) | planned |
 
@@ -120,14 +126,23 @@ game/go.mod             module danmingame, requires danmin via replace
 game/cmd/danmin/        main: flags in, game.Run out
 game/scene.go           Scene interface, SceneManager, Env (shared clock/ward/input/day/flags)
 game/scenes.go          placeholder title
-game/reception.go       day.reception: layered room + desk, queue, patients, edge pan, screen glass
-game/ward.go            Ward: simulation goroutines + Drain() + Snapshot()
+game/days.go            the 3 days as a table (visitors, rooms, shift length), Stamp, Visitor.RightStamp
+game/shift.go           Shift: one day at the desk (queue, stamps, dispatch, score, alert). No drawing
+game/ward.go            Ward: Admit (goroutine per admitted patient), Attend, AssignRoom, Drain, Snapshot
+game/desk.go            DeskArt (sheets + font) and the painter that draws room, guests, HUD, alert
+game/reception.go       day.reception: edge pan and the clicks
+game/computer.go        day.computer: the flip-up terminal, BEDS tab
+game/top10.go           day.top10
+game/scorefile.go       danmin_scores.txt: load, append, ghost row, ranking (tests in scorefile_test.go)
+game/text.go + fonts/   Silkscreen (OFL) at size 8, whole pixels
 game/input.go           Input: real keys/mouse + injected ones from the backdoor
 game/clock.go           in-game clock (HH:MM)
 game/agent.go           the whole backdoor: flags, input script, -shot, -dump
 game/assets.go          //go:embed of assets/sprites
 game/sprites/           loader for the Aseprite sheet + json (+ testdata fixture)
 ```
+
+**Who attends a sleeper (M3):** a patient only enters the hospital when the player stamps ADMIT, and then gets a goroutine (`simulation.Run` with `ManualAttend`). The goroutine only announces "fell asleep" / "woke up"; the player's click calls `Hospital.RegisterEpisode`, so the next attender in line (round robin) attends and a room is assigned if one is free. `AssignRoom` then tells the game which room, or `ErrNoRoomAvailable` (checked with `errors.Is`), which opens the no-room alert and lays the patient in the hallway. A patient nobody attends just wakes up on their own.
 
 Notes on the backdoor as built: `-shot`, `-shot4` and `-dump` are written when the run ends (after `-frames N`, or when the `-input` script ends, or after one frame if neither is given); `shot`/`dump` lines inside a script write mid-run. Without `-quit` the window stays open after the run ends. `-speed N` multiplies both the clock and the patients' timers. `-seed 0` means a random seed.
 
