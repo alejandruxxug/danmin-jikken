@@ -83,3 +83,23 @@ func TestLoadCutsFrames(t *testing.T) {
 		t.Error("loading a missing sheet should fail")
 	}
 }
+
+func TestParseLayerOpacity(t *testing.T) {
+	data := `{"frames":[],"meta":{"layers":[{"name":"bezel","opacity":255},{"name":"glare","opacity":28},{"name":"plain"}]}}`
+	m, err := Parse([]byte(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Opacity("bezel"); got != 1 {
+		t.Errorf("bezel opacity = %v, want 1", got)
+	}
+	if got := m.Opacity("glare"); got < 0.10 || got > 0.12 {
+		t.Errorf("glare opacity = %v, want about 0.11", got)
+	}
+	if got := m.Opacity("plain"); got != 1 {
+		t.Errorf("a layer with no opacity field should be opaque, got %v", got)
+	}
+	if got := m.Opacity("missing"); got != 1 {
+		t.Errorf("an unknown layer should be opaque, got %v", got)
+	}
+}

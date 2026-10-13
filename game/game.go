@@ -33,6 +33,7 @@ func New(opts Options) (*Game, error) {
 		Scores:  make(map[string]int),
 		Input:   NewInput(),
 		Sprites: fsys,
+		CameraX: DefaultCameraX,
 	}
 	g := &Game{env: env, scenes: NewSceneManager(env)}
 	g.scenes.Register(SceneTitle, func() Scene { return titleScene{} })

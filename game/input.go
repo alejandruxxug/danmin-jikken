@@ -13,6 +13,14 @@ type Input struct {
 	clicked bool
 	clickX  int
 	clickY  int
+
+	// The agent backdoor holds the cursor still at a chosen spot. Without it
+	// the real mouse is used, except in test mode, where a stray mouse must
+	// not pan the camera: then the cursor rests in the middle of the screen.
+	fakeMouse  bool
+	mouseX     int
+	mouseY     int
+	IgnoreReal bool // set in test mode
 }
 
 // NewInput makes an Input with nothing injected.
@@ -35,6 +43,23 @@ func (in *Input) Click() (x, y int, ok bool) {
 		return x, y, true
 	}
 	return 0, 0, false
+}
+
+// Cursor returns the 1x game position of the mouse.
+func (in *Input) Cursor() (x, y int) {
+	switch {
+	case in.fakeMouse:
+		return in.mouseX, in.mouseY
+	case in.IgnoreReal:
+		return ScreenW / 2, ScreenH / 2
+	}
+	return ebiten.CursorPosition()
+}
+
+// InjectMouse moves the pretend cursor to (x, y) and keeps it there.
+func (in *Input) InjectMouse(x, y int) {
+	in.fakeMouse = true
+	in.mouseX, in.mouseY = x, y
 }
 
 // InjectKey pretends a key went down on the next frame.

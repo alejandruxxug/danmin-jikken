@@ -39,6 +39,8 @@ type Options struct {
 	NoCRT   bool
 	Quit    bool
 	Frames  int
+	Pan     int  // camera x at the start (used only when PanSet)
+	PanSet  bool // -pan was given; without it the camera starts at 120
 }
 
 // ParseOptions reads the flags. Every flag except -agent is ignored (and
@@ -60,9 +62,15 @@ func ParseOptions(args []string) (Options, error) {
 	fs.BoolVar(&o.NoCRT, "nocrt", false, "turn the day CRT filter off")
 	fs.BoolVar(&o.Quit, "quit", false, "exit when the script (or -frames) ends")
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
+	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
 	if err := fs.Parse(args); err != nil {
 		return Options{}, err
 	}
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "pan" {
+			o.PanSet = true
+		}
+	})
 	if !o.Enabled {
 		return Options{}, nil
 	}
@@ -71,10 +79,10 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op   string // "wait", "key", "click", "shot" or "dump"
-	N    int    // wait: frames
+	Op   string // "wait", "key", "click", "mouse", "pan", "shot" or "dump"
+	N    int    // wait: frames; pan: camera x
 	Key  ebiten.Key
-	X, Y int    // click: 1x game coordinates
+	X, Y int    // click, mouse: 1x game coordinates
 	Path string // shot, dump: output file
 }
 
@@ -83,6 +91,8 @@ type Command struct {
 //	wait 30         frames
 //	key Space
 //	click 212 140   1x game coordinates
+//	mouse 5 135     hold the cursor there (edge of the screen pans the camera)
+//	pan 0           put the camera at x = 0 (0 to 240)
 //	shot out.png
 //	dump out.json
 //
@@ -131,16 +141,25 @@ func parseCommand(words []string) (Command, error) {
 		if err := cmd.Key.UnmarshalText([]byte(args[0])); err != nil {
 			return cmd, fmt.Errorf("key %q: %w", args[0], err)
 		}
-	case "click":
+	case "click", "mouse":
 		if len(args) != 2 {
-			return cmd, fmt.Errorf("click needs x and y")
+			return cmd, fmt.Errorf("%s needs x and y", cmd.Op)
 		}
 		x, errX := strconv.Atoi(args[0])
 		y, errY := strconv.Atoi(args[1])
 		if errX != nil || errY != nil {
-			return cmd, fmt.Errorf("click %q %q: want two numbers", args[0], args[1])
+			return cmd, fmt.Errorf("%s %q %q: want two numbers", cmd.Op, args[0], args[1])
 		}
 		cmd.X, cmd.Y = x, y
+	case "pan":
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("pan needs one camera x")
+		}
+		n, err := strconv.Atoi(args[0])
+		if err != nil || n < 0 || n > MaxCameraX {
+			return cmd, fmt.Errorf("pan %q: want a number from 0 to %d", args[0], MaxCameraX)
+		}
+		cmd.N = n
 	case "shot", "dump":
 		if len(args) != 1 {
 			return cmd, fmt.Errorf("%s needs one file name", cmd.Op)
@@ -198,6 +217,13 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 		}
 	}
 	env.CRT = !opts.NoCRT
+	env.Input.IgnoreReal = true
+	if opts.PanSet {
+		if opts.Pan > MaxCameraX {
+			return nil, fmt.Errorf("-pan %d: want a number from 0 to %d", opts.Pan, MaxCameraX)
+		}
+		env.CameraX = float64(opts.Pan)
+	}
 
 	a := &Agent{opts: opts}
 	if opts.Input != "" {
@@ -254,6 +280,10 @@ func (a *Agent) runCommands(env *Env) {
 		case "click":
 			env.Input.InjectClick(cmd.X, cmd.Y)
 			return
+		case "mouse":
+			env.Input.InjectMouse(cmd.X, cmd.Y)
+		case "pan":
+			env.CameraX = float64(cmd.N)
 		case "shot":
 			a.pending = append(a.pending, output{"shot", cmd.Path})
 		case "dump":
@@ -352,6 +382,7 @@ type Dump struct {
 	Clock    string         `json:"clock"`
 	Seed     int64          `json:"seed"`
 	Frame    int            `json:"frame"`
+	CameraX  int            `json:"cameraX"`
 	Patients []DumpPatient  `json:"patients"`
 	Rooms    []DumpRoom     `json:"rooms"`
 	Scores   map[string]int `json:"scores"`
@@ -386,6 +417,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 		Clock:    env.Clock.String(),
 		Seed:     env.Seed,
 		Frame:    frame,
+		CameraX:  int(env.CameraX),
 		Patients: []DumpPatient{},
 		Rooms:    []DumpRoom{},
 		Scores:   env.Scores,

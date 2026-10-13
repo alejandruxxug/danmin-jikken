@@ -40,7 +40,7 @@ func TestWardDrainsEventsAndStops(t *testing.T) {
 }
 
 func TestSceneManagerStartsAndStopsWard(t *testing.T) {
-	env := &Env{Seed: 1, Speed: 1, Clock: NewClock(9, 0)}
+	env := testEnv(t)
 	m := NewSceneManager(env)
 	m.Register(SceneTitle, func() Scene { return titleScene{} })
 	m.Register(SceneDayReception, func() Scene { return &receptionScene{} })
@@ -66,7 +66,7 @@ func TestSceneManagerStartsAndStopsWard(t *testing.T) {
 }
 
 func TestSwitchToIsAppliedAfterUpdate(t *testing.T) {
-	env := &Env{Seed: 1, Speed: 1, Clock: NewClock(9, 0)}
+	env := testEnv(t)
 	m := NewSceneManager(env)
 	m.Register(SceneTitle, func() Scene { return titleScene{} })
 	m.Register(SceneDayReception, func() Scene { return &receptionScene{} })
@@ -81,4 +81,15 @@ func TestSwitchToIsAppliedAfterUpdate(t *testing.T) {
 	if m.ID() != SceneDayReception {
 		t.Errorf("scene = %q, want the reception", m.ID())
 	}
+}
+
+// testEnv is an Env with what the reception scene needs to start: the real
+// embedded sprites and an input.
+func testEnv(t *testing.T) *Env {
+	t.Helper()
+	fsys, err := SpriteFS()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &Env{Seed: 1, Speed: 1, Clock: NewClock(9, 0), Input: NewInput(), Sprites: fsys}
 }

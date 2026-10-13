@@ -35,6 +35,7 @@ type Meta struct {
 	durations []time.Duration            // per frame number, from the "duration" field
 	Layers    []string
 	Tags      map[string]Tag
+	opacity   map[string]float32 // layer name -> 0..1 (the Aseprite layer opacity)
 }
 
 // The structs below only describe the json file, so encoding/json can fill them.
@@ -53,7 +54,8 @@ type jsonFrame struct {
 
 type jsonMeta struct {
 	Layers []struct {
-		Name string `json:"name"`
+		Name    string `json:"name"`
+		Opacity *int   `json:"opacity"` // 0-255; missing means fully opaque
 	} `json:"layers"`
 	FrameTags []struct {
 		Name string `json:"name"`
@@ -72,6 +74,8 @@ func Parse(data []byte) (*Meta, error) {
 	m := &Meta{
 		frames: make(map[string]image.Rectangle),
 		Tags:   make(map[string]Tag),
+
+		opacity: make(map[string]float32),
 	}
 	for _, jf := range f.Frames {
 		m.frames[jf.Filename] = image.Rect(jf.Frame.X, jf.Frame.Y, jf.Frame.X+jf.Frame.W, jf.Frame.Y+jf.Frame.H)
@@ -87,6 +91,10 @@ func Parse(data []byte) (*Meta, error) {
 	}
 	for _, l := range f.Meta.Layers {
 		m.Layers = append(m.Layers, l.Name)
+		m.opacity[l.Name] = 1
+		if l.Opacity != nil {
+			m.opacity[l.Name] = float32(*l.Opacity) / 255
+		}
 	}
 	for _, t := range f.Meta.FrameTags {
 		m.Tags[t.Name] = Tag{Name: t.Name, From: t.From, To: t.To}
@@ -141,6 +149,15 @@ func (m *Meta) FrameAt(tag string, elapsed time.Duration) int {
 	return t.To
 }
 
+// Opacity is the layer's opacity from the json, 0 to 1. A layer the sheet
+// does not list counts as fully opaque.
+func (m *Meta) Opacity(layer string) float32 {
+	if o, ok := m.opacity[layer]; ok {
+		return o
+	}
+	return 1
+}
+
 func (m *Meta) durationOf(n int) time.Duration {
 	if n < 0 || n >= len(m.durations) {
 		return 0
@@ -185,4 +202,21 @@ func (s *Sheet) Frame(layer string, frame int) (*ebiten.Image, error) {
 		return nil, err
 	}
 	return s.img.SubImage(r).(*ebiten.Image), nil
+}
+
+// Draw stacks the named layers of one frame onto dst, back to front, with
+// the sprite's top-left corner at (x, y). Each layer keeps the opacity it
+// has in the Aseprite file (the screen glass layers are faint on purpose).
+func (s *Sheet) Draw(dst *ebiten.Image, layers []string, frame, x, y int) error {
+	for _, layer := range layers {
+		img, err := s.Frame(layer, frame)
+		if err != nil {
+			return err
+		}
+		var op ebiten.DrawImageOptions
+		op.GeoM.Translate(float64(x), float64(y))
+		op.ColorScale.ScaleAlpha(s.Opacity(layer))
+		dst.DrawImage(img, &op)
+	}
+	return nil
 }

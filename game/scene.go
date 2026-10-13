@@ -32,6 +32,11 @@ type Env struct {
 	Input   *Input
 	Sprites fs.FS // the embedded assets/sprites folder
 
+	// CameraX is the left edge of the 480-wide view over the 720-wide
+	// reception room (0 to 240). It lives here so the backdoor can set it
+	// and the camera stays where it was when the desk scenes switch.
+	CameraX float64
+
 	ward      *Ward
 	nextScene string // set by SwitchTo, applied when Update ends
 }

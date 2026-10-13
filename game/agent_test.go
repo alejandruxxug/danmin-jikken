@@ -51,6 +51,9 @@ func TestParseScriptErrors(t *testing.T) {
 		"click one arg":   "click 5",
 		"click not nums":  "click a b",
 		"shot no file":    "shot",
+		"mouse one arg":   "mouse 5",
+		"pan too far":     "pan 241",
+		"pan negative":    "pan -1",
 	}
 	for name, line := range bad {
 		if _, err := ParseScript(strings.NewReader("wait 1\n" + line)); err == nil {
