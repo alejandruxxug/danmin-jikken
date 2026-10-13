@@ -55,7 +55,7 @@ Alejo, 2026-10-13: the whole **day shift** is shown through an old **CRT screen*
 
 **Palette rule still holds:** the *art* (every sprite and background) uses only the palette. The CRT is a **screen filter on top**, so its in-between greys at the edges are fine.
 
-**In code:** one Ebitengine **Kage shader** run on the final ×4 image, day scenes only. It takes 4 numbers (scanline strength, vignette, curve amount, day number for the breakdown), so it stays small enough to explain in the defense.
+**In code:** one Ebitengine **Kage shader** run on the final ×4 image, day scenes only. It takes 5 numbers (scanline strength, vignette, curve amount, day number for the breakdown, and `invert` for the strobe), so it stays small enough to explain in the defense.
 
 **Settings → CRT effect:** on by default, with an off switch (some players find curved, flickering text hard to read).
 
