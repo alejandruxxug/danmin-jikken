@@ -1,4 +1,4 @@
-# 🌙 Danmin Jikken – Night 2
+u# 🌙 Danmin Jikken – Night 2
 
 Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 1]] + ☀️ Day 2 · Next: ☀️ Day 3, then [[Danmin Jikken – Night 3]]
 

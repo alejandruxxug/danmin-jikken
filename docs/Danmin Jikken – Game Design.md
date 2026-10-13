@@ -197,3 +197,5 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Reception desk view approved** (v3: greens, old anime Cecily, screen glass overlay) | Alejo: "cecily v3 is super good continue building" |
 | 2026-10-13 | **Ward: 3 rooms on days 1–2, 2 on day 3** | Alejo picked it: "no room" hits harder on day 3 |
 | 2026-10-13 | **Beds panel and Top-10 views approved**; the glass smudge stays on the terminal; the 03:17 ghost row looks exactly like the real rows | Alejo |
+| 2026-10-13 | **Fonts: the UI uses a ready-made open-licensed pixel font (Silkscreen, the Figma placeholder). Only the nurses' handwriting is drawn in Aseprite: Hana = neat joined cursive, Mayu = psycho style, jagged separate letters** | Alejo: "Only drawn are the letters (to distinguish hana (cursive) with mayus (pshycho style) so joined and apart letters". Lets day 3's "Hana's reports in Mayu's handwriting" read at a glance |
+| 2026-10-13 | **No room alert view approved** | Alejo |
