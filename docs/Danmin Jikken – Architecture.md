@@ -90,6 +90,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-scores <file>` | Scores file to read and write. Without it the top-10 keeps scores in memory (the real `danmin_scores.txt` is never touched in test mode) | Top-10 and the ghost row on a scratch file |
 | `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |
 | `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
+| `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11 and Alt+Enter toggle it too, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
 **Input script** (one command per line, `#` = comment):
@@ -111,7 +112,7 @@ dump after_admit.json
 | id | Scene | Status |
 |---|---|---|
 | `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour) |
-| `day.reception` | FNAF desk, front view | **built** (approved views). Queue walks up, the window patient + ADMIT / DISCHARGE / REFER stamps (cubby or stamp handle), sleepers in the chairs, hallway sleepers, HUD (DAY plate, PATIENTS n/N, computer tab), the no-room alert, line boil (characters 125 ms, room and props 375 ms), walk bob, blinking. Starts the shift if none is running |
+| `day.reception` | FNAF desk, front view | **built** (approved views). On day 1 Old Cecily nods off at the window a few seconds after she arrives (`-day 1 -seed 7 -frames 260` shows it; the dump's `dozing` names her and her look is `dozing`; `click 240 110` wakes her; `stamp` is refused until then). Each visitor has their own window sprite, the desk memo changes per day, window guests are clipped to the glass. Queue walks up, the window patient + ADMIT / DISCHARGE / REFER stamps (cubby or stamp handle), sleepers in the chairs, hallway sleepers, HUD (DAY plate, PATIENTS n/N, computer tab), the no-room alert, line boil (characters 125 ms, room and props 375 ms), walk bob, blinking. Starts the shift if none is running |
 | `day.computer` | Patient computer open, BEDS tab (RECORDS / SLEEP LOGS / WARD FEED are placeholders until M4) | **built**. Rooms, hallway sleepers + CALL STAFF, staff busy/free. Shares the reception's running shift; `-clock`, `-day`, `-sleepy` apply |
 | `day.top10` | Top-10 clerks (end of every shift) | **built**. Stops the shift, saves today's score to the scores file, shows ranks + the ghost row. `-score N -scores f.txt` reaches it directly |
 | `night` | Night VN, first beat (`night.<beat>` for a specific one) | planned |
@@ -137,6 +138,7 @@ game/scorefile.go       danmin_scores.txt: load, append, ghost row, ranking (tes
 game/text.go + fonts/   Silkscreen (OFL) at size 8, whole pixels
 game/input.go           Input: real keys/mouse + injected ones from the backdoor
 game/clock.go           in-game clock (HH:MM)
+game/game.go            Game: canvas, whole-number scaling (fitScreen), fullscreen toggle
 game/agent.go           the whole backdoor: flags, input script, -shot, -dump
 game/assets.go          //go:embed of assets/sprites
 game/sprites/           loader for the Aseprite sheet + json (+ testdata fixture)
