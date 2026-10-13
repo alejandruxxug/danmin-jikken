@@ -1,0 +1,11 @@
+.DS_Store
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+CLAUDE.local.md
+docs/brief.pdf
+.obsidian/
+assets/preview/
+.idea/

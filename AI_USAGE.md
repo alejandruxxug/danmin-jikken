@@ -1,0 +1,21 @@
+# AI usage
+
+> Running log, written as the project happens so it matches the defense. Finished before submission.
+
+## Tools
+- **Claude Code (Claude Opus 5.5)**, several sessions/accounts: design docs, the `hospital` model, tests, the demo, the game.
+- Student: Alejandro Urrego Giraldo
+
+## Decisive prompts
+*(to fill in: 2–3 prompts that shaped the project)*
+
+## Cases where the AI was wrong or not idiomatic
+
+| Date | What the AI did | Why it was wrong | Fix |
+|---|---|---|---|
+| 2026-10-13 | Recommended **Ebitengine** for the GUI before reading the brief | The brief only lists Fyne, Wails or REST + HTML/JS for the GUI bonus | Checked with the brief; kept Ebitengine because the professor accepts other GUI libraries |
+| 2026-10-13 | Labelled the final room listing in `main.go` as "Query 5.3" | Query 5.3 is `AssignRoom` itself, not a room listing | Relabelled: the `AssignRoom` calls are 5.3, the listing is "Rooms at the end of the shift" |
+| 2026-10-13 | Put the entry point in `cmd/danmin/` | The brief needs `go run .` from the repo root | Moved `main.go` to the root, set `go 1.21` in `go.mod` |
+
+## What I learned
+*(to fill in before the defense)*
