@@ -53,6 +53,12 @@ docs/              design docs (game design, story, art direction, architecture,
 - **Nurse is the third `Attender`.** Adding it needed no change to `Hospital`: `HireStaff` takes any `Attender`. Doctor, Orderly and Nurse share one unexported `episodeLog` instead of repeating the same `Attend` code.
 - **Slices for patients, rooms and staff** because order matters (admission order, "first free room"). **A map for `SevereReport`** because it answers "how many episodes for this patient" directly. `main` sorts it, since maps have no order.
 
+## Game notes
+
+- **Font:** the game's UI text uses **Silkscreen** (Jason Kottke), licensed under the SIL Open Font License 1.1. The font and its licence text are in `game/fonts/` (`Silkscreen-Regular.ttf`, `OFL.txt`).
+- **Scores:** `danmin_scores.txt`, next to the executable, one row per line: `<name> <score> <HH:MM> [message]`. The name is the OS username (`os/user`, "clerk" if unknown). A row with score `---` is the ghost row the game adds between runs.
+- **Ward and goroutines in the game:** a patient only enters the hospital when the player stamps ADMIT, and only then gets a goroutine. The goroutine announces that the patient fell asleep; the player's click calls `RegisterEpisode`, so the next staff member in line attends and a room is assigned if one is free.
+
 ## License
 
 - **Code:** MIT, see [LICENSE](LICENSE).
