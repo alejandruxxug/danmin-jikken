@@ -67,6 +67,31 @@ func TestFrameAtCyclesTheBoil(t *testing.T) {
 	}
 }
 
+// BoilScale 3 plays the same tag three times slower: frame 1 starts at 375 ms.
+func TestBoilScaleSlowsTheBoil(t *testing.T) {
+	data, _ := os.ReadFile("testdata/tiny.json")
+	m, err := Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.BoilScale = 3
+	tests := []struct {
+		elapsed time.Duration
+		want    int
+	}{
+		{0, 0},
+		{374 * time.Millisecond, 0},
+		{375 * time.Millisecond, 1},
+		{750 * time.Millisecond, 2},
+		{1125 * time.Millisecond, 0}, // a full cycle is 3 x 375 ms
+	}
+	for _, tc := range tests {
+		if got := m.FrameAt(BoilTag, tc.elapsed); got != tc.want {
+			t.Errorf("scale 3: FrameAt(%v) = %d, want %d", tc.elapsed, got, tc.want)
+		}
+	}
+}
+
 func TestLoadCutsFrames(t *testing.T) {
 	sheet, err := Load(os.DirFS("testdata"), "tiny")
 	if err != nil {

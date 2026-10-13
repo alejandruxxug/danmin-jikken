@@ -36,6 +36,11 @@ type Meta struct {
 	Layers    []string
 	Tags      map[string]Tag
 	opacity   map[string]float32 // layer name -> 0..1 (the Aseprite layer opacity)
+
+	// BoilScale slows the animation down: 1 plays the tags at the speed in
+	// the json, 3 plays them three times slower. 0 counts as 1. The game sets
+	// it per sheet (see boilScales in assets.go); the art files are untouched.
+	BoilScale float64
 }
 
 // The structs below only describe the json file, so encoding/json can fill them.
@@ -131,6 +136,9 @@ func (m *Meta) FrameAt(tag string, elapsed time.Duration) int {
 	t, ok := m.Tags[tag]
 	if !ok {
 		return 0
+	}
+	if m.BoilScale > 1 {
+		elapsed = time.Duration(float64(elapsed) / m.BoilScale)
 	}
 	var total time.Duration
 	for n := t.From; n <= t.To; n++ {
