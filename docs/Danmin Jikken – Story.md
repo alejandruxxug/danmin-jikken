@@ -120,6 +120,7 @@ Every night = **a goal + 2–3 choices + one horror beat**. No exploring: linear
 | **Wake** 🌅 | ADMIT yourself + read Hana's letter (`read_log` or `searched_room`) | You sleep, under Ward C staff who finally know what they're doing. Bittersweet: Hana's last wish worked. Mayu is admitted too. |
 | **Stay** 🩸 | DISCHARGE yourself (Mayu's route) | You and Mayu stay awake together. The credits roll while the screen keeps "falling asleep" and jolting back. Then 3:17. The worst ending, and it feels like a love ending. |
 | **3:17** 🕒 *(secret)* | ADMIT, but with `confronted_mayu` and `liked_hana` | The game "falls asleep" for real. `sleep_log_317.txt` appears in the game folder, written by Hana. The meta ending (twist C). |
+| **Despair** 🖤 | You **never opened Hana's letter** and you **pushed Mayu away** (didn't stay with her night 1, confronted her night 2) | Alejo's idea (2026-10-13). You're alone, infected, and you only know half of Hana's story: *that* she did it, not *why*. You copy her. It mirrors Hana: she did it to protect everyone, you do it because you gave up. Off-screen like hers: the stamp falls, the desk light goes out, the text box types her letter's first line, which you'll never read. The darkest ending, and the one that tells players to go back and open the letter. |
 
 ### ✍️ Handling Hana's death
 
@@ -136,6 +137,8 @@ It's the emotional centre, so do it the DDLC way, with care:
 | How much romance? | Light (looks, notes, coffee) **or** a real confession scene night 1 |
 | Can the player save Hana? | No (recommended: it hits harder, and 20 min is short) **or** a hidden route |
 | Is Mayu a villain? | No (recommended: she's sick and lonely, just like DDLC's girls) **or** she knew what Hana planned |
+
+| 4 endings now (budget said 2–3) | Keep all 4 **or** merge **Stay** into **Despair** (both are "you didn't let go") |
 
 **Word budget check:** still ~1,500 words across the nights (~400 / 450 / 650). Night 2 carries the most writing.
 
