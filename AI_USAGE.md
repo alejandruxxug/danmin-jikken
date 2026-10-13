@@ -15,6 +15,7 @@
 |---|---|---|---|
 | 2026-10-13 | Recommended **Ebitengine** for the GUI before reading the brief | The brief only lists Fyne, Wails or REST + HTML/JS for the GUI bonus | Checked with the brief; kept Ebitengine because the professor accepts other GUI libraries |
 | 2026-10-13 | Labelled the final room listing in `main.go` as "Query 5.3" | Query 5.3 is `AssignRoom` itself, not a room listing | Relabelled: the `AssignRoom` calls are 5.3, the listing is "Rooms at the end of the shift" |
+| 2026-10-14 | In M0 the AI wrote `Doctor.MyEpisodes` and `Orderly.Episodes` to read their `episodes` slice with no lock, while `RegisterEpisode` appends to it under the hospital's mutex, and `doc.go` said goroutines were safe if they used `Hospital`'s methods | Fine with one goroutine, but once patient goroutines exist a reader calling `MyEpisodes` while an episode is recorded is a data race (the lock only protected the writer). Found while designing M1, before running the race detector | Moved the history into one small `episodeLog` with its own mutex (lock order: hospital, then log), shared by Doctor, Orderly and Nurse; added `Hospital.Snapshot()` for reading patients and rooms while goroutines run; rewrote the `doc.go` claim |
 | 2026-10-13 | Put the entry point in `cmd/danmin/` | The brief needs `go run .` from the repo root | Moved `main.go` to the root, set `go 1.21` in `go.mod` |
 
 ## What I learned

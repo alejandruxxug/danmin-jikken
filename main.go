@@ -6,11 +6,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"danmin/hospital"
+	"danmin/simulation"
 )
 
 func main() {
@@ -100,6 +103,52 @@ func main() {
 	sort.Slice(severe, func(i, j int) bool { return severe[i].ID() < severe[j].ID() })
 	for _, p := range severe {
 		fmt.Printf("  %-6s %-14s %d episode(s) today\n", p.ID(), p.Name(), report[p])
+	}
+
+	runConcurrentDemo()
+}
+
+// runConcurrentDemo is the bonus: every patient of a second hospital is a
+// goroutine that falls asleep at random times. The numbers it prints do not
+// depend on the timing, so the output is the same on every run.
+func runConcurrentDemo() {
+	const attacksEach = 4
+	h := hospital.NewHospital("Halcyon Rest (night ward)")
+	must(h.HireDoctor(hospital.NewDoctor("D-11", "Dr. Okada", 45, "sleep medicine")))
+	must(h.HireStaff(hospital.NewOrderly("O-11", "Gus the orderly", 29)))
+	must(h.HireStaff(hospital.NewNurse("N-11", "Nurse Hana", 31, "east ward")))
+	must(h.AddRoom(hospital.NewRoom(201, 1)))
+	must(h.AddRoom(hospital.NewRoom(202, 1)))
+	var patients []*hospital.Patient
+	for i := 1; i <= 6; i++ {
+		p := hospital.NewPatient(fmt.Sprintf("P-%03d", 100+i), fmt.Sprintf("Sleeper %d", i), 20+i, hospital.Severe)
+		must(h.AdmitPatient(p))
+		patients = append(patients, p)
+	}
+
+	section("Concurrent simulation: 6 patient goroutines, 2 rooms")
+	err := simulation.Run(context.Background(), h, patients, simulation.Config{
+		Seed:      317,
+		MaxAwake:  15 * time.Millisecond,
+		MaxAsleep: 15 * time.Millisecond,
+		Attacks:   attacksEach,
+		Locations: []string{"cafeteria", "gift shop", "radiology queue", "hallway 2"},
+	})
+	if err != nil {
+		fmt.Printf("  simulation failed: %v\n", err)
+		return
+	}
+	snap := h.Snapshot()
+	awake := 0
+	for _, p := range snap.Patients {
+		if p.State == hospital.Awake {
+			awake++
+		}
+	}
+	fmt.Printf("  episodes recorded: %d (6 patients x %d attacks)\n", len(h.History()), attacksEach)
+	fmt.Printf("  patients awake at the end: %d of %d\n", awake, len(snap.Patients))
+	for _, a := range h.Staff() {
+		fmt.Printf("  %-16s %T\n", a.Name(), a)
 	}
 }
 

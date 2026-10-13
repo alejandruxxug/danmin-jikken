@@ -21,17 +21,19 @@ Core: Go 1.21 or later, standard library only.
 ```
 main.go            demo scenario + printing only
 hospital/          the model: no printing, no drawing
-  person.go          Person, embedded by value in Patient, Doctor and Orderly
+  person.go          Person, embedded by value in Patient, Doctor, Orderly and Nurse
   patient.go         Patient
   doctor.go          Doctor (an Attender)
   orderly.go         Orderly (an Attender that can't diagnose)
+  nurse.go           Nurse (the third Attender, assigned to a ward)
   attender.go        the Attender interface
   room.go            Room
   episode.go         EpisodeRecord
   states.go          PatientState, NarcolepsyLevel, RoomState (typed constants)
-  hospital.go        Hospital: dispatch, the lock, the four queries
+  hospital.go        Hospital: dispatch, the lock, the four queries, Snapshot
   errors.go          sentinel errors
   hospital_test.go   tests (the 3 required ones come first)
+simulation/        patient goroutines: random sleep, falls asleep, wakes up (bonus)
 assets/            game art and palette
 docs/              design docs (game design, story, art direction, architecture, build plan)
 ```
@@ -45,6 +47,10 @@ docs/              design docs (game design, story, art direction, architecture,
 - **Records are values.** An `EpisodeRecord` keeps the room and attender of that moment, even after the patient wakes up.
 - **Only `Patient`'s own methods and `Room.Occupy`/`Release` change patient state.** `Room` puts patients in beds through unexported helpers, so outside code can't set `AsleepInBed` by hand.
 - **One mutex in `Hospital`.** Every exported method locks it. Internal `...Locked` helpers assume it's held, because Go's mutex isn't reentrant. Entities (`Patient`, `Room`, `Doctor`) aren't safe alone; concurrent code goes through `Hospital`.
+- **Patients are goroutines (bonus).** `simulation.Run` starts one goroutine per patient. Each waits a random time, calls `RegisterEpisode`, sleeps a random time and calls `WakePatient`. A goroutine never touches a `Patient` or `Room` directly, only `Hospital`'s methods, so the mutex decides who gets the last free room. `go run -race .` and `go test -race ./...` are clean.
+- **Randomness and time are injected.** Each goroutine has its own `rand.Rand` (it isn't safe to share), seeded from `Config.Seed`, and `Config.Sleep` replaces the real timer, so tests run instantly and repeat exactly. A `context` stops the goroutines.
+- **Reading while goroutines run goes through `Hospital.Snapshot()`,** which copies patients and rooms under the lock. Calling `p.State()` on a `*Patient` from another goroutine would race. The staff's episode history has its own small mutex (always taken after the hospital's), so `MyEpisodes` is safe too.
+- **Nurse is the third `Attender`.** Adding it needed no change to `Hospital`: `HireStaff` takes any `Attender`. Doctor, Orderly and Nurse share one unexported `episodeLog` instead of repeating the same `Attend` code.
 - **Slices for patients, rooms and staff** because order matters (admission order, "first free room"). **A map for `SevereReport`** because it answers "how many episodes for this patient" directly. `main` sorts it, since maps have no order.
 
 ## License
