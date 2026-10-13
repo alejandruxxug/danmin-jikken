@@ -201,3 +201,4 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **No room alert view approved** | Alejo |
 | 2026-10-13 | **Day 1 tutorial is scripted: Old Cecily nods off at the window mid-joke**; you click her (learn the mechanic), she wakes, then you stamp her. Needed because only admitted patients have goroutines now | Alejo: yes to the scripted nod-off |
 | 2026-10-13 | **Score: 100 per right stamp, 50 per attended sleeper; one top-10 row per shift** | Builder's proposal, Alejo: "keep it" |
+| 2026-10-13 | **Fullscreen**: F11 / Alt+Enter toggles fullscreen; whole-number (integer) scaling with black bars so pixels stay crisp; windowed stays the default for the agent backdoor | Alejo: "make the screen able to be viewed fullsize" |
