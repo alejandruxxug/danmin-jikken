@@ -65,6 +65,7 @@ Decided at the end of [[Danmin Jikken – Night 2#Choice 2]]:
 | `[BG: nurses' station]` | Background |
 | `[SFX: monitor beep]` `[MUSIC: off]` | Sound |
 | `[FX: eyes close]` | Screen effect (eyelids, white cut, red pixel, text typing by itself) |
+| `[FX: STROBE IN]` | The day → night strobe: flicker → build → white → fall into the night ([[Danmin Jikken – Art Direction#⚡ Day → night: the strobe (Alejo, 2026-10-13)]]) |
 | **Mayu** *(smile)*: line | A character speaks. The word in brackets is the expression = the `eyes_` / `mouth_` layers in Aseprite |
 | *Italic lines* | Your thoughts (you never speak aloud; DDLC style) |
 | `→ set liked_mayu` | Sets a flag |

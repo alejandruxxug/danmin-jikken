@@ -9,7 +9,7 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 1]] + 
 
 ## Waking up
 
-[FX: white fades to grey]
+[FX: **STROBE IN**, the night frames last longer. See [[Danmin Jikken – Art Direction#⚡ Day → night: the strobe (Alejo, 2026-10-13)]]. Fall into the grey]
 [BG: ward C, dark. Bed 4.]
 
 *I fell asleep at the desk again.*

@@ -105,6 +105,7 @@ dump after_admit.json
 | `day.reception` | FNAF desk, front view |
 | `day.computer` | Patient computer open |
 | `night` | Night VN, first beat (`night.<beat>` for a specific one) |
+| `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) |
 
 ## ✅ Assignment checklist
 

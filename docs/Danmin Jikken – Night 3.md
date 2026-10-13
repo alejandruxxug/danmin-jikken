@@ -11,7 +11,7 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 2]] + 
 
 ## Waking up
 
-[FX: white fades to grey, faster than before]
+[FX: **STROBE IN**, violent, red-tinged. See [[Danmin Jikken – Art Direction#⚡ Day → night: the strobe (Alejo, 2026-10-13)]]. Fall into the grey]
 [BG: ward C, bed 4]
 
 *I'm not at the desk.*

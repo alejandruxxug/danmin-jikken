@@ -34,6 +34,34 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 
 **Translating Slay the Princess into pixels:** StP is hand-drawn charcoal, so the pixel version gets its texture from **hatching and dither patterns** (like Return of the Obra Dinn) and uneven, sketchy outlines, not smooth gradients. That's the hardest part of the art and where most of the review rounds will go.
 
+## ⚡ Day → night: the strobe (Alejo, 2026-10-13)
+
+The cut from the day shift into each night is a **strobe that starts as almost nothing, builds until it's overwhelming, and then you fall into the night** through white-ish flashes.
+
+| Phase | Time | What you see | Sound |
+|---|---|---|---|
+| **1 · Flicker** | ~1.5 s | The day keeps going, but the desk lamp dips **once or twice**, one frame each. Half the players won't be sure they saw it. The line boil speeds up a little | The fluorescent hum skips |
+| **2 · Build** | ~2 s | Flashes come in, each **brighter, bigger and longer** than the last: white frames, then **single frames of the night** (the grey ward, bed 4, a face) cut into the day | The hum turns into a rising buzz, a heartbeat under it |
+| **3 · Peak** | ~0.5 s | **Full white** | Silence |
+| **4 · Fall** | ~2 s | The night comes up **through over-exposed white**: grey shapes bleeding in, the view **drifting downward** as if you're sinking into the bed, 2–3 fading afterimage flashes | The ward monitor's beep, far away, getting closer |
+
+**It gets worse every night:**
+
+| | Length | Feel |
+|---|---|---|
+| Into night 1 | ~5 s | Gentle. A couple of flickers, a short build |
+| Into night 2 | ~6 s | The night frames last longer; you can almost read them |
+| Into night 3 | ~7 s | Violent. The flashes are red-tinged (red has leaked into day 3 anyway) and the fall is the longest |
+
+**⚠️ Flashing safety (non-negotiable for a public game):**
+- **At most 3 big flashes per second, ever.** The build gets more intense through **brightness, size and length**, not speed. (The 3-per-second limit is the standard rule for avoiding photosensitive seizures.)
+- **Title-screen warning**, next to the content warning: *"This game contains flashing lights."*
+- **Settings → Reduce flashing:** swaps the strobe for a slow white fade with the same timing and sound, so nobody misses a story beat.
+
+**In code:** one `Transition` scene between day and night, driven by a small table of keyframes per night (time → flash brightness/size, which night frame to show). The night frames are ordinary exported sprites. Reachable with the agent backdoor: `-scene transition.night1` (2, 3).
+
+**In the scripts:** `[FX: STROBE IN]` at the top of each night. The other direction, night → day, stays the **eyes close → hard cut to white** from the scripts.
+
 ## 📐 Resolution
 
 | Thing | Size |
