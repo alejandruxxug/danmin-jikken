@@ -86,6 +86,22 @@ Everything patient-related lives here. *(Exact screens wait on the hospital part
 - You can **nudge** them awake (click), but each nudge costs time.
 - Their sleep times get written into their sleep log. That's how players notice things: **on day 2 every log shows an episode at 3:17 AM.**
 
+### 🏆 Score + top-10 (M3)
+
+- **Points = correct choices.** Every right call at the desk scores: right stamp, right room, attending the sleeper. Wrong calls just don't score (no game over).
+- **The top-10 uses OS usernames** (`os/user` in Go), not typed names.
+- **The save file talks back (DDLC-style).** Scores are saved to a real file next to the game, `danmin_scores.txt`. Between runs, a row you never played appears: your username, no score, the time **03:17**, and a line like *"why did you let me sleep"*. Same idea as DDLC's character files; it pairs with `sleep_log_317.txt`.
+
+```
+danmin_scores.txt
+-----------------
+alejo   880  14:02
+alejo   912  16:40
+alejo   ---  03:17  why did you let me sleep
+```
+
+All of this is game code (`game/`). `hospital/` stays frozen.
+
 ## 🌙 Night shift: the story
 
 DDLC-style VN: a background, character sprites, a text box, and a choice now and then.
@@ -147,3 +163,5 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Agent loop: if Sonnet (tester/builder) sees something visually fishy, it reports a VISUAL issue; Opus (art) confirms it and fixes exactly that thing** | Alejo. Relayed by the main session (subagents can't message each other). Rules in CLAUDE.md → Agent policy |
 | 2026-10-13 | **`hospital/` frozen** after M1 | Alejo confirmed. The brief says the model must not change once the GUI exists; the game uses only `Hospital` methods and `Snapshot()` |
 | 2026-10-13 | `go run .` prints Section 6, then the concurrent demo (6 patients, 24 episodes) | Alejo: keep both. Section 6 output stays unchanged; the goroutines are visible without a flag |
+| 2026-10-13 | **Score = correct choices; top-10 uses OS usernames** | Alejo: "Points are correct choices and top 10 is OS usernames" |
+| 2026-10-13 | **Top-10 twist: the save file talks back.** `danmin_scores.txt` gets a 03:17 row you never played, with a message | Alejo wanted "something very DDLC style"; picked this over the board slowly filling with his username |
