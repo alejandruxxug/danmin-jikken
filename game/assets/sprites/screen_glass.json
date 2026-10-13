@@ -1,0 +1,55 @@
+{ "frames": [
+   {
+    "filename": "reflection#0",
+    "frame": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   },
+   {
+    "filename": "dust#0",
+    "frame": { "x": 480, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   },
+   {
+    "filename": "glare#0",
+    "frame": { "x": 0, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   },
+   {
+    "filename": "bezel#0",
+    "frame": { "x": 480, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.6-dev",
+  "image": "screen_glass.png",
+  "format": "RGBA8888",
+  "size": { "w": 960, "h": 540 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "reflection", "opacity": 16, "blendMode": "normal" },
+   { "name": "dust", "opacity": 64, "blendMode": "normal" },
+   { "name": "glare", "opacity": 28, "blendMode": "normal" },
+   { "name": "bezel", "opacity": 255, "blendMode": "normal" }
+  ]
+ }
+}

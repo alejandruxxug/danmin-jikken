@@ -194,3 +194,4 @@ DDLC-style VN: a background, character sprites, a text box, and a choice now and
 | 2026-10-13 | **Day palette gets 2–3 whitish desaturated greens** (fills only; outlines stay black; night unchanged) | Alejo: "something is getting very lost on the white on white" |
 | 2026-10-13 | **Desk rules approved**: valid referral = name matches ID, ID not expired, Dr. Barrow's stamp, sleep-disorder diagnosis; ADMIT / REFER / DISCHARGE as in *What each stamp means*; explained by the orientation reel before Day 1 | Alejo: "yes those rules work" |
 | 2026-10-13 | **Day palette with the three greens approved** | Alejo: "i like the pallete now" |
+| 2026-10-13 | **Reception desk view approved** (v3: greens, old anime Cecily, screen glass overlay) | Alejo: "cecily v3 is super good continue building" |
