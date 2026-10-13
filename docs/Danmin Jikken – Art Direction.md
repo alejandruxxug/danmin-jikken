@@ -254,7 +254,7 @@ Alejo, 2026-10-13: the UI uses the Silkscreen pixel font; **the only lettering d
 | | `assets/src/hand_hana.aseprite` | `assets/src/hand_mayu.aseprite` |
 |---|---|---|
 | Look | Neat, small, **joined** cursive with **looped capitals**. Tidy, clinical, tired | Her own erratic hand: **some letters apart, some joined**, sharp, uneven sizes, tilted capitals, jumping baselines. Still readable |
-| Ink | Black `#0b0b0c`; join hairlines light grey `#b9b9b4` | Black only |
+| Ink | Black `#0b0b0c`; joins dark grey `#2e2e33` (v3; v2's light grey vanished at 1×) | Black only |
 | x-height | 5 px | 5 px (some letters 6) |
 | Word space | 3 px | 4 px |
 | Gap between letters that don't join | 1 px | 2 px |
@@ -328,3 +328,5 @@ Why Mayu mixes them (Alejo, 2026-10-13): *"mayu should have some letters in curs
 | 2026-10-13 | **Mayu v2 approved (Alejo)** | ✅ Exported `hand_mayu` |
 | 2026-10-13 | **Hana v3:** v2's letters and looped capitals kept; joins now dark grey `#2e2e33` instead of light grey (they vanished at 1×, so it read as print). Black was tried too: both read as joined, but black fuses neighbours (*wrong* → a blob) while the dark grey still shows a faint seam between letters. Previews: `assets/preview/hand_compare_x4.png`, `hand_hana_note_x4.png`, `hand_hana_glyphs_x4.png` (v2 in `assets/preview/v2/`) | **Waiting for Alejo's approval** (not exported) |
 | 2026-10-13 | **Day 1 window patients** (96×128, Cecily's layer set + `mouth_neutral`; fill/lineart boil 3 × 125 ms, day palette): `matty` (12, fisherman's kid: messy black hair with a cowlick, big eyes, plaster, oversized cable-knit sweater), `wren_calloway` (34: black bob, hair clip, round glasses, worried brows, mint raincoat, belt, papers in the pocket), `hank_shoals` (58: beanie, walrus moustache, stubble, heavy lids, oilskin over bib overalls), `ivy_marsh` (26: wavy white hair, black hairband, sleepy half-lids, shell necklace, cardigan over a striped top). Previews: `assets/preview/<name>_awake_x4.png`, `<name>_asleep_x4.png`, all at the window: `window_patients_day1_x3.png`. Seated in the lobby they reuse `waiting_fisher` for now | **Waiting for Alejo's approval** (not exported) |
+| 2026-10-13 | **Hana v3 approved** (Alejo: approve), dark-grey `#2e2e33` joins | ✅ Exported `hand_hana` |
+| 2026-10-13 | **Day 1 window patients approved** as they are (Alejo: approve): `matty`, `wren_calloway`, `hank_shoals`, `ivy_marsh` | ✅ Exported all four |
