@@ -12,3 +12,5 @@ You are the test lane of 断眠実験 DANMIN JIKKEN. Read `CLAUDE.md` and `docs/
 4. Hunt edge cases: empty ward, all rooms full, day 3, 3:17 AM, fast-forward.
 
 Don't edit code or art. Report: ✅/❌ per check, each bug with the exact backdoor command that reproduces it, the screenshot path, expected vs actual.
+
+**Anything that looks fishy or out of place visually** (a stray pixel, a colour not in the palette, a misaligned sprite, a broken line boil, a difference from the approved Figma view, something that just looks wrong) → list it under **`VISUAL` issues**, one per item: screenshot path, exact spot (x, y at 1×), the backdoor command, what looks wrong. Don't guess at the fix: the `art` agent (Opus) confirms and fixes those.

@@ -5,7 +5,7 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 2]] + 
 > **Hana stopped reporting. Find out why, and then the gurney again.** ~950 words with all endings (one playthrough sees ~600). Plays by `route` (set in [[Danmin Jikken – Night 2#Choice 2]]).
 > **Day 3 before this:** rule *"Do not wake them."* Red leaked into the day. **Hana didn't clock in**, but her reports kept coming, **in round, happy handwriting**. The last patient was you: your Settler ID, `{player}`. You stamped your own file (`stamped_self`).
 
-> ⚠️ **Content:** Hana's death (off-screen) and, on Hana's route, Mayu's suicide (silhouette, hard cut at the drop). See [[Danmin Jikken – Story#✍️ Handling the deaths]].
+> ⚠️ **Content:** Hana's room is **the goriest scene in the game** (blood everywhere, red scale; her silhouette, never the act) and, on Hana's route, Mayu's suicide (silhouette, hard cut at the drop). See [[Danmin Jikken – Story#✍️ Handling the deaths]].
 
 ---
 
@@ -34,19 +34,39 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Night 2]] + 
 *Her name is on the door, in her small, neat letters.*
 
 [SFX: the door creaks]
-[BG: black. **We never see the room.**]
+[BG: Hana's room, night look: greys]
+[MUSIC: off]
+
+*It's dark. It smells like copper.*
+
+[FX: **REDSCALE**: starting at the floor, every grey bleeds into its red twin, ~1 s, until the whole screen is red. It holds for the whole room scene. See [[Danmin Jikken – Art Direction#🩸 Hana's room redscale]]]
+[SFX: a slow drip. Then another.]
+
+*Red.*
+
+*The floor. The walls. The sheets. The ceiling, somehow.*
+
+*So much of it that the room stops looking like a room.*
+
+[FX: Hana's silhouette, the darkest red, slumped against the bed, turned away from us]
 
 *Hana is there.*
 
-*She isn't asleep. I know before I touch her hand.*
+*She isn't asleep. I know before I touch her hand. It's cold, and it's wet.*
 
 *Fourteen days awake, and now she'll never have to fight it again.*
 
-*The floor is covered in pale cans. Dozens.*
+*The pale cans are all over the floor, standing in it. Dozens.*
 
 *The newest ones are still sealed. She stopped.*
 
-*On the desk there's an envelope. It says* **Four**.
+`if route = hana:`
+*Her clipboard is on the floor, snapped in half. Her nails are broken.*
+*Nobody does this much to themselves.*
+
+[FX: on the desk, the envelope: **the only thing in the room that stayed white**]
+
+*On the desk there's an envelope. It's the only clean thing in here. It says* **Four**.
 
 ## Choice 4
 
@@ -95,6 +115,7 @@ Don't be sad, okay? Be happy. Be happy with Mayu!
 
 ## The gurney
 
+[FX: the red drains back into grey, from the top down]
 [SFX: footsteps, many, fast]
 [FX: hands. The ceiling again. Moving.]
 [SFX: squeaking wheels]

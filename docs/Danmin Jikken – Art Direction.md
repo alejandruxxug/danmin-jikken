@@ -34,6 +34,24 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 
 **Translating Slay the Princess into pixels:** StP is hand-drawn charcoal, so the pixel version gets its texture from **hatching and dither patterns** (like Return of the Obra Dinn) and uneven, sketchy outlines, not smooth gradients. That's the hardest part of the art and where most of the review rounds will go.
 
+## 🩸 Hana's room redscale
+
+Alejo, 2026-10-13: when you open Hana's door on night 3, **the greyscale turns into blood-red scale**, for that scene only. It's the goriest image in the game, and the only time the *whole screen* is red.
+
+| Normal night grey | → | Red twin |
+|---|---|---|
+| Black `#0b0b0c` | → | `#0b0b0c` (stays black) |
+| Dark grey `#2e2e33` | → | Dark blood `#4a0000` |
+| Mid grey `#6b6b70` | → | Blood red `#8a0303` |
+| Light grey `#b9b9b4` | → | *new* `#c41a1a` |
+| Off-white `#ecece6` | → | *new* `#e8a6a0` |
+
+- **Art:** the room is drawn normally in greys (every surface soaked: floor, walls, sheets, ceiling), with a `fx_blood` layer for the pools, drips and handprints. Hana is a **silhouette** slumped against the bed, turned away. The aftermath, never the act.
+- **The envelope is the only thing that stays white.** It's on its own layer that the remap skips, so the eye goes straight to it.
+- **In:** the red bleeds up **from the floor**, ~1 s. **Out:** it drains back to grey **from the top down** when the orderlies grab you.
+- **In code:** a `redscale` number in the same night shader (0 = grey, 1 = full red twin), plus a keep-white mask for the envelope layer.
+- **Palette file:** add the 2 new reds to `assets/palette/danmin.hex` when the room gets drawn.
+
 ## 📺 Day screen CRT
 
 Alejo, 2026-10-13: the whole **day shift** is shown through an old **CRT screen**: like watching Driftwell's orientation reel that never ends. **The night has none of it.** No glass between you and the real world, so the night is flat, sharp and full screen. The jump from curved, glowing day to raw night is part of the strobe's punch.

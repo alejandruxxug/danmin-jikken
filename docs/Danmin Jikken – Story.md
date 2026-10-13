@@ -180,8 +180,8 @@ Every night = **you wake up → a goal → choices → a horror beat → someone
 ### ✍️ Handling the deaths
 
 The game is public and open source, so this has to be done with care (DDLC is the model):
-- **A content warning on the title screen** (DDLC has one): *"This game contains depictions of suicide, self-harm and death."* Plus *"This game contains strong flashing lights"* for the day → night strobe.
-- **Hana's death is off-screen:** rooms, letters, empty beds. Never a body or a method.
+- **A content warning on the title screen** (DDLC has one): *"This game contains depictions of suicide, self-harm, death and graphic gore."* Plus *"This game contains strong flashing lights"* for the day → night strobe.
+- **Hana's room is shown, and it's the goriest scene in the game** (Alejo, 2026-10-13): blood on every surface, the whole palette turned to **red scale**. We see the **aftermath, not the act**: her silhouette, the blood, the cans, the letter. Never how it was done. On Hana's route the gore is the evidence that it wasn't suicide.
 - **Mayu's death in Forever is the one we show, and only up to the drop:** a dark silhouette through your closing eyelids, then the hard cut to black. No body, no aftermath. The cut is the scare.
 - **Hana's letter (heartbreak routes) is about you, not about how.**
 

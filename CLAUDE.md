@@ -56,7 +56,14 @@ Three project subagents in `.claude/agents/`. Delegate to them (Agent tool, by n
 | `builder` | **Sonnet** | Go code: approved screens, scenes, the agent backdoor, the model, tests |
 | `tester` | **Sonnet** | Checks + driving the game through the agent backdoor (Architecture → Agent backdoor); reports, never fixes |
 
-Usual cycle for a screen: `art` (sprites → Figma view) → **Alejo approves** → `builder` → `tester` → fixes by `builder`. A whole lane session can also be started on a model directly: `claude --model opus` (art) or `claude --model sonnet` (build/test).
+Usual cycle for a screen: `art` (sprites → Figma view) → **Alejo approves** → `builder` → `tester` → fixes by `builder`.
+
+**Visual-issue loop (Alejo, 2026-10-13): Sonnet spots it, Opus confirms it and fixes exactly that.** Subagents can't message each other, so the main session relays:
+1. `tester` (or `builder`) sees something that **looks fishy or out of place** (wrong pixel, off-palette colour, misaligned sprite, broken boil, doesn't match the Figma view) → it reports it as a **`VISUAL` issue**: screenshot path, the exact spot (x, y at 1×), the backdoor command to reproduce it, and what looks wrong. It does **not** fix it.
+2. The main session sends that issue, unchanged, to `art`.
+3. `art` (Opus) **confirms** it: reproduces it, looks at the screenshot. If it's not a real problem, it says why and stops.
+4. If it's real, `art` fixes **that exact thing and nothing else** (in the `.aseprite` file, then `./assets/export.sh`), and says whether the cause was the art or the game code. If it's the code (position, layering, shader), it goes back to `builder` with the exact numbers.
+5. `tester` re-runs the same command and checks it's gone. A whole lane session can also be started on a model directly: `claude --model opus` (art) or `claude --model sonnet` (build/test).
 
 Every scene must be reachable with `-agent -scene <id>`; testing goes through the backdoor, not by playing from the title.
 
