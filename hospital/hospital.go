@@ -233,6 +233,60 @@ func (h *Hospital) Staff() []Attender {
 	return append([]Attender(nil), h.staff...)
 }
 
+// PatientView is a read-only copy of one patient taken under the lock.
+// Code that runs while patient goroutines are active (the game's Update
+// loop, for example) reads these instead of calling methods on *Patient,
+// which would race with the goroutines.
+type PatientView struct {
+	ID       string
+	Name     string
+	Level    NarcolepsyLevel
+	State    PatientState
+	Location string
+	Room     int    // room number, 0 when the patient has no room
+	Doctor   string // doctor's name, "" when none
+}
+
+// RoomView is a read-only copy of one room taken under the lock.
+type RoomView struct {
+	Number    int
+	Capacity  int
+	State     RoomState
+	Occupants []string // patient ids
+}
+
+// Snapshot is a consistent picture of the whole hospital at one instant.
+type Snapshot struct {
+	Patients []PatientView
+	Rooms    []RoomView
+}
+
+// Snapshot copies the state of every patient and room while holding the
+// lock, so it is safe to call while other goroutines are changing them.
+func (h *Hospital) Snapshot() Snapshot {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	var s Snapshot
+	for _, p := range h.patients {
+		v := PatientView{ID: p.ID(), Name: p.Name(), Level: p.level, State: p.state, Location: p.location}
+		if p.room != nil {
+			v.Room = p.room.number
+		}
+		if p.doctor != nil {
+			v.Doctor = p.doctor.Name()
+		}
+		s.Patients = append(s.Patients, v)
+	}
+	for _, r := range h.rooms {
+		v := RoomView{Number: r.number, Capacity: r.capacity, State: r.state}
+		for _, o := range r.occupants {
+			v.Occupants = append(v.Occupants, o.ID())
+		}
+		s.Rooms = append(s.Rooms, v)
+	}
+	return s
+}
+
 func (h *Hospital) admittedLocked(p *Patient) bool {
 	for _, existing := range h.patients {
 		if existing == p {

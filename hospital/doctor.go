@@ -8,7 +8,7 @@ type Doctor struct {
 	Person
 	specialty string
 	patients  []*Patient
-	episodes  []EpisodeRecord
+	log       episodeLog
 }
 
 func NewDoctor(id, name string, age int, specialty string) *Doctor {
@@ -37,16 +37,7 @@ func (d *Doctor) DiagnosePatient(p *Patient) error {
 
 // Attend records that this doctor attended a sleeping patient.
 func (d *Doctor) Attend(p *Patient, location string) (EpisodeRecord, error) {
-	if p == nil {
-		return EpisodeRecord{}, ErrNilPatient
-	}
-	if p.State() == Awake {
-		return EpisodeRecord{}, fmt.Errorf("%s: %w", p.ID(), ErrNotAsleep)
-	}
-	id := fmt.Sprintf("%s-E%02d", d.ID(), len(d.episodes)+1)
-	rec := newEpisode(id, p, d, location)
-	d.episodes = append(d.episodes, rec)
-	return rec, nil
+	return d.log.attend(d, p, location)
 }
 
 // AttendSleepEmergency attends a patient where they fell asleep.
@@ -60,5 +51,5 @@ func (d *Doctor) AttendSleepEmergency(p *Patient) error {
 
 // MyEpisodes returns a copy of every episode this doctor attended.
 func (d *Doctor) MyEpisodes() []EpisodeRecord {
-	return append([]EpisodeRecord(nil), d.episodes...)
+	return d.log.all()
 }

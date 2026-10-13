@@ -209,3 +209,86 @@ func TestConcurrentAssignRoom(t *testing.T) {
 		t.Fatalf("%d patients got a room, want %d", won, rooms)
 	}
 }
+
+func TestNurseIsDispatchedLikeAnyAttender(t *testing.T) {
+	ps := []*Patient{
+		NewPatient("P-1", "Ana", 30, Mild),
+		NewPatient("P-2", "Beto", 45, Severe),
+		NewPatient("P-3", "Caro", 22, Moderate),
+	}
+	h := newTestHospital(t, 3, ps...)
+	nurse := NewNurse("N-1", "Nurse Joy", 33, "east ward")
+	if err := h.HireStaff(nurse); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range ps {
+		if err := h.RegisterEpisode(p, "lobby"); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// staff order is doctor, orderly, nurse, so the third episode is hers
+	hist := h.History()
+	if got, ok := hist[2].Attender().(*Nurse); !ok || got != nurse {
+		t.Fatalf("third attender is %T, want the *Nurse", hist[2].Attender())
+	}
+	eps := nurse.Episodes()
+	if len(eps) != 1 || eps[0].Patient() != ps[2] || eps[0].ID() != "N-1-E01" {
+		t.Errorf("nurse episodes = %v, want one record N-1-E01 for P-3", eps)
+	}
+	if nurse.Ward() != "east ward" || nurse.Name() != "Nurse Joy" {
+		t.Errorf("ward %q name %q: Person or ward not kept", nurse.Ward(), nurse.Name())
+	}
+}
+
+func TestNurseNeedsASleepingPatient(t *testing.T) {
+	nurse := NewNurse("N-1", "Nurse Joy", 33, "east ward")
+	awake := NewPatient("P-1", "Ana", 30, Mild)
+
+	_, err := nurse.Attend(awake, "lobby")
+	if !errors.Is(err, ErrNotAsleep) {
+		t.Errorf("attend awake patient: err = %v, want ErrNotAsleep", err)
+	}
+	_, err = nurse.Attend(nil, "lobby")
+	if !errors.Is(err, ErrNilPatient) {
+		t.Errorf("attend nil: err = %v, want ErrNilPatient", err)
+	}
+	if len(nurse.Episodes()) != 0 {
+		t.Error("a failed Attend must not record an episode")
+	}
+}
+
+func TestHireStaffRejectsDuplicateNurseID(t *testing.T) {
+	h := NewHospital("Test General")
+	if err := h.HireStaff(NewNurse("N-1", "A", 30, "x")); err != nil {
+		t.Fatal(err)
+	}
+	err := h.HireStaff(NewNurse("N-1", "B", 31, "y"))
+	if !errors.Is(err, ErrDuplicateID) {
+		t.Fatalf("err = %v, want ErrDuplicateID", err)
+	}
+}
+
+func TestSnapshotCopiesTheState(t *testing.T) {
+	a := NewPatient("P-1", "Ana", 30, Mild)
+	b := NewPatient("P-2", "Beto", 45, Severe)
+	h := newTestHospital(t, 1, a, b)
+	_ = h.HireDoctor(NewDoctor("D-2", "Dr. Two", 50, "neuro"))
+	_ = h.Doctors()[1].DiagnosePatient(b)
+	_ = h.RegisterEpisode(a, "lobby")
+	_ = h.RegisterEpisode(b, "radiology")
+
+	s := h.Snapshot()
+	if len(s.Patients) != 2 || len(s.Rooms) != 1 {
+		t.Fatalf("snapshot has %d patients, %d rooms; want 2, 1", len(s.Patients), len(s.Rooms))
+	}
+	if v := s.Patients[0]; v.Room != 101 || v.State != AsleepInBed {
+		t.Errorf("P-1 view = %+v, want room 101, asleep in bed", v)
+	}
+	if v := s.Patients[1]; v.Room != 0 || v.State != AsleepInHallway || v.Location != "radiology" || v.Doctor != "Dr. Two" {
+		t.Errorf("P-2 view = %+v, want hallway, radiology, Dr. Two", v)
+	}
+	if r := s.Rooms[0]; r.State != Occupied || len(r.Occupants) != 1 || r.Occupants[0] != "P-1" {
+		t.Errorf("room view = %+v, want occupied by P-1", r)
+	}
+}

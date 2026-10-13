@@ -1,7 +1,7 @@
 package hospital
 
 // Person is the identity shared by patients and staff. It is embedded by
-// value in Patient, Doctor and Orderly, so its methods are promoted to them
+// value in Patient, Doctor, Orderly and Nurse, so its methods are promoted to them
 // (patient.Name() works) and the three fields are never written twice.
 type Person struct {
 	id   string

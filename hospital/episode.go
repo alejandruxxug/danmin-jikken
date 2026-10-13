@@ -2,6 +2,7 @@ package hospital
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -43,4 +44,37 @@ func (e EpisodeRecord) Summary() string {
 	}
 	return fmt.Sprintf("%s %s %s -> %s (%s)",
 		e.at.Format("2006-01-02 15:04"), e.patient.ID(), e.location, dest, e.attender.Name())
+}
+
+// episodeLog is the history every kind of attender keeps (Doctor, Orderly,
+// Nurse), so the checks and the id numbering are written once. It has its own
+// mutex because MyEpisodes reads it without holding the hospital's lock while
+// RegisterEpisode appends to it from another goroutine. Lock order is always
+// hospital first, then log, so the two can never deadlock.
+type episodeLog struct {
+	mu       sync.Mutex
+	episodes []EpisodeRecord
+}
+
+// attend checks that p is asleep, then records the episode for by.
+func (l *episodeLog) attend(by Attender, p *Patient, location string) (EpisodeRecord, error) {
+	if p == nil {
+		return EpisodeRecord{}, ErrNilPatient
+	}
+	if p.State() == Awake {
+		return EpisodeRecord{}, fmt.Errorf("%s: %w", p.ID(), ErrNotAsleep)
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	id := fmt.Sprintf("%s-E%02d", by.ID(), len(l.episodes)+1)
+	rec := newEpisode(id, p, by, location)
+	l.episodes = append(l.episodes, rec)
+	return rec, nil
+}
+
+// all returns a copy, so callers can't change the log.
+func (l *episodeLog) all() []EpisodeRecord {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]EpisodeRecord(nil), l.episodes...)
 }

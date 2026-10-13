@@ -6,7 +6,9 @@
 // draws: main prints the demo scenario and the game draws the screens, and
 // both talk to the model through the methods of Hospital.
 //
-// Concurrency: Hospital is safe for concurrent use. Patient, Doctor, Orderly
-// and Room are not; code running in goroutines must change them only through
-// Hospital's methods, which take the hospital's lock.
+// Concurrency: Hospital is safe for concurrent use. Patient, Room and the
+// setup calls (Doctor.DiagnosePatient) are not; code running in goroutines
+// must change patients only through Hospital's methods, which take the
+// hospital's lock, and read them while goroutines run through Hospital.Snapshot.
+// The staff's own history (MyEpisodes) has its own small lock.
 package hospital
