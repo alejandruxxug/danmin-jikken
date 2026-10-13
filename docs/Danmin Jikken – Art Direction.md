@@ -34,9 +34,9 @@ On the day, **every outline wobbles**: characters, the desk, the room. This is t
 
 **Translating Slay the Princess into pixels:** StP is hand-drawn charcoal, so the pixel version gets its texture from **hatching and dither patterns** (like Return of the Obra Dinn) and uneven, sketchy outlines, not smooth gradients. That's the hardest part of the art and where most of the review rounds will go.
 
-## 📺 Day screen: CRT, vignette, fisheye (Alejo, 2026-10-13)
+## 📺 Day screen CRT
 
-The whole **day shift** is shown through an old **CRT screen**: like watching Driftwell's orientation reel that never ends. **The night has none of it.** No glass between you and the real world, so the night is flat, sharp and full screen. The jump from curved, glowing day to raw night is part of the strobe's punch.
+Alejo, 2026-10-13: the whole **day shift** is shown through an old **CRT screen**: like watching Driftwell's orientation reel that never ends. **The night has none of it.** No glass between you and the real world, so the night is flat, sharp and full screen. The jump from curved, glowing day to raw night is part of the strobe's punch.
 
 | Effect | Amount | Notes |
 |---|---|---|
