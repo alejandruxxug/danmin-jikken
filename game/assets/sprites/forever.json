@@ -1,0 +1,55 @@
+{ "frames": [
+   {
+    "filename": "room#0",
+    "frame": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "mayu_chair#0",
+    "frame": { "x": 480, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "mayu_step#0",
+    "frame": { "x": 0, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "mayu_smile#0",
+    "frame": { "x": 480, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.6-dev",
+  "image": "forever.png",
+  "format": "RGBA8888",
+  "size": { "w": 960, "h": 540 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "room", "opacity": 255, "blendMode": "normal" },
+   { "name": "mayu_chair", "opacity": 255, "blendMode": "normal" },
+   { "name": "mayu_step", "opacity": 255, "blendMode": "normal" },
+   { "name": "mayu_smile", "opacity": 255, "blendMode": "normal" }
+  ]
+ }
+}
