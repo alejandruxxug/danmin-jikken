@@ -1,0 +1,94 @@
+# Night 1: "go home" (docs: Danmin Jikken - Night 1).
+# The strobe into this night is the transition scene, not a line of the script.
+bg ward_c
+sfx monitor_far
+
+~ Closing time already.
+~ I must have dozed off at the desk.
+~ My uniform feels thin tonight.
+
+bg corridor
+wait 1
+bg station
+show mayu
+Mayu (bright): Oh! Look who's up!
+Mayu (smile): Off home already? You always say that.
+~ Always? It's my first day.
+Mayu (smile): Here. Coffee. It's terrible, but it's warm.
+~ She holds the cup with both hands when she gives it to me. Her fingers are shaking.
+Mayu (laugh): Don't look at my hands! Long shift. Long… lots of shifts.
+
+prop can
+prop syringe
+~ Next to the coffee pot there's a pale can. PALE MSTR. And a syringe.
+Mayu (smile): Oh, that? Nurse stuff! Coffee stopped working weeks ago.
+Mayu (soft): You know, it's nice. Having someone new. Someone who stays.
+Mayu (blank): If you ever left, I'd…
+Mayu (laugh): Ha! I'd be so bored. Kidding. You should see your face.
+
+sfx footsteps
+~ Someone walks past behind her. Another nurse. She doesn't look at us.
+prop note
+~ She puts a folded paper on the counter, right in front of me, and keeps walking.
+Mayu (pout): That's Hana. Don't mind her. She doesn't like new people.
+
+# Choice 1
+choice
+option Stay and talk to Mayu | set liked_mayu | jump stay_mayu
+option Go read Hana's note | set liked_hana | jump read_note
+
+label stay_mayu
+~ I leave the note where it is.
+Mayu (happy): You're staying? Okay. Okay! Sit, sit.
+Mayu (smile): Do you want to know a secret? I haven't slept in nineteen days.
+Mayu (laugh): Kidding! …Mostly.
+Mayu (soft): Nobody here sleeps. It's kind of our thing.
+~ She laughs again. A beat too long.
+jump monitor
+
+label read_note
+Mayu (blank): Oh. Sure.
+~ I unfold it.
+hide
+bg note
+Note: Your stamp on bed 4 was wrong.
+~ Bed 4? I didn't stamp a bed 4.
+bg hana_far
+~ I look up. Hana is at the end of the corridor, watching me read it.
+bg station
+Hana (flat): Go back to bed, Four.
+~ Then she's gone.
+Mayu (smile): See? Not a people person.
+jump monitor
+
+label monitor
+bg station
+prop monitor
+hide
+sfx beep_slow
+~ Behind the counter there's a screen. Green lines, one for every patient. Rising and falling.
+~ Matty's name is on one of them.
+sfx long_tone
+fx flat_line
+~ Flat.
+~ One second. Two. Three.
+sfx beep
+fx line_back
+Mayu (smile): Oh, that happens. They dream hard in here.
+~ I count the lines. Six patients on the board.
+fx seventh
+~ Seven lines.
+fx red_pixel
+~ The seventh one has no name.
+
+Mayu (soft): Hey. You look so tired.
+~ I want to say I'm going home. I stand up, and the floor tilts.
+Mayu (smile): Shh. Sleep tight.
+sfx click
+~ A pinch in my arm.
+
+fx eyes_close
+wait 1.2
+bg white
+wait 0.7
+end day2

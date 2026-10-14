@@ -1,0 +1,31 @@
+# The Prologue: the gurney (docs: Danmin Jikken - Prologue).
+# The orientation reel that follows it is a day card sequence, not part of this script.
+bg black
+sfx wheels_slow
+fx fade_in
+bg ceiling
+
+~ Cold.
+~ Someone is pushing me.
+
+faces
+Mayu (smile): There you are. Don't be scared, okay? You're in good hands.
+Hana (tired): …
+Mayu (smile): It's just a little procedure. When you wake up, you'll feel so rested.
+Hana (tired): Count back from ten for me.
+~ I try to ask where I am. Nothing comes out.
+Hana (soft): Ten.
+
+# The text box types by itself, slower and slower.
+speed 22
+~ Ten… nine… eight…
+speed 11
+~ seven…
+
+fx eyes_close
+sfx wheels_stop
+wait 1.4
+bg white
+music driftwell_jingle
+wait 0.8
+end day1
