@@ -758,7 +758,6 @@ type Dump struct {
 	View         View     `json:"view"` // where the picture sits on the screen (fullscreen fit)
 	MusicCue     string   `json:"musicCue"`
 	EndingGlitch float64  `json:"endingGlitch"` // the secret ending's glitch strength, 0 to 1
-	Dream        bool     `json:"dream"`        // the Prologue's washed-out filter is on
 	Settings     Settings `json:"settings"`     // the settings the game runs with
 	SleepLogPath string   `json:"sleepLogPath"`
 	SleepLogErr  string   `json:"sleepLogError"`
@@ -933,7 +932,6 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.EndingGlitch = env.EndingGlitch
-	d.Dream = env.nightArt != nil && env.nightArt.Dream
 	d.Settings = env.Settings()
 	d.Placeholders = []string{}
 	d.SoundLog, d.SoundMissing, d.SoundFiles = []string{}, []string{}, map[string]string{}

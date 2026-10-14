@@ -26,6 +26,10 @@ fx eyes_close
 sfx wheels_stop
 wait 1.4
 bg black
+wait 0.4
+# The real world ends in a hard cut to white (no fade): one frame black, the next white.
+fx clear
+bg white
 music driftwell_jingle
 wait 0.8
 end day1

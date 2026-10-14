@@ -22,7 +22,6 @@ type nightScene struct {
 	onEnd  func(to string) error
 	art    *night.Art
 	engine *night.Engine
-	dream  *Dream // the Prologue's washed-out filter; nil for the nights
 
 	lastCursorX, lastCursorY int // the mouse only changes the highlight when it moves
 }
@@ -32,12 +31,6 @@ func (s *nightScene) Enter(env *Env) error {
 	var err error
 	if s.art, err = env.NightArt(); err != nil {
 		return err
-	}
-	s.art.Dream = s.script == night.Prologue // the Prologue is a dream: white, not black
-	if s.art.Dream {
-		if s.dream, err = NewDream(); err != nil {
-			return err
-		}
 	}
 	script, err := night.LoadScript(s.script)
 	if err != nil {
@@ -178,7 +171,7 @@ func (s *nightScene) finish(to string) error {
 	if s.onEnd != nil {
 		return s.onEnd(to)
 	}
-	if s.script == night.Prologue { // the cold open: the dream ends in the title
+	if s.script == night.Prologue { // the cold open: the cut to white ends in the title
 		s.env.SeenPrologue = true
 		s.env.TitleWhite = true // its white carries into the title drop
 		s.env.SwitchTo(SceneTitle)
@@ -199,16 +192,10 @@ func (s *nightScene) finish(to string) error {
 }
 
 func (s *nightScene) Draw(screen *ebiten.Image) {
-	if s.dream == nil {
-		s.art.Draw(screen, s.engine)
-		return
-	}
-	s.art.Draw(s.dream.Target(), s.engine)
-	s.dream.Apply(screen)
+	s.art.Draw(screen, s.engine)
 }
 
 func (s *nightScene) Exit() {
-	s.art.Dream = false
 	if s.env.Night == s.engine {
 		s.env.Night = nil
 	}

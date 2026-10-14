@@ -100,11 +100,7 @@ type Art struct {
 	world, zoomed, keep *ebiten.Image
 	wash                [4]*ebiten.Image // the Wake ending's dither levels, made when first needed
 	font                TextDrawer
-	// Dream is on while the Prologue plays: its "black" (the screen before
-	// the fade in, the eyelids, the black between lines) is white, as it is
-	// all a dream (Game Design -> design log). The scene sets it when it starts.
-	Dream bool
-	bgs   map[string]*sprites.Sheet // the batch 2 backgrounds that have a sheet, by sheet name
+	bgs                 map[string]*sprites.Sheet // the batch 2 backgrounds that have a sheet, by sheet name
 }
 
 // A background name in a script is drawn from the layers of one sheet. A
@@ -652,14 +648,9 @@ func (a *Art) drawDeskDay(dst *ebiten.Image, e *Engine) {
 	_ = desk.Draw(dst, []string{"next_desk_front"}, 0, 0, 0)
 }
 
-// lid is the colour the screen goes to when it "goes black": ink in the
-// nights, off-white in the dream.
-func (a *Art) lid() color.RGBA {
-	if a.Dream {
-		return colPaper
-	}
-	return colInk
-}
+// lid is the colour the screen goes to when it "goes black": always ink (the
+// Prologue is the real world, so it goes black like the nights).
+func (a *Art) lid() color.RGBA { return colInk }
 
 // ceilingOffset is how far the ceiling has slid down, 0 to 269. It tiles
 // every 270 px, so it wraps without a jump.

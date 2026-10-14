@@ -190,3 +190,38 @@ func TestNobodyStandsInFrontOfAPaperOrACG(t *testing.T) {
 		}
 	}
 }
+
+// The Prologue is the real world: it goes black like the nights, then cuts to
+// white in a single frame (no fade). The picture is black with the eyelids
+// shut on one frame and plain white, with no effect running, on the next.
+func TestPrologueCutsToWhiteInOneFrame(t *testing.T) {
+	script, err := LoadScript(Prologue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := NewEngine(script, Flags{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	prev := ""
+	for range 20000 {
+		if _, ended := e.Ended(); ended {
+			break
+		}
+		if e.BG() == "white" {
+			if prev != "black" || e.FxProgress("eyes_close") != 0 {
+				t.Fatalf("the white came after %q with eyes_close at %v, want black and no effect", prev, e.FxProgress("eyes_close"))
+			}
+			if _, fading := e.FxTicks("fade_in"); fading {
+				t.Error("the cut to white must not be a fade")
+			}
+			return
+		}
+		prev = e.BG()
+		_ = e.Tick()
+		if e.Holding() || len(e.text) > 0 && e.LineDone() && len(e.Options()) == 0 {
+			_ = e.Advance()
+		}
+	}
+	t.Fatal("the Prologue never cut to white")
+}

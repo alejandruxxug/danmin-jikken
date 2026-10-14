@@ -382,9 +382,6 @@ func TestPrologueSkipOnlyWhenSeen(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if d := BuildDump(g.env, g.scenes.ID(), 1); !d.Dream {
-			t.Error("the Prologue must be a dream (washed out)")
-		}
 		for _, k := range []ebiten.Key{ebiten.KeyB, ebiten.KeySpace, ebiten.KeyEnter} {
 			g.env.Input.InjectKey(k)
 			if err := g.Update(); err != nil {

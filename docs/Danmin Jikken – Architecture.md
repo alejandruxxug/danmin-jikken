@@ -148,7 +148,7 @@ dump after_admit.json
 | `day.desk.report` | The look-down desk entered on Hana's night report, the fourth page of day 3's first folder (needs `-day 3`; `-flags route_hana` makes it Mayu's hand: `page report` in a script does the same) | **built** |
 | `ending.sleep`, `ending.wake`, `ending.forever`, `ending.317` | An ending: its script (cinematic: bars from the first line), a hard cut to black + 1.5 s silence, then the rock slams in and the ending's last picture comes back with its title over a dither shade (6 s, 3:17: 10 s), the credits as cards in the bottom bar over that picture (3 s each; `Thank you for staying awake` 4 s), then the top-10 (once per run), then the title. `ending.317` also writes `sleep_log_317.txt` and the game closes after the top-10. Pre-set the route with `-flags route_mayu` / `route_hana` / `route_nobody`, `read_letter`, `closed_eyes`, `stamped_discharge` | **built** |
 
-The run in order: launch → `night.prologue` (white, a dream; later launches skip it with Esc) → `title` → day 1 → `transition.night1` → `night.1` → day 2 → `transition.night2` → `night.2` → day 3 → `transition.night3` → `night.3` → `ending.<name>` (picked by `night.EndingFor(flags)`) → `day.top10` → title.
+The run in order: launch → `night.prologue` (the real world, normal night look; it goes black, then cuts to white in one frame; later launches skip it with Esc) → `title` → day 1 → `transition.night1` → `night.1` → day 2 → `transition.night2` → `night.2` → day 3 → `transition.night3` → `night.3` → `ending.<name>` (picked by `night.EndingFor(flags)`) → `day.top10` → title.
 
 An id that is not registered stops the game with `unknown scene "<id>"` and exit code 1.
 
