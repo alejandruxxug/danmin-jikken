@@ -31,6 +31,7 @@
 | 2026-10-14 | The first CRT draw passed the destination size to `DrawRectShader` with the 480x270 canvas as the source | Ebitengine requires the rectangle and every source image to be the same size, so the game panicked on the first frame | The rectangle is the source's size and `GeoM` stretches it over the buffer; the shader computes its own positions from the buffer size |
 | 2026-10-14 | The fade-to-black and the strobe's white overlay were written as `color.RGBA{0x0b, 0x0b, 0x0c, alpha}` | `color.RGBA` is premultiplied, so for a small alpha the colour channels are bigger than alpha, which is not a valid colour and draws wrong | Changed to `color.NRGBA`, which is the non-premultiplied form |
 | 2026-10-14 | The day-to-night strobe flashed frames of the night station and faded the fall into it | Alejo caught it by playing: the night scene leaked through before the night's opening black thoughts, which spoils the reveal the script controls | The strobe now flashes only the day, the inverted day and white, ends on solid black, and the night starts empty; a test checks the black ending (commit 9074ef9) |
+| 2026-10-14 | The overnight builder reported `procedure_room` and `mayu_chair` as missing art (placeholders) | Both sheets were already exported (`procedure`, `forever`); the background table in `game/night/draw.go` just had no entry mapping the script names to them | Added the two `bgTable` entries (commits 180805f, d7ae383) |
 
 ## What I learned
 *(to fill in before the defense)*
