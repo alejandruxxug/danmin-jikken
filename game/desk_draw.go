@@ -323,8 +323,8 @@ func (p *painter) pageAt(g *Guest, pg Page, x, y int) {
 		p.sheet(p.art.docWristband, layers, x, y)
 		// "WARD" is already printed on the band; only the letter is written.
 		letter := strings.TrimPrefix(g.Ward, "WARD ")
-		p.text(letter, x+51, y+35, colInk)
-		p.pipsAfter(g.Level, letter, x+51, y+35, true)
+		p.text(letter, x+55, y+35, colInk)
+		p.pipsAfter(g.Level, letter, x+55, y+35, true)
 		p.text(g.Name, x+33, y+44, colInk)
 		p.text(g.LastStay.String(), x+8, y+71, colInk)
 	default:
