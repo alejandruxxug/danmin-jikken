@@ -29,6 +29,7 @@ heartbeat.wav     heartbeat_slow_0, Heartbeat sounds, estevinho (opengameart.org
 footsteps.wav     steps_platform and steps_platform2 alternated six times, yd (opengameart.org/content/platformer-sounds-terminal-interaction-door-shots-bang-and-footsteps)
 drip.wav          one drop cut from "atmo", Dripping water loop, Independent.nu (opengameart.org/content/dripping-water-loop)
 door_creak.wav    Creaky Door Hinge Spooky, w.forster.1 (opengameart.org/content/creaky-door-hinge-spooky)
+pipe_snap.ogg     wood_breaking_01, 100 CC0 metal and wood SFX, rubberduck (opengameart.org/content/100-cc0-metal-and-wood-sfx, CC0 on the page), the ceiling pipe snapping in Forever (kept as the pack's own ogg: no converter here). DEFAULT PICK, not auditioned: other candidates in the same pack are wood_breaking_02, wood_cracking_01..04 and metal_hit_01..05
 creak.wav         tree_creak, Tree Creaking, AntumDeluge (opengameart.org/content/tree-creaking), used as the floorboard
 
 MADE FOR THE GAME (pure tones written with a small program, so no licence at all)

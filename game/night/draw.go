@@ -143,8 +143,6 @@ var bgTable = map[string]bgDef{
 	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}, false},
 	// Night 3: Dr. Barrow smiling at the foot of the procedure table.
 	"procedure_room": {"procedure", []string{"room", "lamp_glow", "barrow", "barrow_smile", "rail"}, false},
-	// Forever: Mayu on the chair, seen through the gap of your eyelids.
-	"mayu_chair": {"forever", []string{"room", "mayu_chair", "mayu_smile"}, false},
 	// Sleep ending: the reception desk by day. drawDeskDay adds Mayu (or
 	// the empty desk) between "room" and the front of the next desk.
 	"desk_day": {"desk_day", []string{"room", "next_desk_front"}, false},
@@ -152,6 +150,10 @@ var bgTable = map[string]bgDef{
 	"cg_coffee":      {"cg_coffee", []string{"backdrop", "mayu", "counter", "prop_pot", "hands_cup", "steam"}, true},
 	"cg_supply":      {"cg_supply", []string{"wall", "bulb_glow", "hana", "table", "prop_cans", "arms"}, true},
 	"cg_kanashibari": {"cg_kanashibari", []string{"room", "bed", "hand"}, true},
+	// Forever (Art log 2026-10-14): Mayu close up through the slit of your
+	// eyelids, then the drop. The rope and the smile are switched with "layer".
+	"cg_forever":      {"cg_forever", []string{"ceiling", "mayu", "eyes_soft", "brows_worried", "fx_blush", "fx_tears"}, true},
+	"cg_forever_drop": {"cg_forever_drop", []string{"ceiling", "lamp", "pipe", "rope", "dust"}, true}, // plays once, see DropFrame
 }
 
 func bgTableDefs() []bgDef {
@@ -618,6 +620,9 @@ func (a *Art) drawCG(dst *ebiten.Image, e *Engine, def bgDef, tick int) {
 		}
 	}
 	frame := sheet.FrameAt(sprites.BoilTag, time.Duration(tick)*time.Second/TicksPerSecond)
+	if def.sheet == "cg_forever_drop" {
+		frame = DropFrame(sheet.Meta, time.Duration(e.BGTicks())*time.Second/TicksPerSecond)
+	}
 	_ = sheet.Draw(dst, layers, frame, 0, 0)
 }
 

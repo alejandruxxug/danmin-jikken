@@ -16,14 +16,28 @@ sfx drip_fast
 bars 62 1.5 # the bars grow into the eyelids
 wait 1.5
 hide
+# Through the slit: a close-up of her face (cg_forever). The rope comes in with
+# her hands, then lies loose while she smiles, and the picture pushes in.
+bg cg_forever
+layer +mouth_still
 ~ Through the gap, I can still see her.
+layer +rope_hands
 ~ She's standing on the chair.
+layer -rope_hands -mouth_still +rope_loose +mouth_smile
 ~ She's smiling at me.
-bg mayu_chair
-hold
-# The drop: a hard cut to black, no body, no aftermath. Blood splashes on the
-# camera on the cut frame (3 splash frames over the last image), then the
-# picture is black and the stain stays; the ending scene keeps drawing it.
+push 1.35 240 140 2
+wait 2
+# The drop: no face, only the taut rope (0.45 s), then the pipe breaks (0.3 s, the
+# snap starts on the break). The hard cut and the blood land on the last frame.
+push off
+bg cg_forever_drop
+sfx creak
+lock 0.45
+sfx pipe_snap
+lock 0.3
+# Blood splashes on the camera on the cut frame (3 splash frames over the last
+# image), then the picture is black and the stain stays; the ending scene keeps
+# drawing it.
 fx splash
 wait 0.1
 bg black

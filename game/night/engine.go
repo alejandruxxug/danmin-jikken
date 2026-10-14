@@ -74,6 +74,7 @@ type Engine struct {
 	// Note:/Letter: line so far. Earlier lines stay; a new bg empties it.
 	writer string
 	paper  []string
+	bgAt   int // the tick the current bg came up (an animated CG plays from there)
 	// The last paper that was put away (the realization's sting shows it).
 	lastWriter string
 	lastPaper  []string
@@ -206,7 +207,7 @@ func (e *Engine) exec(n Node) {
 		if e.OnPaperBG() { // the sting still needs the letter after a cut away from it
 			e.lastWriter, e.lastPaper = e.writer, e.paper
 		}
-		e.bg = n.Name
+		e.bg, e.bgAt = n.Name, e.ticks
 		e.layers = map[string]bool{} // a new picture starts with its layers off
 		e.writer, e.paper = "hana", nil
 	case OpWriter:
@@ -641,6 +642,9 @@ func (e *Engine) Line() int {
 
 // Ticks is how many frames the engine has run.
 func (e *Engine) Ticks() int { return e.ticks }
+
+// BGTicks is how many ticks the current background has been up.
+func (e *Engine) BGTicks() int { return e.ticks - e.bgAt }
 
 // HasLayer says whether a CG layer is switched on by the script.
 func (e *Engine) HasLayer(name string) bool { return e.layers[name] }

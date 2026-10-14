@@ -214,6 +214,7 @@ The rock files are **cut at the slam** (frame-level mp3 cut, no re-encoding), so
 | `snore` (a patient falls asleep, then every 3.5 s while anyone sleeps, gain 0.5) | `snore.wav` | 80 CC0 creature SFX, rubberduck, CC0. A 0.4 s snort, not a long snore | **default, weak, confirm** |
 | `stamp_thunk`, also the SFX volume test in Settings | `stamp_thunk.wav` | thud3, Metal Impact Sounds, Brian MacIntosh, CC0 | **default, confirm** |
 | `stamp_lift` (gain 0.8) | `stamp_lift.wav` | wood_hit_01, 100 CC0 metal and wood SFX, rubberduck, CC0 | **default, confirm** |
+| `pipe_snap` (Forever: the ceiling pipe snaps on the first frame of the break, then the splash) | `pipe_snap.ogg` | wood_breaking_01, 100 CC0 metal and wood SFX, rubberduck, CC0 (opengameart.org/content/100-cc0-metal-and-wood-sfx). Not auditioned; alternatives in the same pack: wood_breaking_02, wood_cracking_01..04, metal_hit_01..05 | **default, confirm** |
 | stun part 1, `stun_hit` | `stun_hit.wav` | metal_slam_01, same pack | **default, confirm** |
 | stun part 2, `stun_ring` (gain 0.6) | `stun_ring.wav` | 3 s of three high sines, peak 0.22, written for the game | **default, confirm** |
 | stun part 3, `heartbeat` | `heartbeat.wav` | heartbeat_slow_0, Heartbeat sounds, estevinho, CC0 | **default, confirm** |

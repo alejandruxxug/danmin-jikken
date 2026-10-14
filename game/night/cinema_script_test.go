@@ -1,6 +1,13 @@
 package night
 
-import "testing"
+import (
+	"os"
+	"slices"
+	"testing"
+	"time"
+
+	"danmingame/sprites"
+)
 
 // playTo clicks through night 3 until the line `text` is on screen, with
 // the flags set, and returns the engine.
@@ -76,5 +83,66 @@ func TestLetterWriters(t *testing.T) {
 	hers := playTo(t, []string{"route_mayu", "read_letter"}, "Four. You chose her. I understand.")
 	if hers.Writer() != "hana" {
 		t.Errorf("Hana writes the letter on Mayu's route, got %q", hers.Writer())
+	}
+}
+
+// Forever's drop plays once: the taut rope, then the break, and the last
+// frame stays for the splash. The frames come from the real sheet.
+func TestDropFrames(t *testing.T) {
+	data, err := os.ReadFile("../assets/sprites/cg_forever_drop.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	meta, err := sprites.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ms := time.Millisecond
+	for _, c := range []struct {
+		at   time.Duration
+		want int
+	}{{0, 0}, {160 * ms, 1}, {310 * ms, 2}, {449 * ms, 2}, {450 * ms, 3}, {560 * ms, 4}, {660 * ms, 5}, {749 * ms, 5}, {5000 * ms, 5}} {
+		if got := DropFrame(meta, c.at); got != c.want {
+			t.Errorf("DropFrame at %v = %d, want %d", c.at, got, c.want)
+		}
+	}
+}
+
+// The Forever script shows the rope in the order of the Figma row: the hands
+// first, then the loose loop with the smile; every layer is in cg_forever.json
+// (TestCGLayersExistInTheSheets checks the names).
+func TestForeverRopeSteps(t *testing.T) {
+	script, err := LoadScript(EndingScript(EndingForever))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := Flags{}
+	f.Set("route_hana")
+	en, err := NewEngine(script, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string][]string{}
+	for range 200 {
+		if _, ended := en.Ended(); ended || len(en.Options()) > 0 {
+			break
+		}
+		seen[en.FullText()] = en.Snapshot().CGLayers
+		_ = en.Advance()
+		_ = en.Advance()
+		for range 200 {
+			_ = en.Tick()
+		}
+	}
+	has := func(text, layer string) bool { return slices.Contains(seen[text], layer) }
+	if !has("Through the gap, I can still see her.", "mouth_still") || has("Through the gap, I can still see her.", "rope_hands") {
+		t.Error("through the gap: her face with the still mouth, no rope yet")
+	}
+	if !has("She's standing on the chair.", "rope_hands") {
+		t.Error("standing on the chair: her hands raise the rope")
+	}
+	smile := "She's smiling at me."
+	if !has(smile, "rope_loose") || !has(smile, "mouth_smile") || has(smile, "rope_hands") || has(smile, "mouth_still") {
+		t.Errorf("smiling: the rope lies loose and she smiles, got %v", seen[smile])
 	}
 }

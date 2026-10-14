@@ -3,6 +3,9 @@ package night
 import (
 	"fmt"
 	"strconv"
+	"time"
+
+	"danmingame/sprites"
 )
 
 // Cinematic mode (Art Direction -> Cinematic pass): letterbox bars, the
@@ -270,4 +273,25 @@ func WashPixels(level, w, h int, c [4]byte) []byte {
 		}
 	}
 	return pix
+}
+
+// ---- Forever's drop ----
+
+// The drop plays once: the tag "sway" (the rope taut, 3 frames), then "break"
+// (the pipe cracks, snaps, falls), then the last frame stays. Their lengths
+// are the frame times in cg_forever_drop.json: 3 x 150 ms and 3 x 100 ms.
+const (
+	dropSway  = 450 * time.Millisecond
+	dropBreak = 300 * time.Millisecond
+)
+
+// DropFrame is the frame of the drop shot elapsed after it came up.
+func DropFrame(m *sprites.Meta, elapsed time.Duration) int {
+	switch {
+	case elapsed < dropSway:
+		return m.FrameAt("sway", elapsed)
+	case elapsed < dropSway+dropBreak:
+		return m.FrameAt("break", elapsed-dropSway)
+	}
+	return m.Tags["break"].To // it hangs there: the cut and the splash land on it
 }
