@@ -186,3 +186,29 @@ func TestLockIgnoresClicks(t *testing.T) {
 		t.Error("the lock never ended")
 	}
 }
+
+func TestBloodTimeline(t *testing.T) {
+	if b := BloodAt(-1); b != (Blood{}) {
+		t.Errorf("before the cut: %+v", b)
+	}
+	// splash_1, splash_2, splash_3 in order, two ticks each, then the stain.
+	for tick, want := range []int{1, 1, 2, 2, 3, 3} {
+		if b := BloodAt(tick); b.Splash != want || b.Stain {
+			t.Errorf("tick %d: %+v, want splash %d and no stain", tick, b, want)
+		}
+	}
+	after := BloodAt(SplashTicks)
+	if after.Splash != 0 || !after.Stain || after.Drips != [DripCount]int{} {
+		t.Errorf("right after the splash: %+v, want the stain and no drips yet", after)
+	}
+	// Later every drip has started, each after the one before, and only goes down.
+	late := BloodAt(SplashTicks + 600)
+	for i := 1; i < DripCount; i++ {
+		if late.Drips[i] >= late.Drips[i-1] {
+			t.Errorf("drip %d slid %d, not less than drip %d (%d)", i+1, late.Drips[i], i, late.Drips[i-1])
+		}
+	}
+	if BloodAt(SplashTicks+300).Drips[0] > BloodAt(SplashTicks+301).Drips[0] {
+		t.Error("a drip moved up")
+	}
+}

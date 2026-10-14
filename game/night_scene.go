@@ -15,7 +15,10 @@ import (
 // nightScene plays one night script (the Prologue or Night 1).
 type nightScene struct {
 	env    *Env
-	script string // night.Prologue or night.Night1
+	script string // night.Prologue, night.Night1 ... or an ending's script
+	// onEnd, when set, takes over the end of the script (the ending scene
+	// uses it for "end card"); otherwise finish decides.
+	onEnd  func(to string) error
 	art    *night.Art
 	engine *night.Engine
 
@@ -32,7 +35,7 @@ func (s *nightScene) Enter(env *Env) error {
 	if err != nil {
 		return err
 	}
-	if s.engine, err = night.NewEngine(script, env.Flags); err != nil {
+	if s.engine, err = night.NewEngineFor(script, env.Flags, Username()); err != nil {
 		return err
 	}
 	if env.NightLine > 0 { // the backdoor's -line N
@@ -104,6 +107,13 @@ func (s *nightScene) updateMenu(n int) {
 // finish leaves the night: the script's "end" says which day comes next.
 // The next day starts at the reception, as it did before the nights existed.
 func (s *nightScene) finish(to string) error {
+	if s.onEnd != nil {
+		return s.onEnd(to)
+	}
+	if to == "ending" { // the end of night 3: the flags pick the ending
+		s.env.SwitchTo(endingSceneID(night.EndingFor(s.env.Flags)))
+		return nil
+	}
 	var day int
 	if _, err := fmt.Sscanf(to, "day%d", &day); err != nil {
 		return fmt.Errorf("night script %s ends with %q: want day1, day2 or day3: %w", s.script, to, err)

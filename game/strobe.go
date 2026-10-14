@@ -183,7 +183,7 @@ func (s *strobeScene) Exit() { s.env.Invert, s.env.StrobeNight, s.env.StrobeTick
 // shift ends inside it. It returns true at that hand-over. Only days that
 // lead into a night have one (day 1 for now; nights 2 and 3 come in M6).
 func (e *Env) UpdateLiveStrobe(sh *Shift) (handOver bool) {
-	if _, ok := strobeTicks[e.Day]; !ok || e.Day != 1 {
+	if _, ok := strobeTicks[e.Day]; !ok {
 		return false
 	}
 	last := sh.Served() == sh.Total() || sh.Over() // the last stamp has landed
@@ -203,4 +203,9 @@ func (e *Env) UpdateLiveStrobe(sh *Shift) (handOver bool) {
 	st := StrobeAt(e.StrobeNight, e.StrobeTick, e.ReduceFlashing)
 	e.Invert = st.Invert
 	return st.Layer == layerWhite
+}
+
+// strobeSceneID is the transition scene into night n.
+func strobeSceneID(n int) string {
+	return [...]string{"", SceneStrobe1, SceneStrobe2, SceneStrobe3}[n]
 }

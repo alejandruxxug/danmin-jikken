@@ -110,8 +110,34 @@ var bgTable = map[string]bgDef{
 	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}},
 }
 
+func bgTableDefs() []bgDef {
+	var defs []bgDef
+	for _, def := range bgTable {
+		defs = append(defs, def)
+	}
+	return defs
+}
+
 // fills are the backgrounds the painter makes itself.
 var fills = map[string]bool{"black": true, "white": true, "grey": true, "station": true, "ceiling": true}
+
+// DrawBlood paints the blood t ticks after the cut (BloodAt). It does
+// nothing until the blood sheet is in game/assets/sprites.
+func (a *Art) DrawBlood(dst *ebiten.Image, t int) {
+	sheet := a.bgs[BloodSheet]
+	if sheet == nil || t < 0 {
+		return
+	}
+	b := BloodAt(t)
+	if b.Splash > 0 {
+		_ = sheet.Draw(dst, []string{fmt.Sprintf("splash_%d", b.Splash)}, 0, 0, 0)
+		return
+	}
+	_ = sheet.Draw(dst, []string{"stain"}, 0, 0, 0)
+	for i, slid := range b.Drips {
+		_ = sheet.Draw(dst, []string{fmt.Sprintf("drip_%d", i+1)}, 0, 0, slid)
+	}
+}
 
 // IsPlaceholder says whether a background name has no art yet.
 func (a *Art) IsPlaceholder(bg string) bool {
@@ -131,7 +157,7 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	}
 	a.red = shader
 	a.bgs = map[string]*sprites.Sheet{}
-	for _, def := range bgTable {
+	for _, def := range append([]bgDef{{sheet: BloodSheet}}, bgTableDefs()...) {
 		if _, loaded := a.bgs[def.sheet]; loaded {
 			continue
 		}
@@ -224,6 +250,9 @@ func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 		_ = a.station.Draw(dst, layers, 0, 0, 0)
 	}
 	a.drawEffects(dst, e)
+	if t, ok := e.FxTicks("splash"); ok {
+		a.DrawBlood(dst, t)
+	}
 	if e.HasLine() {
 		a.drawTextBox(dst, e)
 	}

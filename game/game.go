@@ -73,6 +73,13 @@ func New(opts Options) (*Game, error) {
 	g.scenes.Register(SceneNightPrologue, func() Scene { return &nightScene{script: night.Prologue} })
 	g.scenes.Register(SceneStrobe1, func() Scene { return &strobeScene{night: 1, next: SceneNight1} })
 	g.scenes.Register(SceneNight1, func() Scene { return &nightScene{script: night.Night1} })
+	g.scenes.Register(SceneStrobe2, func() Scene { return &strobeScene{night: 2, next: SceneNight2} })
+	g.scenes.Register(SceneNight2, func() Scene { return &nightScene{script: night.Night2} })
+	g.scenes.Register(SceneStrobe3, func() Scene { return &strobeScene{night: 3, next: SceneNight3} })
+	g.scenes.Register(SceneNight3, func() Scene { return &nightScene{script: night.Night3} })
+	for _, ending := range night.Endings {
+		g.scenes.Register(endingSceneID(ending), func() Scene { return &endingScene{name: ending} })
+	}
 
 	first := SceneTitle
 	if opts.Enabled {
@@ -126,7 +133,7 @@ func (g *Game) Update() error {
 	if sh := g.env.Shift(); sh != nil {
 		sh.Update()
 		if g.env.UpdateLiveStrobe(sh) {
-			g.env.SwitchTo(SceneStrobe1) // the strobe goes on in its own scene
+			g.env.SwitchTo(strobeSceneID(g.env.StrobeNight)) // the strobe goes on in its own scene
 		} else if sh.Over() && g.env.StrobeNight == 0 {
 			if err := g.endShift(); err != nil {
 				return err
@@ -138,9 +145,9 @@ func (g *Game) Update() error {
 	return err
 }
 
-// endShift handles a shift that is over on a day with no strobe (days 2 and
-// 3 until M6 builds nights 2 and 3). The top-10 only comes once, after the
-// last day; the other days save their score silently and go on.
+// endShift handles a shift that is over on a day with no strobe. Every day
+// has one now, so this only runs for a day past the last (a test); the top-10
+// comes once, after the last day, the other days save their score silently.
 func (g *Game) endShift() error {
 	if g.env.Day >= LastDay() {
 		g.env.SwitchTo(SceneDayTop10)

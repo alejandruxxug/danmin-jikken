@@ -33,6 +33,10 @@ const (
 	SceneNightPrologue = "night.prologue"    // the gurney, before day 1
 	SceneNight1        = "night.1"           // after day 1
 	SceneStrobe1       = "transition.night1" // the day-to-night strobe into night 1
+	SceneNight2        = "night.2"
+	SceneStrobe2       = "transition.night2"
+	SceneNight3        = "night.3"
+	SceneStrobe3       = "transition.night3"
 )
 
 // Env is what every scene shares: the clock, the shift, the input, the
@@ -71,6 +75,15 @@ type Env struct {
 	Ranked     []ScoreRow // the top-10 as the last top-10 scene showed it
 	KeepClock  bool       // test mode: the next shift starts at Clock, not 09:00
 
+	// The end of the run.
+	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)
+	EndingPhase    string // script, silence, card or credits
+	MusicCue       string // the music the story asked for last (the sound system plays it)
+	SleepLogPath   string // where the secret ending wrote sleep_log_317.txt ("" if it did not)
+	SleepLogError  string
+	QuitAfterTop10 bool             // the 3:17 ending closes the game after the top-10
+	savedRows      map[int]ScoreRow // the score row of each day already saved, so a day is saved once
+
 	Night     *night.Engine // the night script that is playing, nil in the day (for the dump)
 	NightLine int           // the backdoor's -line N: start the night script at this file line
 
@@ -105,6 +118,17 @@ func (e *Env) NightArt() (*night.Art, error) {
 		}
 	}
 	return e.nightArt, nil
+}
+
+// NewRun forgets the last run: flags, scores and the ending (the title starts
+// the Prologue with it).
+func (e *Env) NewRun() {
+	e.Day = 1
+	e.Flags = make(night.Flags)
+	e.Scores = make(map[string]int)
+	e.savedRows = nil
+	e.Ending, e.EndingPhase, e.MusicCue = "", "", ""
+	e.QuitAfterTop10 = false
 }
 
 // Shift returns the running shift, or nil when no day scene has started one.

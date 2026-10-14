@@ -72,6 +72,9 @@ func (s *top10Scene) Exit() {}
 // saveScore writes today's score to the scores file (or keeps it in memory
 // in test mode) and returns the row.
 func (e *Env) saveScore(score int) (ScoreRow, error) {
+	if row, done := e.savedRows[e.Day]; done {
+		return row, nil // the strobe saved this day silently already
+	}
 	row := ScoreRow{Name: Username(), Score: score, Time: time.Now().Format("15:04")}
 	if e.ScoresPath != "" {
 		if err := AppendScore(e.ScoresPath, row); err != nil {
@@ -80,6 +83,10 @@ func (e *Env) saveScore(score int) (ScoreRow, error) {
 	} else {
 		e.MemScores = append(e.MemScores, row)
 	}
+	if e.savedRows == nil {
+		e.savedRows = make(map[int]ScoreRow)
+	}
+	e.savedRows[e.Day] = row
 	return row, nil
 }
 
@@ -105,6 +112,9 @@ func (s *top10Scene) Update() error {
 	s.ticks++
 	if x, y, ok := s.env.Input.Click(); ok && closeRect.has(x, y) {
 		s.next()
+		if s.env.QuitAfterTop10 {
+			return ebiten.Termination // the secret ending: the game closes itself
+		}
 	}
 	return nil
 }

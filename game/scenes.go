@@ -20,7 +20,7 @@ type titleScene struct{ env *Env }
 func (s *titleScene) Enter(env *Env) error { s.env = env; return nil }
 func (s *titleScene) Update() error {
 	if _, _, clicked := s.env.Input.Click(); clicked || s.env.Input.AnyKeyPressed() {
-		s.env.Day = 1
+		s.env.NewRun()
 		s.env.SwitchTo(SceneNightPrologue) // the gurney comes first
 	}
 	return nil

@@ -540,3 +540,7 @@ func (e *Engine) FaceHop(character string) int {
 	}
 	return -e.HopOffset()
 }
+
+// BGNames lists the backgrounds the running script uses (the dump compares
+// them with the art that exists).
+func (e *Engine) BGNames() []string { return e.script.BGNames() }

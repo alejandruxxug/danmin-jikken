@@ -694,6 +694,16 @@ type Dump struct {
 	CallLight bool          `json:"callLight"` // a Severe patient sleeps unattended
 	Banner    string        `json:"banner"`    // the reception's top bar: the message or the nurse call
 
+	// The route and the ending (from the flags), the ending's phase, the
+	// secret ending's file, and the backgrounds that still have no art.
+	Route        string   `json:"route"`
+	Ending       string   `json:"ending"`
+	EndingPhase  string   `json:"endingPhase"`
+	MusicCue     string   `json:"musicCue"`
+	SleepLogPath string   `json:"sleepLogPath"`
+	SleepLogErr  string   `json:"sleepLogError"`
+	Placeholders []string `json:"placeholders"`
+
 	// The night script that is playing (nil in the day).
 	Night *night.State `json:"night,omitempty"`
 
@@ -854,9 +864,19 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 			d.Flags = append(d.Flags, name)
 		}
 	}
+	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
+	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
+	d.Placeholders = []string{}
 	if env.Night != nil {
 		st := env.Night.Snapshot()
 		d.Night = &st
+		if art, err := env.NightArt(); err == nil {
+			for _, bg := range env.Night.BGNames() {
+				if art.IsPlaceholder(bg) {
+					d.Placeholders = append(d.Placeholders, bg)
+				}
+			}
+		}
 	}
 	if env.StrobeNight > 0 {
 		st := StrobeAt(env.StrobeNight, env.StrobeTick, env.ReduceFlashing)
