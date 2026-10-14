@@ -107,9 +107,9 @@ func deskLayers(day int) []string {
 
 // DeskArt is every sheet the day scenes draw, plus the font.
 type DeskArt struct {
-	room, desk, glass, waiting, hallway, computer, icons *sprites.Sheet
-	window                                               map[string]*sprites.Sheet // by Visitor.Sprite
-	font                                                 *Font
+	room, desk, glass, waiting, hallway, computer, icons, iconsM4 *sprites.Sheet
+	window                                                        map[string]*sprites.Sheet // by Visitor.Sprite
+	font                                                          *Font
 }
 
 // LoadDeskArt loads the sheets and the font.
@@ -121,7 +121,7 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 	}{
 		{&a.room, "reception_bg"}, {&a.desk, "desk"}, {&a.glass, "screen_glass"},
 		{&a.waiting, "waiting_fisher"}, {&a.hallway, "hallway_sleeper"},
-		{&a.computer, "computer"}, {&a.icons, "ui_icons"},
+		{&a.computer, "computer"}, {&a.icons, "ui_icons"}, {&a.iconsM4, "ui_icons_m4"},
 	} {
 		var err error
 		if *l.sheet, err = LoadSheet(fsys, l.name); err != nil {

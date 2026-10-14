@@ -10,6 +10,7 @@ import (
 // injects, so a scene cannot tell a script from a person.
 type Input struct {
 	keys    map[ebiten.Key]bool // injected this frame only
+	typed   []rune              // text injected this frame only (the script's "type")
 	clicked bool
 	clickX  int
 	clickY  int
@@ -36,6 +37,15 @@ func NewInput() *Input {
 func (in *Input) KeyPressed(k ebiten.Key) bool {
 	return in.keys[k] || inpututil.IsKeyJustPressed(k)
 }
+
+// Typed returns the characters typed on this frame: the real keyboard's and
+// the ones the backdoor injected.
+func (in *Input) Typed() []rune {
+	return append(ebiten.AppendInputChars(nil), in.typed...)
+}
+
+// InjectText pretends the characters of s were typed on the next frame.
+func (in *Input) InjectText(s string) { in.typed = append(in.typed, []rune(s)...) }
 
 // SetView tells Input how the game picture is placed on the screen.
 func (in *Input) SetView(scale, offX, offY int) {
@@ -127,5 +137,6 @@ func (in *Input) InjectClick(x, y int) {
 // endFrame forgets the injected inputs once the scene has seen them.
 func (in *Input) endFrame() {
 	clear(in.keys)
+	in.typed = nil
 	in.clicked = false
 }

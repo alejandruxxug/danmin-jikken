@@ -115,8 +115,10 @@ type Shift struct {
 	ticks  int
 	snap   hospital.Snapshot
 
-	episodes    map[string]int // episodes the hospital has recorded, by patient id
-	severeToday map[string]int // the same for Severe patients, from SevereReport
+	episodes    map[string]int    // episodes the hospital has recorded, by patient id
+	severeToday map[string]int    // the same for Severe patients, from SevereReport
+	trace       map[string][]bool // the ward feed's last seconds per patient (records.go)
+	traceAt     int               // the game second last sampled
 
 	sleepers  map[string]*Sleeper // by patient id
 	busyUntil map[string]float64  // by staff name
@@ -151,6 +153,7 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 		rng:       rand.New(rand.NewSource(seed + int64(day)*100 - 1)),
 		sleepers:  make(map[string]*Sleeper),
 		busyUntil: make(map[string]float64),
+		trace:     make(map[string][]bool),
 	}
 	for i, v := range rules.Visitors {
 		id := fmt.Sprintf("P-%03d", i+1)
@@ -226,6 +229,7 @@ func (s *Shift) Update() {
 	}
 	s.snap = s.ward.Snapshot()
 	s.episodes, s.severeToday = s.ward.Episodes(), s.ward.SevereToday()
+	s.sampleTraces()
 
 	now := s.Seconds()
 	for i, g := range s.Guests {

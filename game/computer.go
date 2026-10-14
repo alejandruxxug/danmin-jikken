@@ -12,8 +12,7 @@ import (
 	"danmingame/sprites"
 )
 
-// The tabs of the patient computer. Only BEDS exists in M3; the others come
-// with the documents and the queries in M4 and show a placeholder.
+// The four tabs of the patient computer.
 const (
 	TabRecords   = "records"
 	TabSleepLogs = "sleep logs"
@@ -67,11 +66,12 @@ func hallwayRow(k int) rect { return rect{40, 132 + hallwayPitch*k, 290, hallway
 // computerScene is the flip-up patient computer over the reception. The
 // day goes on behind it: patients still fall asleep while you look at it.
 type computerScene struct {
-	env     *Env
-	art     *DeskArt
-	shift   *Shift
-	ticks   int
-	drawErr error
+	startTab string // the tab to open on Enter; "" keeps the open one (BEDS by default)
+	env      *Env
+	art      *DeskArt
+	shift    *Shift
+	ticks    int
+	drawErr  error
 }
 
 func (s *computerScene) Enter(env *Env) error {
@@ -84,6 +84,9 @@ func (s *computerScene) Enter(env *Env) error {
 		return err
 	}
 	s.shift = env.Shift()
+	if s.startTab != "" {
+		env.Tab = s.startTab
+	}
 	if env.Tab == "" {
 		env.Tab = TabBeds
 	}
@@ -98,10 +101,37 @@ func (s *computerScene) Update() error {
 		return s.drawErr
 	}
 	s.ticks++
+	if s.env.Tab == TabRecords {
+		s.typeQuery()
+	}
 	if x, y, ok := s.env.Input.Click(); ok {
 		s.click(x, y)
 	}
 	return nil
+}
+
+// maxQuery is how many characters the RECORDS name field takes.
+const maxQuery = 20
+
+// typeQuery edits the RECORDS name field: typed letters are added,
+// Backspace removes one, and Tab fills in the guest at the window.
+func (s *computerScene) typeQuery() {
+	in := s.env.Input
+	for _, r := range in.Typed() {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == ' ' || r == '.' {
+			if len(s.env.Query) < maxQuery {
+				s.env.Query += strings.ToUpper(string(r))
+			}
+		}
+	}
+	if in.KeyPressed(ebiten.KeyBackspace) && s.env.Query != "" {
+		s.env.Query = s.env.Query[:len(s.env.Query)-1]
+	}
+	if in.KeyPressed(ebiten.KeyTab) {
+		if g := s.shift.window(); g != nil {
+			s.env.Query = strings.ToUpper(g.Name)
+		}
+	}
 }
 
 func (s *computerScene) click(x, y int) {
@@ -115,7 +145,23 @@ func (s *computerScene) click(x, y int) {
 			return
 		}
 	}
-	if s.env.Tab != TabBeds {
+	switch s.env.Tab {
+	case TabSleepLogs:
+		for i, g := range s.shift.Arrived() {
+			if i < logRowsMax && (rect{textLeft, logRowY(i) - 3, 90, 12}).has(x, y) {
+				s.env.LogPick = g.Name
+			}
+		}
+		return
+	case TabWardFeed:
+		for i, g := range s.shift.Admitted() {
+			if i < feedRowsMax && (rect{textLeft, feedRowY(i) - 5, textRight - textLeft, 14}).has(x, y) && s.shift.needsStaff(g) {
+				att, err := s.shift.Dispatch(g)
+				s.afterDispatch(att, err)
+			}
+		}
+		return
+	case TabRecords:
 		return
 	}
 	waiting := s.shift.Waiting()
@@ -146,10 +192,15 @@ func (s *computerScene) Draw(screen *ebiten.Image) {
 	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
 	p.terminal(s.shift, int(s.env.CameraX), "V CLOSE COMPUTER V")
 	p.terminalHeader(fmt.Sprintf("DAY %d  %s", s.shift.Day, s.env.Clock), s.env.Tab)
-	if s.env.Tab == TabBeds {
+	switch s.env.Tab {
+	case TabRecords:
+		p.records(s.shift, s.env.Query)
+	case TabSleepLogs:
+		p.sleepLogs(s.shift, s.env.LogPick)
+	case TabWardFeed:
+		p.wardFeed(s.shift)
+	default:
 		p.beds(s.shift)
-	} else {
-		p.offline(s.env.Tab)
 	}
 	p.glass()
 	if p.err != nil && s.drawErr == nil {
@@ -185,6 +236,11 @@ func (p *painter) icon(name string, x, y int) {
 	p.keep(p.art.icons.Draw(p.screen, []string{name}, p.art.icons.FrameAt(sprites.BoilTag, p.elapse), x, y))
 }
 
+// iconM4 draws one icon of ui_icons_m4 (eyes, check and cross, folder).
+func (p *painter) iconM4(name string, x, y int) {
+	p.keep(p.art.iconsM4.Draw(p.screen, []string{name}, p.art.iconsM4.FrameAt(sprites.BoilTag, p.elapse), x, y))
+}
+
 // pips draws the severity dots (Mild 1, Moderate 2, Severe 3) with their
 // top-left corner at (x, y). ink is true on paper (black dots) and false on
 // the terminal (light dots).
@@ -200,13 +256,6 @@ func (p *painter) pips(l hospital.NarcolepsyLevel, x, y int, ink bool) {
 // capitals start at capsY (the Art log's rule: 2 px below the caps).
 func (p *painter) pipsAfter(l hospital.NarcolepsyLevel, text string, textX, capsY int, ink bool) {
 	p.pips(l, textX+p.art.font.Width(text)+4, capsY+2, ink)
-}
-
-// offline is the placeholder of the tabs that M4 builds.
-func (p *painter) offline(tab string) {
-	p.text(strings.ToUpper(tab)+": MODULE OFFLINE", textLeft, 75, colPaper)
-	p.text("DRIFTWELL SYSTEMS IS CONNECTING THIS", textLeft, 95, colDim)
-	p.text("TERMINAL TO THE WARD. PLEASE WAIT.", textLeft, 107, colDim)
 }
 
 // beds is the BEDS tab: the rooms, the sleepers with no bed, the staff.

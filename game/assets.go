@@ -29,6 +29,7 @@ var boilScales = map[string]float64{
 	"desk":         3,
 	"computer":     3,
 	"ui_icons":     3,
+	"ui_icons_m4":  3,
 	// cecily, waiting_fisher and hallway_sleeper are characters: normal speed.
 	// screen_glass has one frame and never boils.
 }

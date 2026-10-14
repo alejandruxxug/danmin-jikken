@@ -45,6 +45,9 @@ func New(opts Options) (*Game, error) {
 	g.scenes.Register(SceneTitle, func() Scene { return &titleScene{} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
+	for id, tab := range map[string]string{SceneRecords: TabRecords, SceneSleepLogs: TabSleepLogs, SceneWardFeed: TabWardFeed} {
+		g.scenes.Register(id, func() Scene { return &computerScene{startTab: tab} })
+	}
 	g.scenes.Register(SceneDayTop10, func() Scene { return &top10Scene{} })
 
 	first := SceneTitle

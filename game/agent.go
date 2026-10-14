@@ -90,7 +90,8 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op    string // "wait", "key", "click", "mouse", "pan", "stamp", "shot" or "dump"
+	Op    string // "wait", "key", "click", "mouse", "pan", "advance", "type", "stamp", "shot" or "dump"
+	Text  string // type: the characters
 	N     int    // wait: frames; pan: camera x
 	Stamp Stamp  // stamp: which one
 	Key   ebiten.Key
@@ -104,6 +105,8 @@ type Command struct {
 //	key Space
 //	click 212 140   1x game coordinates
 //	mouse 5 135     hold the cursor there (edge of the screen pans the camera)
+//	type marcus     type text (the RECORDS tab's name field)
+//	advance 120     run the shift 120 game seconds at once (queue, clock, ward)
 //	pan 0           put the camera at x = 0 (0 to 240)
 //	stamp admit     use a stamp on the window patient (admit, refer, discharge)
 //	shot out.png    (1x)
@@ -172,6 +175,20 @@ func parseCommand(words []string) (Command, error) {
 		n, err := strconv.Atoi(args[0])
 		if err != nil || n < 0 || n > MaxCameraX {
 			return cmd, fmt.Errorf("pan %q: want a number from 0 to %d", args[0], MaxCameraX)
+		}
+		cmd.N = n
+	case "type":
+		if len(args) == 0 {
+			return cmd, fmt.Errorf("type needs some text")
+		}
+		cmd.Text = strings.Join(args, " ")
+	case "advance":
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("advance needs one number of game seconds")
+		}
+		n, err := strconv.Atoi(args[0])
+		if err != nil || n < 0 {
+			return cmd, fmt.Errorf("advance %q: want a number of game seconds", args[0])
 		}
 		cmd.N = n
 	case "stamp":
@@ -319,6 +336,11 @@ func (a *Agent) runCommands(env *Env) {
 			return
 		case "mouse":
 			env.Input.InjectMouse(cmd.X, cmd.Y)
+		case "type":
+			env.Input.InjectText(cmd.Text)
+			return
+		case "advance":
+			advance(env, cmd.N)
 		case "pan":
 			env.CameraX = float64(cmd.N)
 		case "stamp":
@@ -332,6 +354,20 @@ func (a *Agent) runCommands(env *Env) {
 			a.pending = append(a.pending, output{"dump", cmd.Path})
 			return
 		}
+	}
+}
+
+// advance runs the shift (and the clock) seconds game seconds at once, so
+// a test can reach the middle of a day without waiting for it. The patients'
+// own timers run in real time and do not jump.
+func advance(env *Env, seconds int) {
+	sh := env.Shift()
+	if sh == nil {
+		return
+	}
+	for range seconds * 60 {
+		env.Clock.Advance(env.ClockRate * env.Speed / 60)
+		sh.Update()
 	}
 }
 

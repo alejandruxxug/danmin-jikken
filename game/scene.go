@@ -17,7 +17,10 @@ const (
 const (
 	SceneTitle        = "title"
 	SceneDayReception = "day.reception"
-	SceneDayComputer  = "day.computer"
+	SceneDayComputer  = "day.computer" // the BEDS tab
+	SceneRecords      = "day.computer.records"
+	SceneSleepLogs    = "day.computer.sleeplogs"
+	SceneWardFeed     = "day.computer.wardfeed"
 	SceneDayTop10     = "day.top10"
 )
 
@@ -43,6 +46,8 @@ type Env struct {
 	Sleepy     bool       // test mode: patients fall asleep fast and sleep long
 	ScoresPath string     // the scores file; "" keeps scores in memory only
 	Tab        string     // the open tab of the patient computer
+	Query      string     // what is typed in the RECORDS name field
+	LogPick    string     // the name picked on the SLEEP LOGS tab
 	Ranked     []ScoreRow // the top-10 as the last top-10 scene showed it
 	KeepClock  bool       // test mode: the next shift starts at Clock, not 09:00
 

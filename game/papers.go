@@ -127,14 +127,16 @@ func (v Visitor) NewEpisodes() int {
 	return n
 }
 
-// SleepTimes lists the times of day of every episode, earliest first, as the
-// SLEEP LOGS tab shows them.
+// SleepTimes lists the times of day the episodes happen at, earliest first
+// and each time once, as the SLEEP LOGS tab shows them.
 func (v Visitor) SleepTimes() []string {
 	rows := append([]LogRow(nil), v.Log...)
 	sort.Slice(rows, func(i, j int) bool { return rows[i].At < rows[j].At })
 	var out []string
 	for _, r := range rows {
-		out = append(out, r.TimeString())
+		if t := r.TimeString(); len(out) == 0 || out[len(out)-1] != t {
+			out = append(out, t)
+		}
 	}
 	return out
 }
