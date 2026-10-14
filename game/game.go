@@ -55,12 +55,14 @@ func New(opts Options) (*Game, error) {
 	}
 	env.Sound = sound.New(soundFS, opts.Enabled) // test mode only records the cues
 	activeSound = env.Sound
+	env.Apply(DefaultSettings())
 	crt, err := NewCRT()
 	if err != nil {
 		return nil, err
 	}
 	g := &Game{env: env, scenes: NewSceneManager(env), crt: crt, shotCRT: &CRT{shader: crt.shader}}
 	g.scenes.Register(SceneTitle, func() Scene { return &titleScene{} })
+	g.scenes.Register(SceneSettings, func() Scene { return &settingsScene{} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
 	g.scenes.Register(SceneDayDesk, func() Scene { return &deskScene{} })
@@ -96,9 +98,9 @@ func New(opts Options) (*Game, error) {
 		}
 		g.agent = agent
 		first = opts.Scene
+		env.SeenPrologue = opts.SeenPrologue
 	} else {
-		env.CRT = !opts.NoCRT // player options, like -fullscreen
-		env.ReduceFlashing = opts.ReduceFlashing
+		first = SceneNightPrologue // the cold open: the Prologue plays before the title
 		// A real player: the scores live next to the executable, and the
 		// ghost row may appear between runs. Test mode keeps its hands off
 		// that file unless -scores names another one.
@@ -107,6 +109,19 @@ func New(opts Options) (*Game, error) {
 			return nil, err
 		}
 		env.ScoresPath = path
+		// The saved settings come first; the command-line options (like
+		// -fullscreen) only ever turn something on or off for this run. A
+		// settings file that cannot be read gives the defaults: the game
+		// still starts.
+		env.SettingsPath = SettingsPathFor(path)
+		saved, _ := LoadSettings(env.SettingsPath)
+		env.Apply(saved)
+		if opts.NoCRT {
+			env.CRT = false
+		}
+		if opts.ReduceFlashing {
+			env.ReduceFlashing = true
+		}
 		if err := EnsureGhost(path, Username()); err != nil {
 			return nil, err
 		}

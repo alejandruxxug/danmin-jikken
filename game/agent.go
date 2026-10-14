@@ -42,7 +42,9 @@ type Options struct {
 	Shot4   string // x4 PNG, written when the run ends
 	Dump    string // json state, written when the run ends
 	NoCRT   bool
-	PowerOn bool // start the day with the CRT turn-on playing
+	// SeenPrologue pretends the Prologue was seen before: any key skips it.
+	SeenPrologue bool
+	PowerOn      bool // start the day with the CRT turn-on playing
 	// ReduceFlashing is a player option (Settings -> Reduce flashing), so it
 	// works without -agent.
 	ReduceFlashing bool
@@ -80,6 +82,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Dump, "dump", "", "save the game state as json when the run ends")
 	fs.BoolVar(&o.NoCRT, "nocrt", false, "turn the day CRT filter off")
 	fs.BoolVar(&o.ReduceFlashing, "reduce-flashing", false, "replace the day-to-night strobe by one slow invert-and-fade")
+	fs.BoolVar(&o.SeenPrologue, "seen-prologue", false, "the Prologue counts as seen before: any key skips it (the cold open)")
 	fs.BoolVar(&o.PowerOn, "poweron", false, "play the CRT turn-on at the start (see it with wait N and shot4)")
 	fs.BoolVar(&o.Quit, "quit", false, "exit when the script (or -frames) ends")
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
@@ -727,6 +730,8 @@ type Dump struct {
 	EndingPhase  string   `json:"endingPhase"`
 	MusicCue     string   `json:"musicCue"`
 	EndingGlitch float64  `json:"endingGlitch"` // the secret ending's glitch strength, 0 to 1
+	Dream        bool     `json:"dream"`        // the Prologue's washed-out filter is on
+	Settings     Settings `json:"settings"`     // the settings the game runs with
 	SleepLogPath string   `json:"sleepLogPath"`
 	SleepLogErr  string   `json:"sleepLogError"`
 	Placeholders []string `json:"placeholders"`
@@ -896,6 +901,8 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.EndingGlitch = env.EndingGlitch
+	d.Dream = env.nightArt != nil && env.nightArt.Dream
+	d.Settings = env.Settings()
 	d.Placeholders = []string{}
 	d.SoundLog, d.SoundMissing = []string{}, []string{}
 	if env.Sound != nil {

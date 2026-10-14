@@ -1,7 +1,9 @@
 package game
 
 import (
+	"danmingame/night"
 	"errors"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -200,22 +202,80 @@ func TestClockStopsOnTop10(t *testing.T) {
 	}
 }
 
-// Until the real title exists, a click or a key on it starts day 1.
+// The title waits for input; START begins day 1 and the day turns on like a CRT.
 func TestTitleStartsDayOne(t *testing.T) {
-	env := &Env{Input: NewInput(), Day: 3}
+	fsys, err := SpriteFS()
+	if err != nil {
+		t.Fatal(err)
+	}
+	env := &Env{Input: NewInput(), Day: 3, Sprites: fsys}
 	s := &titleScene{}
 	if err := s.Enter(env); err != nil {
 		t.Fatal(err)
 	}
-	s.Update()
+	env.Input.InjectKey(ebiten.KeySpace)
+	s.Update() // too early: the logo is still falling
 	if env.nextScene != "" {
-		t.Fatal("the title must wait for input")
+		t.Fatal("the title must not answer while the logo falls")
+	}
+	for range titleMenuFrom {
+		s.Update()
 	}
 	env.Input.InjectKey(ebiten.KeySpace)
 	s.Update()
-	// The game now opens with the Prologue (the gurney); day 1 follows it.
-	if env.nextScene != SceneNightPrologue || env.Day != 1 {
-		t.Errorf("next %q day %d, want night.prologue day 1", env.nextScene, env.Day)
+	if env.nextScene != SceneDayReception || env.Day != 1 || !env.PoweringOn {
+		t.Errorf("next %q day %d poweringOn %v, want day.reception day 1 with the CRT turn-on", env.nextScene, env.Day, env.PoweringOn)
+	}
+}
+
+func TestTitleDropFallsThenSettles(t *testing.T) {
+	if titleDrop(0) >= 0 || titleDrop(titleFall+titleBounce) != 0 {
+		t.Errorf("the logo starts above the screen (%d) and ends in place (%d)", titleDrop(0), titleDrop(titleFall+titleBounce))
+	}
+	for ticks := 1; ticks < titleFall; ticks++ {
+		if titleDrop(ticks) <= titleDrop(ticks-1) {
+			t.Fatalf("tick %d: the logo must keep falling", ticks)
+		}
+	}
+	if dx, dy := titleShakeOffset(titleFall + titleShake); dx != 0 || dy != 0 {
+		t.Error("the shake must be over by the end of its table")
+	}
+}
+
+// The cold open: the Prologue ends in the title (with its white), a later
+// launch may skip the Prologue with a key, and a fresh run never repeats it.
+func TestColdOpen(t *testing.T) {
+	env := &Env{Day: 1, Flags: night.Flags{}}
+	s := &nightScene{env: env, script: night.Prologue}
+	if err := s.finish("day1"); err != nil {
+		t.Fatal(err)
+	}
+	if env.nextScene != SceneTitle || !env.TitleWhite || !env.SeenPrologue {
+		t.Errorf("after the Prologue: next %q white %v seen %v, want the title, with the white, remembered", env.nextScene, env.TitleWhite, env.SeenPrologue)
+	}
+}
+
+func TestSettingsFileRoundTrip(t *testing.T) {
+	path := SettingsPathFor(filepath.Join(t.TempDir(), ScoresFile))
+	got, err := LoadSettings(path)
+	if err != nil || got != DefaultSettings() {
+		t.Fatalf("a missing file must give the defaults: %+v, %v", got, err)
+	}
+	want := Settings{CRT: false, ReduceFlashing: true, Auto: true, Music: 0.3, SFX: 1, SeenPrologue: true}
+	if err := SaveSettings(path, want); err != nil {
+		t.Fatal(err)
+	}
+	if got, err = LoadSettings(path); err != nil || got != want {
+		t.Errorf("read back %+v, %v; want %+v", got, err, want)
+	}
+	if SettingsPathFor("") != "" || SaveSettings("", want) != nil {
+		t.Error("test mode (no scores file) must save nothing")
+	}
+}
+
+func TestStepVolumeStaysInRange(t *testing.T) {
+	if stepVolume(1, 1) != 1 || stepVolume(0, -1) != 0 || stepVolume(0.5, 1) != 0.6 {
+		t.Errorf("volumes: %v %v %v", stepVolume(1, 1), stepVolume(0, -1), stepVolume(0.5, 1))
 	}
 }
 
@@ -232,6 +292,31 @@ func TestPickScale(t *testing.T) {
 	for _, c := range cases {
 		if got := pickScale(c.w, c.h); got != c.want {
 			t.Errorf("pickScale(%d, %d) = %d, want %d", c.w, c.h, got, c.want)
+		}
+	}
+}
+
+// A later launch skips the Prologue with any key; the first launch does not.
+func TestPrologueSkipOnlyWhenSeen(t *testing.T) {
+	for _, seen := range []bool{false, true} {
+		g, err := New(Options{Enabled: true, Scene: SceneNightPrologue, SeenPrologue: seen})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for range 5 {
+			if err := g.Update(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if d := BuildDump(g.env, g.scenes.ID(), 1); !d.Dream {
+			t.Error("the Prologue must be a dream (washed out)")
+		}
+		g.env.Input.InjectKey(ebiten.KeyB)
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+		if skipped := g.scenes.ID() == SceneTitle; skipped != seen {
+			t.Errorf("seen=%v: scene after a key is %q", seen, g.scenes.ID())
 		}
 	}
 }

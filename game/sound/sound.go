@@ -32,10 +32,11 @@ var extensions = []string{".ogg", ".mp3", ".wav"}
 
 // Player is the game's sound system.
 type Player struct {
-	fsys   fs.FS
-	ctx    *audio.Context // nil when muted or when no audio device was found
-	muted  bool
-	volume float64 // 0 to 1
+	fsys     fs.FS
+	ctx      *audio.Context // nil when muted or when no audio device was found
+	muted    bool
+	musicVol float64 // 0 to 1, the music
+	sfxVol   float64 // 0 to 1, the sound effects
 
 	effects map[string][]byte // decoded sound effects by cue name
 	playing []*audio.Player   // effects that may still be playing (kept so they are not collected)
@@ -50,7 +51,7 @@ type Player struct {
 // records requests (test mode). If the computer has no audio device the
 // player mutes itself instead of stopping the game.
 func New(fsys fs.FS, muted bool) *Player {
-	p := &Player{fsys: fsys, muted: muted, volume: 1, effects: map[string][]byte{}, missing: map[string]bool{}}
+	p := &Player{fsys: fsys, muted: muted, musicVol: 1, sfxVol: 1, effects: map[string][]byte{}, missing: map[string]bool{}}
 	if !muted {
 		// Ebitengine allows one audio context per program.
 		p.ctx = audio.CurrentContext()
@@ -61,17 +62,21 @@ func New(fsys fs.FS, muted bool) *Player {
 	return p
 }
 
-// Volume is the master volume from 0 to 1.
-func (p *Player) Volume() float64 { return p.volume }
+// MusicVolume and SFXVolume are the two volumes, 0 to 1 (Settings screen).
+func (p *Player) MusicVolume() float64 { return p.musicVol }
+func (p *Player) SFXVolume() float64   { return p.sfxVol }
 
-// SetVolume sets the master volume (clamped to 0..1) and applies it to the
-// music that is playing.
-func (p *Player) SetVolume(v float64) {
-	p.volume = min(max(v, 0), 1)
+// SetMusicVolume sets the music volume (clamped to 0..1) and applies it to
+// the music that is playing.
+func (p *Player) SetMusicVolume(v float64) {
+	p.musicVol = min(max(v, 0), 1)
 	if p.music != nil {
-		p.music.SetVolume(p.volume)
+		p.music.SetVolume(p.musicVol)
 	}
 }
+
+// SetSFXVolume sets the volume of the sound effects played from now on.
+func (p *Player) SetSFXVolume(v float64) { p.sfxVol = min(max(v, 0), 1) }
 
 // Current is the music asked for last ("" when it was stopped).
 func (p *Player) Current() string { return p.current }
@@ -140,7 +145,7 @@ func (p *Player) PlaySFX(name string) {
 		p.effects[name] = pcm
 	}
 	pl := p.ctx.NewPlayerFromBytes(pcm)
-	pl.SetVolume(p.volume)
+	pl.SetVolume(p.sfxVol)
 	pl.Play()
 	// Forget the effects that have finished.
 	live := p.playing[:0]
@@ -187,7 +192,7 @@ func (p *Player) PlayMusic(name string, loop bool, start time.Duration) {
 		p.missing[name] = true
 		return
 	}
-	pl.SetVolume(p.volume)
+	pl.SetVolume(p.musicVol)
 	pl.Play()
 	p.music = pl
 }

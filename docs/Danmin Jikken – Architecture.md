@@ -96,6 +96,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11, Alt+Enter and Cmd+F toggle it too; the window opens at the biggest whole-number scale that fits 90% of the screen and can be resized, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
 | `-dark N` | Draws **every** guest N palette steps darker (0-3), to judge the Severe darkening without waiting for a Severe patient to wake up (`dark N` does the same inside a script). In the dump: `forceDark` | The darkening is otherwise hidden: a Severe patient in a bed is not drawn |
 | `-auto` | Night scenes: the VN's AUTO play starts on (the A key or a click on the toggle flips it; the script command `auto [on\|off]` does the same) | See the AUTO wait (`1.2 s + 0.05 s per letter`, at most 6 s) |
+| `-seen-prologue` | Pretends the Prologue was seen on an earlier launch: any key skips it (the cold open). Normally the saved settings file (`danmin_settings.json`, next to the scores file) remembers it | Check the skip |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
 **Dump fields for M6:** `route` (from the flags), `ending`, `endingPhase` (`script`, `silence`, `card`, `credits`), `musicCue`, `sleepLogPath` / `sleepLogError`, and `placeholders` (the backgrounds of the playing night script that still have no sheet). `go test -run TestPlaceholdersInUse -v ./game` lists every placeholder of every script. `-line N` jumps let every timed effect finish first (open eyes, risen red), so a jump lands on the settled picture. **`advance N` is not a faithful shift:** it runs the clock past the strobe (a guest can still be at the desk with 0 served), so test the strobe with real stamps, not `advance`.
@@ -111,6 +112,7 @@ pan 240            # put the camera at x = 240 right away
 next               # night: press Space (first shows the whole line, then goes on; in a menu it picks the highlighted option)
 choose 2           # night: pick option 2 of the open menu (1 to 3)
 skipstrobe         # the day-to-night strobe ends on its next frame
+card               # an ending scene jumps from its script to its card (then `wait 100` and `shot4`; ending.317 lags and glitches more and more, dump field endingGlitch)
 stamp admit        # use a stamp on the window patient (admit, refer, discharge) straight away, skipping the desk
 advance 120        # run the shift 120 game seconds at once (queue, clock; the patients' own timers stay real-time)
 dark 2             # draw every guest 2 palette steps darker (0-3); -1 flag value = off
@@ -133,7 +135,8 @@ dump after_admit.json
 
 | id | Scene | Status |
 |---|---|---|
-| `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour); any key or click starts day 1 until the real title (M7) |
+| `title` | Title: the logo drops (slam, shake) and START / SETTINGS appear; the Prologue's white carries into it after the cold open. Uses a `title` sheet when one is in `game/assets/sprites` (layer `logo` drops, other layers stay put), else the ending font on black | **built** (placeholder look until the title art is exported). START begins day 1 with the CRT turn-on |
+| `settings` | CRT effect, Reduce flashing, AUTO play, Music and Sound effects volume; saved at once to `danmin_settings.json` next to the scores file (dump block `settings`) | **built** (plain text rows; no Figma view yet) |
 | `day.reception` | FNAF desk, front view | **built** (approved views). On day 1 Old Cecily nods off at the window a few seconds after she arrives (`-day 1 -seed 7 -frames 260` shows it; the dump's `dozing` names her and her look is `dozing`; `click 240 110` wakes her; `stamp` is refused until then). Each visitor has their own window sprite, the desk memo changes per day, window guests are clipped to the glass. Queue walks up, the window patient + ADMIT / DISCHARGE / REFER stamps (cubby or stamp handle), sleepers in the chairs, hallway sleepers, HUD (DAY plate, PATIENTS n/N, computer tab), the no-room alert, line boil (characters 125 ms, room and props 375 ms), walk bob, blinking. Starts the shift if none is running |
 | `day.desk` | The look-down desk (FILES tab / `desk` command): the closed folder slides in, click it to open, drag the page corner to flip, lift a stamp and press it on the FOR DESK USE box. The tilt plays (0.3 s) | **built** (M4). While you are on the desk the reception goes on behind it |
 | `day.desk.closed`, `day.desk.referral`, `day.desk.sleeplog`, `day.desk.wristband` | The same desk entered **settled** (no tilt) with the first guest's folder on it: closed, or open on that page. `wristband` needs a returning patient: `-day 3` | **built** (M4). Test mode only; they fast-forward the shift until the folder has slid in |
@@ -144,7 +147,7 @@ dump after_admit.json
 | `transition.night1` / `2` / `3` | The day → night strobe into that night (longer each night) | **built**. Every day ends in its strobe, which starts while the last patient is at the desk |
 | `ending.sleep`, `ending.wake`, `ending.forever`, `ending.317` | An ending: its script, black + silence, the ending card (rock cue), the credits, then the top-10 (once per run), then the title. `ending.317` also writes `sleep_log_317.txt` and the game closes after the top-10. Pre-set the route with `-flags route_mayu` / `route_hana` / `route_nobody`, `read_letter`, `closed_eyes`, `stamped_discharge` | **built** |
 
-The run in order: title → `night.prologue` → day 1 → `transition.night1` → `night.1` → day 2 → `transition.night2` → `night.2` → day 3 → `transition.night3` → `night.3` → `ending.<name>` (picked by `night.EndingFor(flags)`) → `day.top10` → title.
+The run in order: launch → `night.prologue` (white, a dream; later launches skip it with any key) → `title` → day 1 → `transition.night1` → `night.1` → day 2 → `transition.night2` → `night.2` → day 3 → `transition.night3` → `night.3` → `ending.<name>` (picked by `night.EndingFor(flags)`) → `day.top10` → title.
 
 An id that is not registered stops the game with `unknown scene "<id>"` and exit code 1.
 

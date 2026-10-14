@@ -122,10 +122,17 @@ func (a *cardArt) drawTitle(dst *ebiten.Image, title string, y int, red bool) {
 	if red {
 		sheet = a.fontRed
 	}
-	placed, w := night.Layout(title, endingMetrics{a.font.Meta}, endingStyle)
-	x0 := (ScreenW - w) / 2
+	drawBigText(dst, sheet, title, y, 0)
+}
+
+// drawBigText writes text in the ending font, centred (then moved dx
+// pixels), with the glyph cells' top at y. It is the handwriting layout
+// without joins or jitter.
+func drawBigText(dst *ebiten.Image, font *sprites.Sheet, text string, y, dx int) {
+	placed, w := night.Layout(text, endingMetrics{font.Meta}, endingStyle)
+	x0 := (ScreenW-w)/2 + dx
 	for _, p := range placed {
-		_ = sheet.Draw(dst, []string{p.Glyph}, 0, x0+p.X, y)
+		_ = font.Draw(dst, []string{p.Glyph}, 0, x0+p.X, y)
 	}
 }
 

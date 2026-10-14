@@ -19,6 +19,7 @@ const (
 // Scene ids. The table in Architecture -> Agent backdoor lists them all.
 const (
 	SceneTitle        = "title"
+	SceneSettings     = "settings"
 	SceneDayReception = "day.reception"
 	SceneDayDesk      = "day.desk" // the look-down desk, with the tilt
 	// The same desk entered settled, with the folder on it (test mode).
@@ -78,7 +79,13 @@ type Env struct {
 
 	Sound *sound.Player // music and sound effects; muted in test mode
 
-	Auto bool // the VN's AUTO toggle (Settings -> Auto-play)
+	Auto         bool    // the VN's AUTO toggle (Settings -> Auto-play)
+	MusicVolume  float64 // Settings: 0 to 1
+	SFXVolume    float64
+	TitleWhite   bool   // the Prologue's white carries into the title drop
+	TitleSettled bool   // the title is entered with its logo already down (coming back from the settings)
+	SeenPrologue bool   // saved: later launches may skip the Prologue with a key
+	SettingsPath string // the settings file ("" in test mode: nothing is saved)
 
 	// The end of the run.
 	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)

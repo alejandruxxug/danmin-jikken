@@ -82,9 +82,9 @@ func TestFindTriesEachExtensionAndReportsMissing(t *testing.T) {
 func TestVolumeIsClamped(t *testing.T) {
 	p := New(fstest.MapFS{}, true)
 	for _, tt := range []struct{ in, want float64 }{{-1, 0}, {0.4, 0.4}, {3, 1}} {
-		p.SetVolume(tt.in)
-		if p.Volume() != tt.want {
-			t.Errorf("SetVolume(%v) = %v, want %v", tt.in, p.Volume(), tt.want)
+		p.SetMusicVolume(tt.in)
+		if p.MusicVolume() != tt.want {
+			t.Errorf("SetMusicVolume(%v) = %v, want %v", tt.in, p.MusicVolume(), tt.want)
 		}
 	}
 }

@@ -22,6 +22,7 @@ type nightScene struct {
 	onEnd  func(to string) error
 	art    *night.Art
 	engine *night.Engine
+	dream  *Dream // the Prologue's washed-out filter; nil for the nights
 
 	lastCursorX, lastCursorY int // the mouse only changes the highlight when it moves
 }
@@ -31,6 +32,12 @@ func (s *nightScene) Enter(env *Env) error {
 	var err error
 	if s.art, err = env.NightArt(); err != nil {
 		return err
+	}
+	s.art.Dream = s.script == night.Prologue // the Prologue is a dream: white, not black
+	if s.art.Dream {
+		if s.dream, err = NewDream(); err != nil {
+			return err
+		}
 	}
 	script, err := night.LoadScript(s.script)
 	if err != nil {
@@ -58,6 +65,11 @@ func (s *nightScene) Enter(env *Env) error {
 func (s *nightScene) Update() error {
 	in := s.env.Input
 	e := s.engine
+	if s.script == night.Prologue && s.env.SeenPrologue && s.engine.Ticks() > 0 {
+		if _, _, clicked := in.Click(); clicked || in.AnyKeyPressed() {
+			return s.finish("title") // a later launch: any key skips the Prologue
+		}
+	}
 	if in.KeyPressed(ebiten.KeyA) {
 		s.toggleAuto()
 	}
@@ -153,6 +165,12 @@ func (s *nightScene) finish(to string) error {
 	if s.onEnd != nil {
 		return s.onEnd(to)
 	}
+	if s.script == night.Prologue { // the cold open: the dream ends in the title
+		s.env.SeenPrologue = true
+		s.env.TitleWhite = true // its white carries into the title drop
+		s.env.SwitchTo(SceneTitle)
+		return s.env.SaveSettings()
+	}
 	if to == "ending" { // the end of night 3: the flags pick the ending
 		s.env.SwitchTo(endingSceneID(night.EndingFor(s.env.Flags)))
 		return nil
@@ -167,9 +185,17 @@ func (s *nightScene) finish(to string) error {
 	return nil
 }
 
-func (s *nightScene) Draw(screen *ebiten.Image) { s.art.Draw(screen, s.engine) }
+func (s *nightScene) Draw(screen *ebiten.Image) {
+	if s.dream == nil {
+		s.art.Draw(screen, s.engine)
+		return
+	}
+	s.art.Draw(s.dream.Target(), s.engine)
+	s.dream.Apply(screen)
+}
 
 func (s *nightScene) Exit() {
+	s.art.Dream = false
 	if s.env.Night == s.engine {
 		s.env.Night = nil
 	}

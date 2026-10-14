@@ -93,7 +93,11 @@ type Art struct {
 	ui, choice         *sprites.Sheet
 	handMayu, handHana *sprites.Sheet
 	font               TextDrawer
-	bgs                map[string]*sprites.Sheet // the batch 2 backgrounds that have a sheet, by sheet name
+	// Dream is on while the Prologue plays: its "black" (the screen before
+	// the fade in, the eyelids, the black between lines) is white, as it is
+	// all a dream (Game Design -> design log). The scene sets it when it starts.
+	Dream bool
+	bgs   map[string]*sprites.Sheet // the batch 2 backgrounds that have a sheet, by sheet name
 }
 
 // A background name in a script is drawn from the layers of one sheet. A
@@ -299,7 +303,7 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 		_ = a.ceiling.Draw(dst, layers, 0, 0, offset)
 		_ = a.ceiling.Draw(dst, layers, 0, 0, offset-screenH)
 	case "black":
-		dst.Fill(colInk)
+		dst.Fill(a.lid())
 	case "white":
 		dst.Fill(colPaper)
 	case "grey":
@@ -318,6 +322,15 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 		label := "PLACEHOLDER: " + strings.ToUpper(strings.ReplaceAll(bg, "_", " "))
 		a.font.Draw(dst, label, 8, 8, colLight)
 	}
+}
+
+// lid is the colour the screen goes to when it "goes black": ink in the
+// nights, off-white in the dream.
+func (a *Art) lid() color.RGBA {
+	if a.Dream {
+		return colPaper
+	}
+	return colInk
 }
 
 // ceilingOffset is how far the ceiling has slid down, 0 to 269. It tiles
@@ -416,7 +429,8 @@ func absInt(n int) int {
 func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 	if _, ok := e.FxTicks("fade_in"); ok {
 		if alpha := 1 - e.FxProgress("fade_in"); alpha > 0 {
-			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(alpha * 255)}, false)
+			c := a.lid()
+			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{c.R, c.G, c.B, uint8(alpha * 255)}, false)
 		}
 	}
 	if _, ok := e.FxTicks("dim"); ok {
@@ -439,21 +453,21 @@ func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 	if _, ok := e.FxTicks("eyes_slit"); ok {
 		// Almost closed: a thin gap is left in the middle.
 		h := float32(e.FxProgress("eyes_slit") * screenH * 0.46)
-		vector.FillRect(dst, 0, 0, screenW, h, colInk, false)
-		vector.FillRect(dst, 0, screenH-h, screenW, h, colInk, false)
+		vector.FillRect(dst, 0, 0, screenW, h, a.lid(), false)
+		vector.FillRect(dst, 0, screenH-h, screenW, h, a.lid(), false)
 	}
 	if _, ok := e.FxTicks("eyes_open"); ok {
 		// The eyelids part: closed at the start, gone at the end.
 		if h := float32((1 - e.FxProgress("eyes_open")) * screenH / 2); h > 0 {
-			vector.FillRect(dst, 0, 0, screenW, h, colInk, false)
-			vector.FillRect(dst, 0, screenH-h, screenW, h, colInk, false)
+			vector.FillRect(dst, 0, 0, screenW, h, a.lid(), false)
+			vector.FillRect(dst, 0, screenH-h, screenW, h, a.lid(), false)
 		}
 	}
 	if _, ok := e.FxTicks("eyes_close"); ok {
 		// The eyelids come in from the top and the bottom and meet in the middle.
 		h := float32(e.FxProgress("eyes_close") * screenH / 2)
-		vector.FillRect(dst, 0, 0, screenW, h, colInk, false)
-		vector.FillRect(dst, 0, screenH-h, screenW, h, colInk, false)
+		vector.FillRect(dst, 0, 0, screenW, h, a.lid(), false)
+		vector.FillRect(dst, 0, screenH-h, screenW, h, a.lid(), false)
 	}
 }
 
