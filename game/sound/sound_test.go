@@ -88,3 +88,44 @@ func TestVolumeIsClamped(t *testing.T) {
 		}
 	}
 }
+
+func TestFadeGain(t *testing.T) {
+	cases := []struct {
+		left, total int
+		want        float64
+	}{
+		{240, 240, 1}, {120, 240, 0.5}, {0, 240, 0}, {-3, 240, 0}, {300, 240, 1}, {5, 0, 1},
+	}
+	for _, c := range cases {
+		if got := FadeGain(c.left, c.total); got != c.want {
+			t.Errorf("FadeGain(%d, %d) = %v, want %v", c.left, c.total, got, c.want)
+		}
+	}
+}
+
+// A fade-out runs for its ticks and then the music is stopped.
+func TestFadeOutStopsTheMusic(t *testing.T) {
+	p := New(fstest.MapFS{"rock.wav": {Data: wavBytes(10)}}, true)
+	p.PlayMusic("rock", false, 0)
+	p.FadeOut(3)
+	if !p.Fading() {
+		t.Fatal("not fading after FadeOut")
+	}
+	for range 3 {
+		p.Update()
+	}
+	if p.Fading() || p.Current() != "" {
+		t.Errorf("after the fade: fading=%v current=%q", p.Fading(), p.Current())
+	}
+	if p.Log[len(p.Log)-1] != "music fade" {
+		t.Errorf("log = %v", p.Log)
+	}
+}
+
+func TestSFXGainIsClampedAndLogged(t *testing.T) {
+	p := New(fstest.MapFS{"snore.wav": {Data: wavBytes(10)}}, true)
+	p.PlaySFXGain("snore", 7) // a muted player records it and plays nothing
+	if len(p.Log) != 1 || p.Log[0] != "sfx snore" {
+		t.Errorf("log = %v", p.Log)
+	}
+}

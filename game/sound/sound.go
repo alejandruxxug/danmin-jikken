@@ -43,6 +43,11 @@ type Player struct {
 	music   *audio.Player
 	current string // the music that was asked for last ("" for none)
 
+	preloaded map[string][]byte // decoded music kept by Preload, so a track can start without a hitch
+
+	// A fade-out in progress (FadeOut): fadeLeft counts ticks down to 0.
+	fadeLeft, fadeTotal int
+
 	missing map[string]bool
 	Log     []string // every request, like "sfx stamp_thunk" or "music title"
 }
@@ -51,7 +56,7 @@ type Player struct {
 // records requests (test mode). If the computer has no audio device the
 // player mutes itself instead of stopping the game.
 func New(fsys fs.FS, muted bool) *Player {
-	p := &Player{fsys: fsys, muted: muted, musicVol: 1, sfxVol: 1, effects: map[string][]byte{}, missing: map[string]bool{}}
+	p := &Player{fsys: fsys, muted: muted, musicVol: 1, sfxVol: 1, effects: map[string][]byte{}, preloaded: map[string][]byte{}, missing: map[string]bool{}}
 	if !muted {
 		// Ebitengine allows one audio context per program.
 		p.ctx = audio.CurrentContext()
@@ -71,7 +76,7 @@ func (p *Player) SFXVolume() float64   { return p.sfxVol }
 func (p *Player) SetMusicVolume(v float64) {
 	p.musicVol = min(max(v, 0), 1)
 	if p.music != nil {
-		p.music.SetVolume(p.musicVol)
+		p.music.SetVolume(p.musicVol * FadeGain(p.fadeLeft, p.fadeTotal))
 	}
 }
 
@@ -124,8 +129,12 @@ func decode(data []byte, ext string) ([]byte, error) {
 	return io.ReadAll(stream)
 }
 
-// PlaySFX plays a short sound once. Several can play at the same time.
-func (p *Player) PlaySFX(name string) {
+// PlaySFX plays a short sound once at full gain.
+func (p *Player) PlaySFX(name string) { p.PlaySFXGain(name, 1) }
+
+// PlaySFXGain plays a short sound once, scaled by gain (0 to 1) on top of the
+// SFX volume. Several can play at the same time.
+func (p *Player) PlaySFXGain(name string, gain float64) {
 	p.Log = append(p.Log, "sfx "+name)
 	if p.muted || p.ctx == nil {
 		return
@@ -145,7 +154,7 @@ func (p *Player) PlaySFX(name string) {
 		p.effects[name] = pcm
 	}
 	pl := p.ctx.NewPlayerFromBytes(pcm)
-	pl.SetVolume(p.sfxVol)
+	pl.SetVolume(p.sfxVol * min(max(gain, 0), 1))
 	pl.Play()
 	// Forget the effects that have finished.
 	live := p.playing[:0]
@@ -170,15 +179,19 @@ func (p *Player) PlayMusic(name string, loop bool, start time.Duration) {
 	if p.muted || p.ctx == nil {
 		return
 	}
-	data, ext, found := p.find(name)
-	if !found {
-		p.missing[name] = true
-		return
-	}
-	pcm, err := decode(data, ext)
-	if err != nil {
-		p.missing[name] = true
-		return
+	pcm, ok := p.preloaded[name]
+	delete(p.preloaded, name)
+	if !ok {
+		data, ext, found := p.find(name)
+		if !found {
+			p.missing[name] = true
+			return
+		}
+		var err error
+		if pcm, err = decode(data, ext); err != nil {
+			p.missing[name] = true
+			return
+		}
 	}
 	bytesPerSecond := SampleRate * 4 // 16-bit stereo
 	skip := int(start.Seconds()*float64(bytesPerSecond)) / 4 * 4
@@ -197,6 +210,55 @@ func (p *Player) PlayMusic(name string, loop bool, start time.Duration) {
 	p.music = pl
 }
 
+// Preload decodes a track ahead of time so PlayMusic can start it at once.
+// Decoding a minute of mp3 takes a moment; the ending does it during its
+// beat of silence. Nothing is recorded in Log: it is not a request to play.
+func (p *Player) Preload(name string) {
+	if p.muted || p.ctx == nil || p.preloaded[name] != nil {
+		return
+	}
+	data, ext, found := p.find(name)
+	if !found {
+		return // PlayMusic will report it as missing
+	}
+	if pcm, err := decode(data, ext); err == nil {
+		p.preloaded[name] = pcm
+	}
+}
+
+// FadeOut lowers the music to silence over the given number of ticks (one
+// per frame) and then stops it. Update must be called every frame for it to run.
+func (p *Player) FadeOut(ticks int) {
+	p.Log = append(p.Log, "music fade")
+	p.fadeLeft, p.fadeTotal = ticks, ticks
+}
+
+// Fading reports whether a fade-out is in progress.
+func (p *Player) Fading() bool { return p.fadeLeft > 0 }
+
+// FadeGain is how loud the music is, from 1 down to 0, with left ticks of a
+// fade of total ticks remaining.
+func FadeGain(left, total int) float64 {
+	if total <= 0 {
+		return 1
+	}
+	return min(max(float64(left)/float64(total), 0), 1)
+}
+
+// Update moves a fade-out one tick forward. Call it once per frame.
+func (p *Player) Update() {
+	if p.fadeLeft <= 0 {
+		return
+	}
+	p.fadeLeft--
+	if p.music != nil {
+		p.music.SetVolume(p.musicVol * FadeGain(p.fadeLeft, p.fadeTotal))
+	}
+	if p.fadeLeft == 0 {
+		p.stop()
+	}
+}
+
 // StopMusic cuts the music (a script's "music off").
 func (p *Player) StopMusic() {
 	p.Log = append(p.Log, "music off")
@@ -204,6 +266,7 @@ func (p *Player) StopMusic() {
 }
 
 func (p *Player) stop() {
+	p.fadeLeft, p.fadeTotal = 0, 0
 	if p.music != nil {
 		p.music.Pause()
 		p.music = nil
@@ -217,4 +280,18 @@ func (p *Player) FileName(name string) string {
 		return path.Base(name + ext)
 	}
 	return ""
+}
+
+// Length decodes a cue's file and says how long it plays, for the tests: a
+// file that is empty or broken shows up as an error or 0 s.
+func (p *Player) Length(name string) (time.Duration, error) {
+	data, ext, ok := p.find(name)
+	if !ok {
+		return 0, fmt.Errorf("no file for %q", name)
+	}
+	pcm, err := decode(data, ext)
+	if err != nil {
+		return 0, fmt.Errorf("%s%s: %w", name, ext, err)
+	}
+	return time.Duration(len(pcm)/4) * time.Second / SampleRate, nil
 }
