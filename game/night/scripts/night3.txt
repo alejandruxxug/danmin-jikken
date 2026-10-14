@@ -39,6 +39,7 @@ wait 1.2
 ~ The pale cans are all over the floor, standing in it. Dozens.
 ~ The newest ones are still sealed. She stopped.
 ifnot route_hana jump envelope
+prop clipboard
 ~ Her clipboard is on the floor, snapped in half. Her nails are broken.
 ~ Nobody does this much to themselves.
 label envelope

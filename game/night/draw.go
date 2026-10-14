@@ -109,6 +109,8 @@ var bgTable = map[string]bgDef{
 	"corridor":    {"corridor", []string{"corridor", "sign_station"}},
 	"hana_far":    {"corridor", []string{"corridor", "sign_station", "hana_far"}},
 	"hana_door":   {"corridor", []string{"corridor", "sign_quarters", "door_crack"}},
+	"supply_room": {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}},
+	"hana_room":   {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}},
 	"note":        {"note", []string{"backdrop", "paper_note", "text_note", "hands_note"}},
 	"letter":      {"note", []string{"backdrop", "paper_letter", "hands_letter"}},
 	"ward_c_dark": {"ward_c", []string{"room", "sleepers", "blanket", "dark"}},
@@ -214,6 +216,7 @@ func (a *Art) Draw(dst *ebiten.Image, e *Engine) {
 	rise, drain := e.RedscaleAmounts()
 	if !shaking && rise == 0 {
 		a.drawScene(dst, e)
+		a.drawKeepWhite(dst, e)
 		return
 	}
 	// The shake and the redscale work on the finished picture: draw it
@@ -233,6 +236,16 @@ func (a *Art) Draw(dst *ebiten.Image, e *Engine) {
 	op.GeoM.Translate(float64(dx), float64(dy))
 	op.Uniforms = map[string]any{"Rise": float32(rise), "Drain": float32(drain)}
 	dst.DrawRectShader(screenW, screenH, a.red, op)
+	a.drawKeepWhite(dst, e)
+}
+
+// drawKeepWhite draws the envelope on Hana's desk after the redscale, so it
+// is the one thing in the room that stays white (Art Direction -> Hana's
+// room redscale).
+func (a *Art) drawKeepWhite(dst *ebiten.Image, e *Engine) {
+	if sheet := a.bgs["hana_room"]; sheet != nil && e.BG() == "hana_room" && e.Prop("envelope") {
+		_ = sheet.Draw(dst, []string{"envelope"}, 0, 0, 0)
+	}
 }
 
 // drawScene paints the night screen without the shake or the redscale.
@@ -293,7 +306,11 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 		dst.Fill(colMid)
 	default:
 		if def, ok := bgTable[bg]; ok && a.bgs[def.sheet] != nil {
-			_ = a.bgs[def.sheet].Draw(dst, def.layers, 0, 0, 0)
+			layers := def.layers
+			if bg == "hana_room" && e.Prop("clipboard") { // Hana's route: the clipboard is snapped
+				layers = append(append([]string(nil), layers...), "clipboard_snapped")
+			}
+			_ = a.bgs[def.sheet].Draw(dst, layers, 0, 0, 0)
 			return
 		}
 		// Batch 2 art is not drawn yet: a black screen with the name.
@@ -406,9 +423,17 @@ func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 		vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(e.FxProgress("dim") * 0.75 * 255)}, false)
 	}
 	if _, ok := e.FxTicks("figure"); ok {
-		// The faceless figure in the doorway.
+		// The faceless figure in the doorway: with a clipboard (Hana, Mayu's
+		// route), head tilted (Mayu, Hana's route), or plain (nobody's route).
+		layer := "doorway_figure"
+		switch {
+		case e.Flags().Has("route_mayu"):
+			layer = "doorway_figure_board"
+		case e.Flags().Has("route_hana"):
+			layer = "doorway_figure_tilt"
+		}
 		if sheet := a.bgs["ward_c"]; sheet != nil {
-			_ = sheet.Draw(dst, []string{"doorway_figure"}, 0, 0, 0)
+			_ = sheet.Draw(dst, []string{layer}, 0, 0, 0)
 		}
 	}
 	if _, ok := e.FxTicks("eyes_slit"); ok {

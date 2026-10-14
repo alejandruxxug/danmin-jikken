@@ -119,7 +119,7 @@ var knownFX = map[string]bool{
 }
 
 // knownProps are the things on the counter and the monitor.
-var knownProps = map[string]bool{"coffee": true, "can": true, "syringe": true, "note": true, "monitor": true, "clear": true, "envelope": true}
+var knownProps = map[string]bool{"coffee": true, "can": true, "syringe": true, "note": true, "monitor": true, "clear": true, "envelope": true, "clipboard": true}
 
 // Parse reads a script. name is only used in error messages.
 func Parse(name string, r io.Reader) (*Script, error) {
