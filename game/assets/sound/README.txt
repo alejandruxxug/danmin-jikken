@@ -1,1 +1,45 @@
-Sound files for the game (see docs/Danmin Jikken – Sound.md for the sources and licences). A cue with no file here is silent.
+Sound files for the game (see docs/Danmin Jikken - Sound.md for the sources and licences). A cue with no file here is silent.
+Every name is a cue: the game looks for name.ogg, name.mp3 or name.wav. All the choices below are DEFAULT PICKS, Alejo to confirm by ear.
+
+MUSIC
+title.mp3               Vampire's Piano, TAD, CC0, opengameart.org/content/vampires-piano
+night_ambience.mp3      Paranoid Truth, Tsorthan Grove, CC0, opengameart.org/content/paranoid-truth
+ending_rock_forever.mp3 Ironbound, Zander Noriega, CC BY 3.0 (CREDIT REQUIRED), opengameart.org/content/ironbound
+                        https://creativecommons.org/licenses/by/3.0/  Cut: starts at 1:24.7 of the original (the crunch), 80 s kept.
+ending_rock_sleep.mp3   Sad orchestral theme, Gichco, CC0, opengameart.org/node/29751. Cut: starts at 2:22.5 of the original, 80 s kept.
+ending_rock_wake.mp3    Realm of Torment, Vitalezzz, CC0, opengameart.org/content/realm-of-torment. From 0:00, 80 s kept.
+ending_rock_317.mp3     Unholy Surge, Vitalezzz, CC0, opengameart.org/content/unholy-surge. From 0:00, 80 s kept.
+driftwell_jingle.mp3    Hot Swing, Kevin MacLeod (incompetech.com), CC BY 4.0 (CREDIT REQUIRED)
+                        https://creativecommons.org/licenses/by/4.0/  Cut: 1.0 s to 25.0 s of the original (the first second is silence).
+
+The four rock tracks were cut at MP3 frame boundaries with a small script (no re-encoding, so no quality loss). The measured slam
+time of each is the "cut" column of the Sound note. The cut file starts on the slam, so the game plays it from 0 (rockStarts in cues.go).
+
+SOUND EFFECTS (short, 16-bit mono wav, volume-normalised and trimmed; every one CC0)
+bell.wav          Pleasing Bell Sound Effect, Julie Damsgaard / Spring Spring (opengameart.org/content/pleasing-bell-sound-effect)
+snore.wav         "snore", 80 CC0 creature SFX, rubberduck (opengameart.org/content/80-cc0-creature-sfx)
+breath.wav        "breath", same pack
+stamp_thunk.wav   thud3, Metal Impact Sounds, Brian MacIntosh (opengameart.org/content/metal-impact-sounds)
+clock_chime.wav   bong1, same pack
+stamp_lift.wav    wood_hit_01, 100 CC0 metal and wood SFX, rubberduck (opengameart.org/content/100-cc0-metal-and-wood-sfx)
+stun_hit.wav      metal_slam_01, same pack
+click.wav         lock_open_01, same pack
+gurney.wav        wood_squeak_01 and _02 repeated three times (a squeaking wheel), same pack
+heartbeat.wav     heartbeat_slow_0, Heartbeat sounds, estevinho (opengameart.org/content/heartbeat-sounds)
+footsteps.wav     steps_platform and steps_platform2 alternated six times, yd (opengameart.org/content/platformer-sounds-terminal-interaction-door-shots-bang-and-footsteps)
+drip.wav          one drop cut from "atmo", Dripping water loop, Independent.nu (opengameart.org/content/dripping-water-loop)
+door_creak.wav    Creaky Door Hinge Spooky, w.forster.1 (opengameart.org/content/creaky-door-hinge-spooky)
+creak.wav         tree_creak, Tree Creaking, AntumDeluge (opengameart.org/content/tree-creaking), used as the floorboard
+
+MADE FOR THE GAME (pure tones written with a small program, so no licence at all)
+monitor_beep.wav  0.2 s sine at 1000 Hz
+flatline.wav      4 s sine at 1000 Hz
+stun_ring.wav     3 s of 6000 + 6600 + 3100 Hz sines, peak 0.22 (kept quiet on purpose)
+day_hum.wav       3 s of 60 Hz and its harmonics, a whole number of cycles so it loops without a click
+
+Each download was checked on its OpenGameArt page (licence and author) before it was used. The Ironbound zip carries no licence
+file; its licence is the one on the page (CC BY 3.0). The OpenGameArt packs carry no licence file or only a CC0 note (yd's readme says cc0).
+
+NOT FOUND / SILENT
+All cues the scripts and the code ask for have a file. Pixabay was NOT used: its pages answer an automated download with a 403 challenge page,
+which we do not get around. Nothing from Sonniss.

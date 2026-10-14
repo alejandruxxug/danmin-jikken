@@ -137,7 +137,12 @@ var activeSound *sound.Player
 // playSFX is the hook the game calls where a sound belongs ("stamp_lift",
 // "stamp_thunk"). The sound package finds the file; a cue with no file is silent.
 func playSFX(name string) {
-	if activeSound != nil {
-		activeSound.PlaySFX(name)
+	if activeSound == nil {
+		return
 	}
+	gain, ok := sfxGain[name]
+	if !ok {
+		gain = 1
+	}
+	activeSound.PlaySFXGain(name, gain)
 }

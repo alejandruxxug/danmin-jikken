@@ -761,7 +761,10 @@ type Dump struct {
 	SleepLogErr  string   `json:"sleepLogError"`
 	Placeholders []string `json:"placeholders"`
 	SoundLog     []string `json:"soundLog"`     // the last 30 sound requests (muted in test mode)
-	SoundMissing []string `json:"soundMissing"` // cues asked for that have no file
+	SoundMissing []string `json:"soundMissing"` // cues asked for that have no file (real playback only)
+	// SoundFiles maps each cue in SoundLog to the file the game would play
+	// ("" when there is none), so a muted test run still shows what resolves.
+	SoundFiles map[string]string `json:"soundFiles"`
 
 	// The night script that is playing (nil in the day).
 	Night *night.State `json:"night,omitempty"`
@@ -929,10 +932,15 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.Dream = env.nightArt != nil && env.nightArt.Dream
 	d.Settings = env.Settings()
 	d.Placeholders = []string{}
-	d.SoundLog, d.SoundMissing = []string{}, []string{}
+	d.SoundLog, d.SoundMissing, d.SoundFiles = []string{}, []string{}, map[string]string{}
 	if env.Sound != nil {
 		d.SoundLog = append(d.SoundLog, env.Sound.Log[max(0, len(env.Sound.Log)-30):]...)
 		d.SoundMissing = append(d.SoundMissing, env.Sound.Missing()...)
+		for _, entry := range d.SoundLog {
+			if _, cue, ok := strings.Cut(entry, " "); ok && cue != "off" && cue != "fade" {
+				d.SoundFiles[cue] = env.Sound.FileName(cue)
+			}
+		}
 	}
 	if env.Night != nil {
 		st := env.Night.Snapshot()

@@ -106,9 +106,9 @@ func (s *nightScene) playCues() {
 			playSFX(sfxFile(c.Name))
 		case c.Kind == "music" && c.Name == "off":
 			s.env.SetMusic("")
-		case c.Kind == "music" && c.Name == "jingle":
-			if s.env.Sound != nil {
-				s.env.Sound.PlayMusic("driftwell_jingle", false, 0)
+		case c.Kind == "music" && isJingle(c.Name):
+			if s.env.Sound != nil { // plays once, it does not loop
+				s.env.Sound.PlayMusic(musicFile(c.Name), false, 0)
 			}
 		case c.Kind == "music":
 			s.env.SetMusic(c.Name)

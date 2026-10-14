@@ -140,6 +140,9 @@ func (g *Game) Update() error {
 		}
 	}
 	g.ticks++
+	if g.env.Sound != nil {
+		g.env.Sound.Update() // runs a music fade-out
+	}
 	g.env.tickPowerOn()
 	if g.env.Input.KeyPressed(ebiten.KeyF10) {
 		g.env.CRT = !g.env.CRT // Settings -> CRT effect: some players find the curved, flickering text hard to read

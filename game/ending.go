@@ -102,6 +102,9 @@ func (s *endingScene) setPhase(p endingPhase) {
 	switch p {
 	case phaseSilence:
 		s.env.SetMusic("") // hard cut: nothing plays under the black
+		if s.env.Sound != nil {
+			s.env.Sound.Preload("ending_rock_" + s.name) // decode now, in the quiet, so the slam is not late
+		}
 	case phaseCard:
 		s.env.MusicCue = "ending_rock_" + s.name
 		if s.env.Sound != nil { // the rock slams in, mid-riff, no fade-in
@@ -140,6 +143,9 @@ func (s *endingScene) Update() error {
 			s.setPhase(phaseCredits)
 		}
 	case phaseCredits:
+		if s.ticks == creditsTotalTicks(len(s.credits))-creditsFadeTicks && s.env.Sound != nil {
+			s.env.Sound.FadeOut(creditsFadeTicks) // the rock fades in the last seconds
+		}
 		if s.creditsDone() || skip {
 			s.env.SwitchTo(SceneDayTop10)
 		}
@@ -152,6 +158,12 @@ func (s *endingScene) Update() error {
 func creditsY(ticks int) int { return ScreenH - int(float64(ticks)*creditsPixelsPer) }
 
 const creditsLineStep = 12
+
+// creditsTotalTicks is the tick of the credits phase when the last line has
+// scrolled off the top.
+func creditsTotalTicks(lines int) int {
+	return int(float64(ScreenH+lines*creditsLineStep)/creditsPixelsPer) + 1
+}
 
 func (s *endingScene) creditsDone() bool {
 	return creditsY(s.ticks)+len(s.credits)*creditsLineStep < 0

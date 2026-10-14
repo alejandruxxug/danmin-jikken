@@ -228,6 +228,9 @@ func (s *Shift) Stop() error { return s.ward.Stop() }
 // Update moves the shift one tick forward. Call it once per frame.
 func (s *Shift) Update() {
 	s.ticks++
+	if len(s.sleepers) > 0 && s.ticks%snoreEvery == 0 {
+		playSFX("snore") // the ward keeps snoring while someone sleeps
+	}
 	// Collect what the patient goroutines reported since the last frame.
 	// The picture itself comes from the snapshot, never from the events.
 	for _, ev := range s.ward.Drain() {
