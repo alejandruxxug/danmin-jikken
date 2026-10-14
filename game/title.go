@@ -12,9 +12,10 @@ import (
 
 // The title screen. The Prologue plays before it (the cold open): the white
 // of the dream carries over, the title drops in, and START begins day 1 (the
-// day turns on like a CRT). If a "title" sheet is in the sprites folder it is
-// drawn (its layer "logo" drops, every other layer stays put); until then the
-// title is the ending font, large, on black.
+// day turns on like a CRT). The title sheet (Art log: title) is drawn layer by
+// layer: the logo drops, the dagger slams through 断 a moment later (the
+// screen shakes, then blood shows); if the sheet is missing the title is the
+// ending font, large, on black.
 
 // Title timing, in ticks, and layout, in pixels.
 const (
@@ -22,11 +23,14 @@ const (
 	titleBounce   = 8  // and hops once after the slam
 	titleShake    = 8  // the screen shakes after the slam
 	titleWhite    = 90 // the carried-over white fades out over this long
-	titleMenuFrom = 30 // the menu answers keys and clicks from here
-	titleStartY   = 190
-	titleStepY    = 14
+	titleMenuFrom = 44 // the menu answers keys and clicks from here
+	titleDagger   = 14 // the dagger starts to fall this many ticks after the logo
+	titleBloodAt  = 52 // the blood shows on the dagger from here
 	titleLogoY    = 40 // top of the fallback logo's glyph cells
-	titleDropFrom = -150
+	// The menu rows: START sits in the gap of the sheet's "press rule" (y 228).
+	titleStartY, titleStepY = 223, 16
+	fallbackStartY          = 190
+	titleDropFrom           = -150
 )
 
 // titleDrop is how far (in pixels) the logo is above its place at a tick:
@@ -150,31 +154,41 @@ func (s *titleScene) Update() error {
 // itemRect is the mouse area of a menu entry.
 func (s *titleScene) itemRect(i int) image.Rectangle {
 	w := s.font.Width(titleItems[i])
-	y := titleStartY + i*titleStepY
+	y := s.startY() + i*titleStepY
 	return image.Rect((ScreenW-w)/2-10, y-3, (ScreenW+w)/2+10, y+11)
 }
 
-func (s *titleScene) Draw(screen *ebiten.Image) {
-	screen.Fill(paletteInk)
-	dx, dy := titleShakeOffset(s.ticks)
-	drop := titleDrop(s.ticks)
+// startY is the y of the first menu row: under the title sheet's rule, or
+// lower on the fallback title.
+func (s *titleScene) startY() int {
 	if s.art != nil {
-		s.drawSheet(screen, dx, dy+drop)
+		return titleStartY
+	}
+	return fallbackStartY
+}
+
+func (s *titleScene) Draw(screen *ebiten.Image) {
+	ink, dim := colPaperRGBA, colMidRGBA // on black
+	if s.art != nil {
+		ink, dim = colInk, colMidRGBA // on the light title
+		s.drawSheet(screen)
 	} else {
+		screen.Fill(paletteInk)
+		dx, dy := titleShakeOffset(s.ticks)
+		drop := titleDrop(s.ticks)
 		drawBigText(screen, s.bigF, "DANMIN", titleLogoY+dy+drop, dx)
 		drawBigText(screen, s.bigF, "JIKKEN", titleLogoY+34+dy+drop, dx)
 	}
 	if s.ticks >= titleMenuFrom {
 		for i, item := range titleItems {
-			c := colMidRGBA
-			label := item
+			c, label := dim, item
 			if i == s.sel {
-				c, label = colPaperRGBA, "> "+item+" <"
+				c, label = ink, "> "+item+" <"
 			}
-			s.font.Draw(screen, label, (ScreenW-s.font.Width(label))/2, titleStartY+i*titleStepY, c)
+			s.font.Draw(screen, label, (ScreenW-s.font.Width(label))/2, s.startY()+i*titleStepY, c)
 		}
 		warn := "THIS GAME CONTAINS STRONG FLASHING LIGHTS."
-		s.font.Draw(screen, warn, (ScreenW-s.font.Width(warn))/2, ScreenH-16, colMidRGBA)
+		s.font.Draw(screen, warn, (ScreenW-s.font.Width(warn))/2, ScreenH-14, dim)
 	}
 	if s.white {
 		if a := titleWhiteAlpha(s.ticks); a > 0 {
@@ -183,13 +197,28 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 	}
 }
 
-// drawSheet draws the title sheet: every layer in place, the "logo" layer
-// moved by (dx, dy).
-func (s *titleScene) drawSheet(screen *ebiten.Image, dx, dy int) {
+// drawSheet draws the title sheet's layers back to front. The logo falls
+// first; the dagger falls a moment after it and shakes the picture when it
+// lands; the blood shows later. The background never moves.
+func (s *titleScene) drawSheet(screen *ebiten.Image) {
+	dx, dy := titleShakeOffset(s.ticks - titleDagger)
 	for _, layer := range s.art.Layers {
-		x, y := 0, 0
-		if layer == "logo" {
-			x, y = dx, dy
+		x, y := dx, dy
+		switch layer {
+		case "bg":
+			x, y = 0, 0
+		case "logo_shadow", "logo_kanji", "logo_romaji", "logo_sub":
+			y += titleDrop(s.ticks)
+		case "dagger":
+			y += titleDrop(s.ticks - titleDagger)
+		case "blood":
+			if s.ticks < titleBloodAt {
+				continue
+			}
+		case "press_rule":
+			if s.ticks < titleMenuFrom {
+				continue
+			}
 		}
 		_ = s.art.Draw(screen, []string{layer}, 0, x, y)
 	}
