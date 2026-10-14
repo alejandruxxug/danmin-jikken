@@ -196,7 +196,7 @@ func TestEndingTitleComesBackOverTheLastPicture(t *testing.T) {
 		{night.EndingForever, "route_hana", "black"}, // the stain stays on the glass
 		{night.Ending317, "route_nobody", "procedure_blank"},
 	} {
-				g, err := New(Options{Enabled: true, Scene: endingSceneID(c.ending), Line: 1 << 20, Flags: c.flags})
+		g, err := New(Options{Enabled: true, Scene: endingSceneID(c.ending), Line: 1 << 20, Flags: c.flags})
 		if err != nil {
 			t.Fatal(err)
 		}

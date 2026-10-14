@@ -352,3 +352,23 @@ func TestSettingsKeysWorkWithRestingCursor(t *testing.T) {
 		t.Error("Enter on REDUCE FLASHING should flip it")
 	}
 }
+
+// Both content warnings fit across the title screen, below the menu.
+func TestTitleWarningsFit(t *testing.T) {
+	font, err := LoadFont()
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := 0
+	for _, w := range titleWarnings {
+		for _, line := range night.WrapText(w, warningWidth, font.Width) {
+			if font.Width(line) > warningWidth {
+				t.Errorf("warning line %q is %d px wide, more than %d", line, font.Width(line), warningWidth)
+			}
+			lines++
+		}
+	}
+	if lines != 2 {
+		t.Errorf("the warnings take %d lines, want 2 (one each)", lines)
+	}
+}

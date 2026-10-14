@@ -2,11 +2,13 @@ package game
 
 import (
 	"image"
+	"image/color"
 	"io/fs"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
+	"danmingame/night"
 	"danmingame/sprites"
 )
 
@@ -187,8 +189,7 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 			}
 			s.font.Draw(screen, label, (ScreenW-s.font.Width(label))/2, s.startY()+i*titleStepY, c)
 		}
-		warn := "THIS GAME CONTAINS STRONG FLASHING LIGHTS."
-		s.font.Draw(screen, warn, (ScreenW-s.font.Width(warn))/2, ScreenH-14, dim)
+		s.drawWarnings(screen, dim)
 	}
 	if s.white {
 		if a := titleWhiteAlpha(s.ticks); a > 0 {
@@ -225,3 +226,28 @@ func (s *titleScene) drawSheet(screen *ebiten.Image) {
 }
 
 func (s *titleScene) Exit() {}
+
+// The content warnings under the menu: each is wrapped to fit the screen
+// with room to spare, and the lines stack up from the bottom edge.
+var titleWarnings = []string{
+	"THIS GAME CONTAINS DEPICTIONS OF SUICIDE, SELF-HARM, DEATH AND GRAPHIC GORE.",
+	"THIS GAME CONTAINS STRONG FLASHING LIGHTS.",
+}
+
+const (
+	warningWidth = 440 // the widest a warning line may be, in pixels
+	warningStep  = 8   // distance between two warning lines
+	warningBase  = 9   // the last line's y, from the bottom edge (its letters end 1 px above it)
+)
+
+// drawWarnings writes the warnings, centred, the flashing one last.
+func (s *titleScene) drawWarnings(screen *ebiten.Image, c color.Color) {
+	var lines []string
+	for _, w := range titleWarnings {
+		lines = append(lines, night.WrapText(w, warningWidth, s.font.Width)...)
+	}
+	for i, line := range lines {
+		y := ScreenH - warningBase - (len(lines)-1-i)*warningStep
+		s.font.Draw(screen, line, (ScreenW-s.font.Width(line))/2, y, c)
+	}
+}
