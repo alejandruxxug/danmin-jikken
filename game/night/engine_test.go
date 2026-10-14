@@ -280,3 +280,53 @@ func TestLampFlickers(t *testing.T) {
 		t.Error("the ceiling must wrap every 270 px")
 	}
 }
+
+func TestTalkHop(t *testing.T) {
+	e := newEngine(t, "Mayu (smile): one\nMayu (smile): two\n~ thought\nMayu (smile): three\nHana (tired): four\n", Flags{})
+	if e.HopOffset() != hopTable[0] {
+		t.Fatal("the hop starts with the first line")
+	}
+	_ = e.Tick()
+	if got := e.HopOffset(); got != hopTable[1] || got >= 0 {
+		t.Errorf("a new speaker hops up: offset %d", got)
+	}
+	for range 20 {
+		_ = e.Tick()
+	}
+	if e.HopOffset() != 0 {
+		t.Error("the hop settles back to 0")
+	}
+	_ = e.Advance()
+	_ = e.Advance() // same speaker, second line: no hop
+	if e.HopOffset() != 0 {
+		t.Error("no hop for the same speaker")
+	}
+	_ = e.Advance()
+	_ = e.Advance() // a thought: no hop
+	if e.HopOffset() != 0 {
+		t.Error("never a hop on a thought")
+	}
+	_ = e.Advance()
+	_ = e.Advance() // Mayu again after the thought: hops
+	_ = e.Tick()
+	if e.HopOffset() >= 0 {
+		t.Error("the first line after a thought hops")
+	}
+	for range 20 {
+		_ = e.Tick()
+	}
+	_ = e.Advance()
+	_ = e.Advance() // speaker change to Hana
+	_ = e.Tick()
+	if e.HopOffset() >= 0 {
+		t.Error("a speaker change hops")
+	}
+}
+
+func TestFaceHopGoesDown(t *testing.T) {
+	e := newEngine(t, "faces\nHana (tired): hi\n", Flags{})
+	_ = e.Tick()
+	if e.FaceHop("hana") <= 0 || e.FaceHop("mayu") != 0 {
+		t.Errorf("hana %d mayu %d: only the speaker hops, downward", e.FaceHop("hana"), e.FaceHop("mayu"))
+	}
+}

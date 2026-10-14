@@ -118,7 +118,7 @@ func (a *Art) Draw(dst *ebiten.Image, e *Engine) {
 		if e.Visible() == "hana" {
 			sheet = a.hana
 		}
-		_ = sheet.Draw(dst, e.PoseOf(e.Visible()).Layers(), 0, girlX, girlY)
+		_ = sheet.Draw(dst, e.PoseOf(e.Visible()).Layers(), 0, girlX, girlY+e.HopOffset())
 	}
 	if e.BG() == "station" {
 		layers := []string{"counter", "prop_coffee"}
@@ -182,8 +182,8 @@ func LampOn(tick int) bool {
 // They lean in from above: the slide uses the "faces" effect's progress.
 func (a *Art) drawFaces(dst *ebiten.Image, e *Engine) {
 	slide := (1 - easeOut(e.FxProgress("faces"))) * -float64(faceRows)
-	drawRotated(dst, a.mayu, e.PoseOf("mayu").Layers(), mayuFaceX, float64(mayuFaceY)+slide)
-	drawRotated(dst, a.hana, e.PoseOf("hana").Layers(), hanaFaceX, float64(hanaFaceY)+slide)
+	drawRotated(dst, a.mayu, e.PoseOf("mayu").Layers(), mayuFaceX, float64(mayuFaceY)+slide+float64(e.FaceHop("mayu")))
+	drawRotated(dst, a.hana, e.PoseOf("hana").Layers(), hanaFaceX, float64(hanaFaceY)+slide+float64(e.FaceHop("hana")))
 }
 
 func easeOut(t float64) float64 { return 1 - (1-t)*(1-t) }

@@ -25,6 +25,10 @@ var fxLength = map[string]int{
 	"red_pixel":  30,
 }
 
+// hopTable is the talk hop: how many pixels up (negative) the speaking girl
+// is, tick by tick after she starts talking. 12 ticks = 0.2 s, whole pixels.
+var hopTable = [12]int{-1, -3, -3, -2, -1, 0, -1, -1, 0, 0, 0, 0}
+
 // Engine runs one script. It knows nothing about drawing: the painter
 // (draw.go) reads what the engine exposes, and the scene feeds it ticks and
 // the player's clicks. That keeps the whole story logic testable.
@@ -61,6 +65,9 @@ type Engine struct {
 	// Cues for the sound (M7): the last ones the script asked for.
 	LastSFX, LastMusic string
 	ticks              int
+
+	hopStart int    // the tick the current hop began; -1 for none
+	hopFor   string // who spoke last ("" after a thought or a scene change): no hop while it stays her
 }
 
 // NewEngine starts a script. flags is the shared store: choices write into
@@ -71,7 +78,7 @@ func NewEngine(s *Script, flags Flags) (*Engine, error) {
 		script: s, flags: flags,
 		bg: "black", props: map[string]bool{},
 		poses: map[string]Pose{"mayu": startPose("mayu"), "hana": startPose("hana")},
-		fx:    map[string]int{}, speed: DefaultSpeed,
+		fx:    map[string]int{}, speed: DefaultSpeed, hopStart: -1,
 	}
 	if err := e.run(); err != nil {
 		return nil, err
@@ -121,6 +128,7 @@ func (e *Engine) exec(n Node) {
 	case OpSet:
 		e.flags.Set(n.Name)
 	case OpBG:
+		e.hopFor = ""
 		e.bg = n.Name
 	case OpProp:
 		if n.Name == "clear" {
@@ -129,10 +137,13 @@ func (e *Engine) exec(n Node) {
 			e.props[n.Name] = true
 		}
 	case OpShow:
+		e.hopFor = ""
 		e.visible, e.faces = n.Name, false
 	case OpHide:
+		e.hopFor = ""
 		e.visible, e.faces = "", false
 	case OpFaces:
+		e.hopFor = ""
 		e.visible, e.faces = "", true
 		e.fx["faces"] = 0
 	case OpPose:
@@ -173,10 +184,15 @@ func (e *Engine) startLine(n Node) {
 	e.speaker, e.thinking = "", n.Op == OpThink
 	e.text, e.shown = []rune(n.Text), 0
 	if n.Op == OpThink {
+		e.hopFor = "" // never a hop on a thought; the next spoken line hops again
 		return
 	}
 	e.speaker = n.Name
 	if IsCharacter(n.Name) {
+		if e.hopFor != n.Name {
+			e.hopStart = e.ticks
+		}
+		e.hopFor = n.Name
 		e.setPose(n)
 		if !e.faces {
 			e.visible = n.Name
@@ -440,4 +456,24 @@ func (e *Engine) Snapshot() State {
 	sort.Strings(st.Props)
 	sort.Strings(st.Effects)
 	return st
+}
+
+// HopOffset is how many pixels the speaker is lifted right now (0 or
+// negative; the Prologue's hanging faces hop the other way). A pure function
+// of the ticks since the hop began.
+func (e *Engine) HopOffset() int {
+	i := e.ticks - e.hopStart
+	if e.hopStart < 0 || i < 0 || i >= len(hopTable) {
+		return 0
+	}
+	return hopTable[i]
+}
+
+// FaceHop is the hop of one of the Prologue's hanging faces: downward
+// (positive), and only for the one who is talking.
+func (e *Engine) FaceHop(character string) int {
+	if e.hopFor != character {
+		return 0
+	}
+	return -e.HopOffset()
 }
