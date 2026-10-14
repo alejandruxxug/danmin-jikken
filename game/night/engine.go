@@ -52,8 +52,12 @@ var oneShotFX = map[string]int{"shake": 45, "red_pixel": 30, "sting": 48, "fade_
 // a slow rise, a short hang at the top, the fall, then a small bounce.
 var hopTable = [20]int{-1, -1, -2, -2, -3, -3, -3, -3, -2, -2, -1, -1, 0, 0, -1, -1, 0, 0, 0, 0}
 
-// Cue is a sound the script asked for: Kind is "sfx" or "music".
-type Cue struct{ Kind, Name string }
+// Cue is a sound the script asked for: Kind is "sfx" or "music". The cue
+// "music fade 5" has Name "fade" and Seconds 5.
+type Cue struct {
+	Kind, Name string
+	Seconds    float64
+}
 
 // TakeCues returns the sound cues since the last call. The scene plays them.
 func (e *Engine) TakeCues() []Cue {
@@ -285,10 +289,10 @@ func (e *Engine) exec(n Node) {
 		e.fx[n.Name] = 0
 	case OpSfx:
 		e.LastSFX = n.Name
-		e.cues = append(e.cues, Cue{"sfx", n.Name})
+		e.cues = append(e.cues, Cue{Kind: "sfx", Name: n.Name})
 	case OpMusic:
 		e.LastMusic = n.Name
-		e.cues = append(e.cues, Cue{"music", n.Name})
+		e.cues = append(e.cues, Cue{Kind: "music", Name: n.Name, Seconds: n.Number})
 	case OpSpeed:
 		e.speed = n.Number
 	}

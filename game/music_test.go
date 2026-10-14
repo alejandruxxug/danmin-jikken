@@ -91,3 +91,97 @@ func TestEndingStillCutsDead(t *testing.T) {
 		t.Error("SetMusic(\"\") must still cut at once")
 	}
 }
+
+// Night 3 plays its own track from the opening eyes, is silent in Hana's
+// room, comes back at the gurney and fades out over the last lines, so the
+// volume is 0 when the ending starts. The test clicks through the real
+// script, giving every line two seconds of ticks.
+func TestNight3MusicPlaysAndFadesBeforeTheEnding(t *testing.T) {
+	env := &Env{Day: 3, Flags: night.Flags{}, Sound: soundPlayer(t)}
+	env.Flags.Set("route_mayu")
+	script, err := night.LoadScript(night.Night3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := night.NewEngineFor(script, env.Flags, "Alejo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := &nightScene{env: env, script: night.Night3, engine: e}
+
+	playing := map[string]bool{} // what played on which line of the script
+	var fadeGains []float64
+	ended := func() bool { _, ok := e.Ended(); return ok }
+	for step := 0; step < 3000 && !ended(); step++ {
+		if err := e.Tick(); err != nil {
+			t.Fatal(err)
+		}
+		switch {
+		case len(e.Options()) > 0:
+			err = e.Choose(0)
+		default:
+			if err = e.Advance(); err == nil {
+				err = e.Advance()
+			}
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.playCues()
+		playing[env.Sound.Current()] = true
+		for range 120 {
+			before := env.Sound.Fading()
+			env.Sound.Update()
+			env.tickMusicFade()
+			if before || env.Sound.Fading() {
+				fadeGains = append(fadeGains, env.Sound.MusicGain())
+			}
+		}
+	}
+	if !ended() {
+		t.Fatal("night 3 did not reach its end")
+	}
+	if !playing["night3_tension"] {
+		t.Error("night3_tension never played")
+	}
+	tension := 0
+	for _, entry := range env.Sound.Log {
+		if entry == "music night3_tension" {
+			tension++
+		}
+	}
+	if tension != 2 {
+		t.Errorf("night3_tension was started %d times, want 2 (the eyes opening, the gurney)", tension)
+	}
+	if len(fadeGains) < dayFadeTicks/2 {
+		t.Fatalf("the fade ran only %d ticks", len(fadeGains))
+	}
+	prev := 1.0
+	for i, g := range fadeGains {
+		if g > prev || prev-g > 0.1 {
+			t.Fatalf("fade tick %d: %v after %v", i, g, prev)
+		}
+		prev = g
+	}
+	if env.Sound.MusicGain() != 0 || env.Sound.Current() != "" {
+		t.Errorf("at the ending: gain %v, playing %q; want silence", env.Sound.MusicGain(), env.Sound.Current())
+	}
+	if len(fadeGains) < 290 || len(fadeGains) > 310 {
+		t.Errorf("the fade took %d ticks, want 5 s (300)", len(fadeGains))
+	}
+}
+
+// Clicking through the last lines faster than the fade: the ending still
+// starts in silence.
+func TestNight3FadeIsFinishedWhenTheEndingStarts(t *testing.T) {
+	env := &Env{Day: 3, Flags: night.Flags{}, Sound: soundPlayer(t)}
+	env.SetMusic("night3_tension")
+	env.FadeMusic(300)
+	s := &nightScene{env: env, script: night.Night3}
+	if err := s.finish("ending"); err != nil {
+		t.Fatal(err)
+	}
+	if env.Sound.MusicGain() != 0 || env.Sound.Fading() {
+		t.Errorf("gain %v fading %v at the ending", env.Sound.MusicGain(), env.Sound.Fading())
+	}
+}

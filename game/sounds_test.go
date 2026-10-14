@@ -42,7 +42,7 @@ func TestEveryScriptCueHasAFile(t *testing.T) {
 				if p.FileName(sfxFile(n.Name)) == "" {
 					t.Errorf("%s: sfx %q has no file (looked for %q)", name, n.Name, sfxFile(n.Name))
 				}
-			case n.Op == night.OpMusic && n.Name != "off":
+			case n.Op == night.OpMusic && n.Name != "off" && n.Name != "fade":
 				if p.FileName(musicFile(n.Name)) == "" {
 					t.Errorf("%s: music %q has no file (looked for %q)", name, n.Name, musicFile(n.Name))
 				}

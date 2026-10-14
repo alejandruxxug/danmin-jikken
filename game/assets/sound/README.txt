@@ -9,6 +9,7 @@ ending_rock_forever.mp3 Ironbound, Zander Noriega, CC BY 3.0 (CREDIT REQUIRED), 
 ending_rock_sleep.mp3   Sad orchestral theme, Gichco, CC0, opengameart.org/node/29751. Cut: starts at 2:22.5 of the original, 80 s kept.
 ending_rock_wake.mp3    Realm of Torment, Vitalezzz, CC0, opengameart.org/content/realm-of-torment. From 0:00, 80 s kept.
 ending_rock_317.mp3     Unholy Surge, Vitalezzz, CC0, opengameart.org/content/unholy-surge. From 0:00, 80 s kept.
+night3_tension.mp3 Narrow Corridors (narrow_corridors_short), TinyWorlds, CC0, opengameart.org/content/narrow-corridors. Night 3 music, DEFAULT PICK, not auditioned
 driftwell_jingle.mp3    Hot Swing, Kevin MacLeod (incompetech.com), CC BY 4.0 (CREDIT REQUIRED)
                         https://creativecommons.org/licenses/by/4.0/  Cut: 1.0 s to 25.0 s of the original (the first second is silence).
 

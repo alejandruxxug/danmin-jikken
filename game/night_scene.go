@@ -46,7 +46,17 @@ func (s *nightScene) Enter(env *Env) error {
 		env.NightLine = 0
 	}
 	s.engine.AutoPlay = env.Auto
-	if s.onEnd == nil { // the endings bring their own music
+	switch {
+	case s.onEnd != nil: // the endings bring their own music
+	case s.script == night.Night3:
+		// Night 3 is silent in its black opening; the script starts its music.
+		// A backdoor jump (-line N) skipped those cues, so start the one that
+		// should be playing by that line.
+		env.SetMusic("")
+		if m := s.engine.LastMusic; m != "" && m != "off" && m != "fade" {
+			env.SetMusic(m)
+		}
+	default:
 		env.SetMusic("night_ambience")
 	}
 	s.playCues() // cues of the lines a backdoor jump skipped are dropped
@@ -110,6 +120,8 @@ func (s *nightScene) playCues() {
 		switch {
 		case c.Kind == "sfx" && c.Name != "off":
 			playSFX(sfxFile(c.Name))
+		case c.Kind == "music" && c.Name == "fade":
+			s.env.FadeMusic(int(c.Seconds * 60))
 		case c.Kind == "music" && c.Name == "off":
 			s.env.SetMusic("")
 		case c.Kind == "music" && isJingle(c.Name):
@@ -178,6 +190,9 @@ func (s *nightScene) finish(to string) error {
 		return s.env.SaveSettings()
 	}
 	if to == "ending" { // the end of night 3: the flags pick the ending
+		if s.env.Sound != nil && s.env.Sound.Fading() {
+			s.env.Sound.StopMusic() // a fade not yet finished ends here: the ending starts in silence
+		}
 		s.env.SwitchTo(endingSceneID(night.EndingFor(s.env.Flags)))
 		return nil
 	}

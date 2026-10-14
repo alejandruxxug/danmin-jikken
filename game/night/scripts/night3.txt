@@ -8,6 +8,7 @@ bg black
 ~ I was never at the desk.
 bg ward_c
 fx eyes_open
+music night3_tension
 sfx monitor_far
 wait 1
 ~ There's a band on my wrist. It says 4.
@@ -126,6 +127,7 @@ fx clear
 sfx footsteps_many
 sfx wheels_squeak
 bg ceiling
+music night3_tension
 ~ They found me. I'm on my back. The ceiling slides past, the lights, one, two, three.
 ~ Like the first time.
 bg ward_c_up
@@ -138,6 +140,7 @@ Dr. Barrow: S-317 isn't something we found. It's something we made. And we neede
 Dr. Barrow: Who checks on a sleepy fisherman?
 Dr. Barrow: And the nurses' little white drink? Ours too. We sell the cure to the problem. That's just good business.
 Dr. Barrow: The dream is the cure. As long as you never leave it. Tonight we make your rest permanent.
+music fade 5
 ~ Someone takes my hand.
 if route_mayu jump g_mayu
 if route_hana jump g_hana

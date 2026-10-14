@@ -28,7 +28,17 @@ func (e *Env) fadeMusicIntoDay() {
 	if cur := e.Sound.Current(); cur == "" || cur == "day_hum" {
 		return
 	}
-	e.Sound.FadeOutEased(dayFadeTicks)
+	e.FadeMusic(dayFadeTicks)
+}
+
+// FadeMusic fades the playing track out over ticks with the eased curve; a
+// track asked for while it runs waits for the end. The night 3 script's
+// "music fade 5" uses it too. Nothing plays: nothing to do.
+func (e *Env) FadeMusic(ticks int) {
+	if e.Sound == nil || e.Sound.Current() == "" {
+		return
+	}
+	e.Sound.FadeOutEased(ticks)
 	e.fade = musicFade{active: true}
 }
 

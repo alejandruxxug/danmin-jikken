@@ -32,7 +32,8 @@ import (
 //	layer +face_look -face_down   CG only: switch layers of the CG background on (+) or
 //	                              off (-); a new bg switches them all off again
 //	fx eyes_close                 a screen effect (see knownFX)
-//	sfx name / music name         sound cues (the sound comes in M7: only logged)
+//	sfx name / music name         sound cues (music off stops it; music fade 5 fades it
+//	                              out over 5 s)
 //	speed 12                      typewriter speed in letters per second
 //	wait 1.5                      pause, in seconds (a click cuts it short)
 //	hold                          a shot with no line: stays up until a click (AUTO
@@ -408,7 +409,16 @@ func parseCommand(n *Node, word, rest string) error {
 		n.Name, err = one()
 	case "music":
 		n.Op = OpMusic
-		n.Name, err = one()
+		if len(args) > 0 && args[0] == "fade" { // music fade 5: fade out over 5 seconds
+			n.Name = "fade"
+			if len(args) != 2 {
+				err = fmt.Errorf("music fade: want the seconds, like music fade 5")
+			} else if n.Number, err = strconv.ParseFloat(args[1], 64); err != nil || n.Number <= 0 {
+				err = fmt.Errorf("music fade %q: want a positive number of seconds", args[1])
+			}
+		} else {
+			n.Name, err = one()
+		}
 	case "route":
 		n.Op = OpRoute
 		if len(args) != 0 {

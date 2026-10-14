@@ -82,3 +82,18 @@ func TestEmbeddedScriptsParse(t *testing.T) {
 		}
 	}
 }
+
+func TestMusicFadeCommand(t *testing.T) {
+	s, err := Parse("t", strings.NewReader("music fade 5\nmusic off\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := s.Nodes[0]; n.Op != OpMusic || n.Name != "fade" || n.Number != 5 {
+		t.Errorf("music fade 5 parsed as %+v", n)
+	}
+	for _, bad := range []string{"music fade\n", "music fade 0\n", "music fade soon\n", "music fade 5 6\n"} {
+		if _, err := Parse("t", strings.NewReader(bad)); err == nil {
+			t.Errorf("%q should be an error", bad)
+		}
+	}
+}
