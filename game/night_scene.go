@@ -46,6 +46,10 @@ func (s *nightScene) Enter(env *Env) error {
 		env.NightLine = 0
 	}
 	s.engine.AutoPlay = env.Auto
+	if s.onEnd == nil { // the endings bring their own music
+		env.SetMusic("night_ambience")
+	}
+	s.playCues() // cues of the lines a backdoor jump skipped are dropped
 	env.Night = s.engine
 	s.lastCursorX, s.lastCursorY = env.Input.Cursor()
 	return nil
@@ -75,10 +79,29 @@ func (s *nightScene) Update() error {
 	if err := e.Tick(); err != nil {
 		return err
 	}
+	s.playCues()
 	if to, ended := e.Ended(); ended {
 		return s.finish(to)
 	}
 	return nil
+}
+
+// playCues plays the sounds the script asked for since the last frame.
+func (s *nightScene) playCues() {
+	for _, c := range s.engine.TakeCues() {
+		switch {
+		case c.Kind == "sfx" && c.Name != "off":
+			playSFX(sfxFile(c.Name))
+		case c.Kind == "music" && c.Name == "off":
+			s.env.SetMusic("")
+		case c.Kind == "music" && c.Name == "jingle":
+			if s.env.Sound != nil {
+				s.env.Sound.PlayMusic("driftwell_jingle", false, 0)
+			}
+		case c.Kind == "music":
+			s.env.SetMusic(c.Name)
+		}
+	}
 }
 
 // toggleAuto flips AUTO (the A key or a click on the toggle). The choice is

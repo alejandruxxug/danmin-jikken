@@ -727,6 +727,8 @@ type Dump struct {
 	SleepLogPath string   `json:"sleepLogPath"`
 	SleepLogErr  string   `json:"sleepLogError"`
 	Placeholders []string `json:"placeholders"`
+	SoundLog     []string `json:"soundLog"`     // the last 30 sound requests (muted in test mode)
+	SoundMissing []string `json:"soundMissing"` // cues asked for that have no file
 
 	// The night script that is playing (nil in the day).
 	Night *night.State `json:"night,omitempty"`
@@ -891,6 +893,11 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.Placeholders = []string{}
+	d.SoundLog, d.SoundMissing = []string{}, []string{}
+	if env.Sound != nil {
+		d.SoundLog = append(d.SoundLog, env.Sound.Log[max(0, len(env.Sound.Log)-30):]...)
+		d.SoundMissing = append(d.SoundMissing, env.Sound.Missing()...)
+	}
 	if env.Night != nil {
 		st := env.Night.Snapshot()
 		d.Night = &st

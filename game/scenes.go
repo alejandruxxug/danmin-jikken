@@ -17,7 +17,11 @@ var (
 // any key or click starts the game: the Prologue, then day 1.
 type titleScene struct{ env *Env }
 
-func (s *titleScene) Enter(env *Env) error { s.env = env; return nil }
+func (s *titleScene) Enter(env *Env) error {
+	s.env = env
+	env.SetMusic("title")
+	return nil
+}
 func (s *titleScene) Update() error {
 	if _, _, clicked := s.env.Input.Click(); clicked || s.env.Input.AnyKeyPressed() {
 		s.env.NewRun()

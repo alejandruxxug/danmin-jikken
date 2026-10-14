@@ -1,6 +1,7 @@
 package game
 
 import (
+	"danmingame/sound"
 	"fmt"
 	"io/fs"
 
@@ -75,6 +76,8 @@ type Env struct {
 	Ranked     []ScoreRow // the top-10 as the last top-10 scene showed it
 	KeepClock  bool       // test mode: the next shift starts at Clock, not 09:00
 
+	Sound *sound.Player // music and sound effects; muted in test mode
+
 	Auto bool // the VN's AUTO toggle (Settings -> Auto-play)
 
 	// The end of the run.
@@ -148,6 +151,7 @@ func (e *Env) StartShift() error {
 		return err
 	}
 	e.shift = sh
+	e.SetMusic("day_hum") // the fluorescent hum under the desk
 	sh.Flags = e.Flags
 	sh.forceDark = e.Dark
 	e.ClockRate = shiftMinutes / float64(sh.Rules.ShiftSeconds)
@@ -251,4 +255,17 @@ func (m *SceneManager) Close() {
 		m.current.Exit()
 		m.current, m.currentID = nil, ""
 	}
+}
+
+// SetMusic plays a looping track; asking for the one that is already playing
+// changes nothing. "" stops the music.
+func (e *Env) SetMusic(name string) {
+	if e.Sound == nil {
+		return
+	}
+	if name == "" {
+		e.Sound.StopMusic()
+		return
+	}
+	e.Sound.PlayMusic(name, true, 0)
 }

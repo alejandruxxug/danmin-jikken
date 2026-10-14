@@ -96,8 +96,14 @@ func (s *endingScene) scriptEnded(string) error {
 func (s *endingScene) setPhase(p endingPhase) {
 	s.phase, s.ticks = p, 0
 	s.env.EndingPhase = p.String()
-	if p == phaseCard {
-		s.env.MusicCue = "ending_rock_" + s.name // the sound system (M7) starts the track here
+	switch p {
+	case phaseSilence:
+		s.env.SetMusic("") // hard cut: nothing plays under the black
+	case phaseCard:
+		s.env.MusicCue = "ending_rock_" + s.name
+		if s.env.Sound != nil { // the rock slams in, mid-riff, no fade-in
+			s.env.Sound.PlayMusic("ending_rock_"+s.name, false, rockStarts[s.name])
+		}
 	}
 }
 

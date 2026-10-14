@@ -30,6 +30,7 @@ type top10Scene struct {
 
 func (s *top10Scene) Enter(env *Env) error {
 	s.env = env
+	env.SetMusic("") // the rock of an ending ends here
 	var err error
 	if s.art, err = env.Art(); err != nil {
 		return err

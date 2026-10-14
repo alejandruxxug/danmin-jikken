@@ -1,6 +1,10 @@
 package game
 
-import "math"
+import (
+	"math"
+
+	"danmingame/sound"
+)
 
 // The stamp landing (Game Design -> design log, "The stamp landing is
 // JUICY"). Every number that shapes it is in the table below, and every
@@ -127,7 +131,13 @@ func speck(f int) (spread, alpha float64) {
 	return ease(t), 1 - t
 }
 
-// playSFX is the hook for the sound pass (M7): the game calls it where a
-// sound belongs ("stamp_lift", "stamp_thunk") and it does nothing until the
-// sounds exist.
-func playSFX(name string) {}
+// activeSound is the game's sound player (set by New); nil in a bare test.
+var activeSound *sound.Player
+
+// playSFX is the hook the game calls where a sound belongs ("stamp_lift",
+// "stamp_thunk"). The sound package finds the file; a cue with no file is silent.
+func playSFX(name string) {
+	if activeSound != nil {
+		activeSound.PlaySFX(name)
+	}
+}

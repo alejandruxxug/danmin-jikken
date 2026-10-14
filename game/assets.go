@@ -51,3 +51,14 @@ func LoadSheet(fsys fs.FS, name string) (*sprites.Sheet, error) {
 	sheet.BoilScale = boilScales[name]
 	return sheet, nil
 }
+
+// The sound files (ogg, mp3 or wav) are baked in too. The folder always has a
+// README, so the embed works before the first sound is added.
+//
+//go:embed all:assets/sound
+var soundFiles embed.FS
+
+// SoundFS is the assets/sound folder as a file system root.
+func SoundFS() (fs.FS, error) {
+	return fs.Sub(soundFiles, "assets/sound")
+}

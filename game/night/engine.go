@@ -42,6 +42,16 @@ var fxLength = map[string]int{
 // a slow rise, a short hang at the top, the fall, then a small bounce.
 var hopTable = [20]int{-1, -1, -2, -2, -3, -3, -3, -3, -2, -2, -1, -1, 0, 0, -1, -1, 0, 0, 0, 0}
 
+// Cue is a sound the script asked for: Kind is "sfx" or "music".
+type Cue struct{ Kind, Name string }
+
+// TakeCues returns the sound cues since the last call. The scene plays them.
+func (e *Engine) TakeCues() []Cue {
+	c := e.cues
+	e.cues = nil
+	return c
+}
+
 // Engine runs one script. It knows nothing about drawing: the painter
 // (draw.go) reads what the engine exposes, and the scene feeds it ticks and
 // the player's clicks. That keeps the whole story logic testable.
@@ -87,6 +97,8 @@ type Engine struct {
 
 	ended  bool
 	endsTo string
+
+	cues []Cue // sound cues not yet taken by the scene
 
 	// Cues for the sound (M7): the last ones the script asked for.
 	LastSFX, LastMusic string
@@ -207,8 +219,10 @@ func (e *Engine) exec(n Node) {
 		e.fx[n.Name] = 0
 	case OpSfx:
 		e.LastSFX = n.Name
+		e.cues = append(e.cues, Cue{"sfx", n.Name})
 	case OpMusic:
 		e.LastMusic = n.Name
+		e.cues = append(e.cues, Cue{"music", n.Name})
 	case OpSpeed:
 		e.speed = n.Number
 	}

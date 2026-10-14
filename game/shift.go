@@ -233,6 +233,7 @@ func (s *Shift) Update() {
 	for _, ev := range s.ward.Drain() {
 		switch ev.Kind {
 		case simulation.FellAsleep:
+			playSFX("snore")
 			s.sleepers[ev.PatientID] = &Sleeper{Location: ev.Location, Since: s.Seconds()}
 		case simulation.WokeUp:
 			delete(s.sleepers, ev.PatientID)
@@ -298,6 +299,7 @@ func (s *Shift) Wake(g *Guest) error {
 // arrive lets a guest walk in: from the right if the window is free, from
 // the left to a chair if somebody is already being served.
 func (s *Shift) arrive(g *Guest) {
+	playSFX("bell") // the reception bell
 	g.status = guestWaiting
 	if s.window() == g {
 		g.x, g.y = float64(windowSpot.x+walkFrom), float64(windowSpot.y)

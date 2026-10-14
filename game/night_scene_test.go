@@ -141,3 +141,22 @@ func TestPlaceholdersInUse(t *testing.T) {
 	}
 	t.Logf("%d placeholder backgrounds in use", count)
 }
+
+func TestNightCuesReachTheSoundPlayer(t *testing.T) {
+	g, err := New(Options{Enabled: true, Scene: SceneNight1, Line: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 5 {
+		if err := g.scenes.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log := strings.Join(g.env.Sound.Log, ",")
+	if !strings.Contains(log, "music night_ambience") {
+		t.Errorf("sound log %q: the night should start its ambience", log)
+	}
+	if got := sfxFile("footsteps_many"); got != "footsteps" {
+		t.Errorf("alias = %q", got)
+	}
+}

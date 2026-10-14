@@ -111,6 +111,7 @@ func (s *strobeScene) Enter(env *Env) error {
 		return err
 	}
 	env.SkipStrobe = false
+	env.SetMusic("") // the hum stops under the stun
 	// Coming from the live day, the strobe goes on where it was.
 	if env.StrobeNight == s.night {
 		s.ticks = env.StrobeTick
@@ -124,6 +125,9 @@ func (s *strobeScene) state() StrobeState {
 
 func (s *strobeScene) Update() error {
 	s.ticks++
+	if s.ticks == flickerTicks {
+		playStun()
+	}
 	if s.env.SkipStrobe || s.ticks >= StrobeLength(s.night) {
 		s.env.SwitchTo(s.next)
 		return nil
@@ -194,6 +198,9 @@ func (e *Env) UpdateLiveStrobe(sh *Shift) (handOver bool) {
 		e.StrobeNight, e.StrobeTick = e.Day, 0
 	}
 	e.StrobeTick++
+	if e.StrobeTick == flickerTicks {
+		playStun() // the full strobe starts
+	}
 	if !last && e.StrobeTick >= flickerTicks {
 		e.StrobeTick = 0 // still stamping: keep flickering
 	}

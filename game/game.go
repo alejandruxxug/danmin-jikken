@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
 	"danmingame/night"
+	"danmingame/sound"
 )
 
 // Game is the Ebitengine game: it owns the shared Env, the scene manager
@@ -48,6 +49,12 @@ func New(opts Options) (*Game, error) {
 
 		ClockRate: 1,
 	}
+	soundFS, err := SoundFS()
+	if err != nil {
+		return nil, err
+	}
+	env.Sound = sound.New(soundFS, opts.Enabled) // test mode only records the cues
+	activeSound = env.Sound
 	crt, err := NewCRT()
 	if err != nil {
 		return nil, err
