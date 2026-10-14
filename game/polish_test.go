@@ -369,7 +369,8 @@ func TestPickScale(t *testing.T) {
 	}
 }
 
-// A later launch skips the Prologue with any key; the first launch does not.
+// A later launch skips the Prologue with Esc; the first launch does not. A
+// click or another key only reads the next line, it never skips.
 func TestPrologueSkipOnlyWhenSeen(t *testing.T) {
 	for _, seen := range []bool{false, true} {
 		g, err := New(Options{Enabled: true, Scene: SceneNightPrologue, SeenPrologue: seen})
@@ -384,12 +385,21 @@ func TestPrologueSkipOnlyWhenSeen(t *testing.T) {
 		if d := BuildDump(g.env, g.scenes.ID(), 1); !d.Dream {
 			t.Error("the Prologue must be a dream (washed out)")
 		}
-		g.env.Input.InjectKey(ebiten.KeyB)
+		for _, k := range []ebiten.Key{ebiten.KeyB, ebiten.KeySpace, ebiten.KeyEnter} {
+			g.env.Input.InjectKey(k)
+			if err := g.Update(); err != nil {
+				t.Fatal(err)
+			}
+			if g.scenes.ID() != SceneNightPrologue {
+				t.Fatalf("seen=%v: key %v left the Prologue for %q", seen, k, g.scenes.ID())
+			}
+		}
+		g.env.Input.InjectKey(ebiten.KeyEscape)
 		if err := g.Update(); err != nil {
 			t.Fatal(err)
 		}
 		if skipped := g.scenes.ID() == SceneTitle; skipped != seen {
-			t.Errorf("seen=%v: scene after a key is %q", seen, g.scenes.ID())
+			t.Errorf("seen=%v: scene after Esc is %q", seen, g.scenes.ID())
 		}
 	}
 }

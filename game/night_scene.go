@@ -66,8 +66,10 @@ func (s *nightScene) Update() error {
 	in := s.env.Input
 	e := s.engine
 	if s.script == night.Prologue && s.env.SeenPrologue && s.engine.Ticks() > 0 {
-		if _, _, clicked := in.Click(); clicked || in.AnyKeyPressed() {
-			return s.finish("title") // a later launch: any key skips the Prologue
+		// A later launch: Esc skips the Prologue. Clicks, Space and Enter
+		// still read it line by line, so a click never throws it away.
+		if in.KeyPressed(ebiten.KeyEscape) {
+			return s.finish("title")
 		}
 	}
 	if in.KeyPressed(ebiten.KeyA) {
