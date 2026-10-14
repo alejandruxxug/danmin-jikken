@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"danmingame/night"
 )
 
 // Game is the Ebitengine game: it owns the shared Env, the scene manager
@@ -33,7 +35,7 @@ func New(opts Options) (*Game, error) {
 		Speed:   1,
 		CRT:     true,
 		Clock:   NewClock(9, 0), // the day shift opens at nine
-		Flags:   make(map[string]bool),
+		Flags:   make(night.Flags),
 		Scores:  make(map[string]int),
 		Dark:    -1,
 		Input:   NewInput(),
@@ -60,6 +62,8 @@ func New(opts Options) (*Game, error) {
 		g.scenes.Register(id, func() Scene { return &computerScene{startTab: tab} })
 	}
 	g.scenes.Register(SceneDayTop10, func() Scene { return &top10Scene{} })
+	g.scenes.Register(SceneNightPrologue, func() Scene { return &nightScene{script: night.Prologue} })
+	g.scenes.Register(SceneNight1, func() Scene { return &nightScene{script: night.Night1} })
 
 	first := SceneTitle
 	if opts.Enabled {

@@ -5,6 +5,8 @@ import (
 	"io/fs"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"danmingame/night"
 )
 
 // Internal resolution. The window shows it at x4 (1920x1080).
@@ -28,6 +30,8 @@ const (
 	SceneSleepLogs     = "day.computer.sleeplogs"
 	SceneWardFeed      = "day.computer.wardfeed"
 	SceneDayTop10      = "day.top10"
+	SceneNightPrologue = "night.prologue" // the gurney, before day 1
+	SceneNight1        = "night.1"        // after day 1
 )
 
 // Env is what every scene shares: the clock, the shift, the input, the
@@ -38,7 +42,7 @@ type Env struct {
 	Speed   float64
 	CRT     bool // the day CRT filter; no filter exists yet, so nothing reads it
 	Clock   *Clock
-	Flags   map[string]bool
+	Flags   night.Flags    // story flags the nights set and the day will read
 	Scores  map[string]int // points of each shift, keyed "day1", "day2", ...
 	Input   *Input
 	Sprites fs.FS // the embedded assets/sprites folder
@@ -59,8 +63,12 @@ type Env struct {
 	Ranked     []ScoreRow // the top-10 as the last top-10 scene showed it
 	KeepClock  bool       // test mode: the next shift starts at Clock, not 09:00
 
-	art   *DeskArt
-	shift *Shift
+	Night     *night.Engine // the night script that is playing, nil in the day (for the dump)
+	NightLine int           // the backdoor's -line N: start the night script at this file line
+
+	art      *DeskArt
+	nightArt *night.Art
+	shift    *Shift
 	// nextScene is set by SwitchTo, applied when Update ends
 	nextScene string
 }

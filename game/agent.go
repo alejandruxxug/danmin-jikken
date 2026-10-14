@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"danmingame/night"
 )
 
 // Options are the command-line flags. Without Enabled, all but Enabled are
@@ -32,6 +34,7 @@ type Options struct {
 	Clock   string
 	Seed    int64
 	Flags   string // story flags, comma separated
+	Line    int    // night scenes: start at this line of the script file
 	Speed   float64
 	Input   string // path of the input script
 	Shot    string // 1x PNG, written when the run ends
@@ -63,6 +66,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Clock, "clock", "", "in-game time, HH:MM")
 	fs.Int64Var(&o.Seed, "seed", 0, "random seed (0 = random)")
 	fs.StringVar(&o.Flags, "flags", "", "story flags, comma separated")
+	fs.IntVar(&o.Line, "line", 0, "night scenes: start at this line of the script file")
 	fs.Float64Var(&o.Speed, "speed", 1, "game time multiplier")
 	fs.StringVar(&o.Input, "input", "", "input script file")
 	fs.StringVar(&o.Shot, "shot", "", "save a 1x PNG screenshot when the run ends")
@@ -93,7 +97,7 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op    string // "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "shot" or "dump"
+	Op    string // "next", "choose", "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "shot" or "dump"
 	Text  string // type: the characters
 	N     int    // wait: frames; pan: camera x
 	Stamp Stamp  // stamp: which one
@@ -114,6 +118,8 @@ type Command struct {
 //	down 320 210    press the left button there and hold it (mouse moves it)
 //	up              let the button go
 //	drag 318 213 200 213   down, move, up: drag the page corner left
+//	next            advance the night text (the Space key: first shows the whole line, then goes on)
+//	choose 2        pick option 2 of the open night menu
 //	pan 0           put the camera at x = 0 (0 to 240)
 //	desk            look down to the desk (reception: look back up)
 //	folder          open the folder on the desk
@@ -295,6 +301,19 @@ func parseCommand(words []string) (Command, error) {
 		default:
 			return cmd, fmt.Errorf("page %q: want referral, sleeplog or wristband", args[0])
 		}
+	case "next":
+		if len(args) != 0 {
+			return cmd, fmt.Errorf("next takes no argument")
+		}
+	case "choose":
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("choose needs the number of the option (1, 2 or 3)")
+		}
+		n, err := strconv.Atoi(args[0])
+		if err != nil || n < 1 || n > 3 {
+			return cmd, fmt.Errorf("choose %q: want 1, 2 or 3", args[0])
+		}
+		cmd.N = n
 	case "folder", "turn", "apply", "putback", "desk", "reception":
 		if len(args) != 0 {
 			return cmd, fmt.Errorf("%s takes no argument", cmd.Op)
@@ -368,6 +387,7 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 			env.Flags[name] = true
 		}
 	}
+	env.NightLine = opts.Line
 	env.CRT = !opts.NoCRT
 	env.Input.IgnoreReal = true
 	if opts.PanSet {
@@ -451,6 +471,14 @@ func (a *Agent) runCommands(env *Env) {
 			advance(env, cmd.N)
 		case "pan":
 			env.CameraX = float64(cmd.N)
+		case "next": // the same Space press a player would make
+			env.Input.InjectKey(ebiten.KeySpace)
+			return
+		case "choose":
+			if env.Night != nil {
+				_ = env.Night.Choose(cmd.N - 1) // no menu open: nothing happens, as for a click
+			}
+			return
 		case "desk":
 			env.SwitchTo(SceneDayDesk)
 			return
@@ -646,6 +674,9 @@ type Dump struct {
 	Desk      DumpDesk      `json:"desk"`
 	CallLight bool          `json:"callLight"` // a Severe patient sleeps unattended
 	Banner    string        `json:"banner"`    // the reception's top bar: the message or the nurse call
+
+	// The night script that is playing (nil in the day).
+	Night *night.State `json:"night,omitempty"`
 }
 
 // DumpDesk is the look-down desk: the folder, the page, the stamp in the hand.
@@ -791,6 +822,10 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 		if on {
 			d.Flags = append(d.Flags, name)
 		}
+	}
+	if env.Night != nil {
+		st := env.Night.Snapshot()
+		d.Night = &st
 	}
 	sort.Strings(d.Flags) // map order is random; sorted keeps dumps comparable
 	return d
