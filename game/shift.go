@@ -8,6 +8,8 @@ import (
 
 	"danmin/hospital"
 	"danmin/simulation"
+
+	"danmingame/night"
 )
 
 // Points: only correct choices score, wrong ones just do not (Game Design ->
@@ -15,6 +17,8 @@ import (
 const (
 	pointsRightStamp = 100
 	pointsAttend     = 50
+	pointsWardC      = 50 // day 2: a Shoal sleeper taken to Ward C
+	pointsLetSleep   = 50 // day 3: a sleeper left alone, for each one at the end of the shift
 
 	busySeconds  = 8 // how long a staff member shows BUSY after attending
 	toastSeconds = 3 // how long a message stays on the screen
@@ -118,6 +122,7 @@ type Shift struct {
 	episodes    map[string]int    // episodes the hospital has recorded, by patient id
 	severeToday map[string]int    // the same for Severe patients, from SevereReport
 	forceDark   int               // test mode: darkness of every guest, -1 = off (severe.go)
+	Flags       night.Flags       // the story flags; the desk writes stamped_self (nil in some tests)
 	desk        Desk              // the look-down desk (desk_state.go)
 	trace       map[string][]bool // the ward feed's last seconds per patient (records.go)
 	traceAt     int               // the game second last sampled
@@ -159,6 +164,9 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 		forceDark: -1,
 	}
 	for i, v := range rules.Visitors {
+		if v.Self {
+			v.Name = strings.ToUpper(Username()) // the Settler ID has your own name
+		}
 		id := fmt.Sprintf("P-%03d", i+1)
 		s.Guests = append(s.Guests, &Guest{
 			Visitor: v,
@@ -489,6 +497,14 @@ func (s *Shift) checkEnd(now float64) {
 	allDone := s.allDoneAt > 0 && now-s.allDoneAt >= endDelay && !waiting
 	if timeUp || allDone {
 		s.over = true
+		if s.Day == 3 {
+			// "Do not wake them": every sleeper still asleep and unattended pays.
+			for _, sl := range s.sleepers {
+				if !sl.Attended {
+					s.addScore(pointsLetSleep)
+				}
+			}
+		}
 	}
 }
 
@@ -514,6 +530,17 @@ func (s *Shift) Stamp(st Stamp) error {
 		return ErrDozing
 	}
 	right := g.RightStamp() == st
+	if g.Self {
+		// Your own file: the story choice. Admit or discharge both score;
+		// the choice is remembered for the endings.
+		right = st != StampRefer
+		if s.Flags != nil && right {
+			s.Flags.Set("stamped_self")
+			if st == StampDischarge {
+				s.Flags.Set("stamped_discharge")
+			}
+		}
+	}
 	if right {
 		s.addScore(pointsRightStamp)
 	}
@@ -532,7 +559,9 @@ func (s *Shift) Stamp(st Stamp) error {
 	s.folderLeaves(g, st)
 	s.served++
 	s.stamps = append(s.stamps, StampRecord{Patient: g.Name, Stamp: st, Right: right})
-	if right {
+	if right && st == StampAdmit && g.SendToWardC(s.Day) {
+		s.say("ADMIT: %s TO WARD C", g.Name) // day 2's memo
+	} else if right {
 		s.say("%s: %s", st, g.Name)
 	} else {
 		s.say("CITATION: WRONG STAMP FOR %s", g.Name)
@@ -558,12 +587,24 @@ func (s *Shift) Dispatch(g *Guest) (Attendance, error) {
 		sl.Attended = true
 		a.Attender = who
 		s.busyUntil[who] = s.Seconds() + busySeconds
+		if s.Day == 3 {
+			// Day 3's memo: "Do not wake them." Sending staff wakes the
+			// sleeper, so it costs points instead of earning them.
+			s.addScore(-min(pointsAttend, s.Score()))
+			s.say("%s WOKE UP. THE MEMO SAID DO NOT.", g.Name)
+			return a, nil
+		}
 		// Decided (Alejo, 2026-10-13): attending a sleeper in the hallway
 		// still scores the 50 points; getting them staff is the right call
 		// whether or not there was a bed.
 		s.addScore(pointsAttend)
 		a.Bonus = s.quickBonus(g, sl) // a Severe patient answered in time
 		s.addScore(a.Bonus)
+		if g.SendToWardC(s.Day) {
+			s.addScore(pointsWardC)
+			s.say("%s goes to WARD C: +%d", g.Name, pointsWardC)
+			return a, nil // Ward C has no beds on the map and no "no room"
+		}
 	}
 	// RegisterEpisode already gave a room if one was free; AssignRoom tells
 	// us which one, or that there is none (hospital.ErrNoRoomAvailable).

@@ -146,6 +146,7 @@ func (e *Env) StartShift() error {
 		return err
 	}
 	e.shift = sh
+	sh.Flags = e.Flags
 	sh.forceDark = e.Dark
 	e.ClockRate = shiftMinutes / float64(sh.Rules.ShiftSeconds)
 	if !e.KeepClock {

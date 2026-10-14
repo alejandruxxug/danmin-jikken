@@ -3,10 +3,13 @@
 # stamped_discharge (the day 3 desk). Out: read_letter, closed_eyes. The
 # script ends with `end ending`; the game then picks the ending scene from
 # the flags (night.EndingFor) and plays ending_<name>.txt.
-bg ward_c
-sfx monitor_far
+bg black
 ~ I'm not at the desk.
 ~ I was never at the desk.
+bg ward_c
+fx eyes_open
+sfx monitor_far
+wait 1
 ~ There's a band on my wrist. It says 4.
 
 bg station

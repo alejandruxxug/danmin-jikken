@@ -34,6 +34,7 @@ var fxLength = map[string]int{
 	"redscale_off": 60,
 	"dim":          120,
 	"eyes_slit":    150,
+	"eyes_open":    72,
 }
 
 // hopTable is the talk hop: how many pixels up (negative) the speaking girl

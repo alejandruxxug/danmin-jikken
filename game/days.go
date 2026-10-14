@@ -46,10 +46,20 @@ type Visitor struct {
 
 	Papers
 
+	// Self marks the last patient of day 3: you. Their name is the OS
+	// username (set when the shift is built) and the stamp they get is the
+	// choice `stamped_self` (Script -> Every decision, 3).
+	Self bool
+
 	// Returning patients wear a wristband. This one has no new sleep
 	// episodes, so the right call is DISCHARGE.
 	Returning bool
 }
+
+// SendToWardC says whether the day's memo sends this visitor to Ward C:
+// day 2's rule is "Shoal patients go to Ward C" (Game Design -> The day's
+// rules). There is no Ward C on the map.
+func (v Visitor) SendToWardC(day int) bool { return day == 2 && v.Home == theShoals }
 
 // RightStamp is the stamp that scores for this visitor: no valid referral
 // is REFER, a returning patient with nothing new is DISCHARGE, everyone
@@ -111,6 +121,11 @@ func buildDays() []DayRules {
 	pearl := person("Pearl Wick", "pearl_wick", smile, 29, hospital.Mild, gullhaven, Date{4, 22, 79}, "SEASICKNESS", "FEELS ILL ON THE", "FERRY.")
 
 	cecily := person("Old Cecily", "cecily", smile, 71, hospital.Severe, gullhaven, Date{6, 30, 79}, "NARCOLEPSY", "FALLS ASLEEP AT HER", "FISH STALL.")
+	// You: the last patient of day 3. The sprite is Silas Brook's until
+	// the art for the player's own window picture exists (placeholder).
+	you := person("YOU", "silas_brook", neutral, 24, hospital.Moderate, theShoals, Date{10, 30, 79}, "SLEEP ATTACKS", "FALLS ASLEEP AT", "THE DESK.")
+	you.Self = true
+	you.Returning, you.Ward, you.LastStay = true, "WARD C", dayDate(2)
 	cecilyBack := cecily
 	cecilyBack.Returning, cecilyBack.Ward, cecilyBack.LastStay = true, "WARD B", dayDate(1)
 
@@ -135,6 +150,7 @@ func buildDays() []DayRules {
 			person("Silas Brook", "silas_brook", neutral, 37, hospital.Moderate, saltReach, Date{10, 30, 79}, "SLEEP ATTACKS", "NODS OFF AT THE", "HELM."),
 			pearl,
 			person("Hank Shoals", "hank_shoals", neutral, 58, hospital.Severe, theShoals, Date{11, 20, 79}, "SLEEP ATTACKS", "NODS OFF WHILE", "MENDING NETS."),
+			you,
 		}},
 	}
 	// The date and the sleep log depend on the day, so they are filled in here.

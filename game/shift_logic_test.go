@@ -93,7 +93,7 @@ func TestRightStampFromData(t *testing.T) {
 }
 
 func TestDaysTable(t *testing.T) {
-	want := []struct{ patients, rooms, secs int }{{5, 3, 180}, {6, 3, 180}, {4, 2, 150}}
+	want := []struct{ patients, rooms, secs int }{{5, 3, 180}, {6, 3, 180}, {5, 2, 150}} // day 3's fifth guest is you
 	for i, w := range want {
 		r, err := RulesForDay(i + 1)
 		if err != nil {
@@ -114,6 +114,7 @@ func TestDaysTable(t *testing.T) {
 // bed is taken the no-room alert opens and the patient lies in the hallway.
 func TestDispatchAndNoRoom(t *testing.T) {
 	sh := newTestShift(t, 3) // two rooms
+	sh.Day = 1               // day 3's memo changes attending (see memo_rules_test.go)
 	var guests []*Guest
 	for _, g := range sh.Guests[:3] {
 		if err := sh.ward.Admit(g.patient); err != nil {

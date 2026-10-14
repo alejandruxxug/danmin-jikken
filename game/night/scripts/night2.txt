@@ -2,10 +2,13 @@
 # The strobe into this night is the transition scene (longer than night 1's).
 # Flags in: liked_mayu, liked_hana. Out: stay_mayu / find_hana / confront_mayu
 # and route_mayu / route_hana / route_nobody (set by `route`).
-bg ward_c_dark
-sfx monitor_far
+bg black
 ~ I fell asleep at the desk again.
 ~ I have to stop doing that.
+bg ward_c_dark
+fx eyes_open
+sfx monitor_far
+wait 1
 
 bg station
 show mayu

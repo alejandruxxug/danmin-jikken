@@ -408,6 +408,13 @@ func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 		vector.FillRect(dst, 0, 0, screenW, h, colInk, false)
 		vector.FillRect(dst, 0, screenH-h, screenW, h, colInk, false)
 	}
+	if _, ok := e.FxTicks("eyes_open"); ok {
+		// The eyelids part: closed at the start, gone at the end.
+		if h := float32((1 - e.FxProgress("eyes_open")) * screenH / 2); h > 0 {
+			vector.FillRect(dst, 0, 0, screenW, h, colInk, false)
+			vector.FillRect(dst, 0, screenH-h, screenW, h, colInk, false)
+		}
+	}
 	if _, ok := e.FxTicks("eyes_close"); ok {
 		// The eyelids come in from the top and the bottom and meet in the middle.
 		h := float32(e.FxProgress("eyes_close") * screenH / 2)

@@ -109,6 +109,7 @@ var knownFX = map[string]bool{
 	"shake":        true, // the picture shakes for 0.75 s
 	"redscale":     true, // Hana's room: grey turns red from the floor up
 	"redscale_off": true, // ... and drains back to grey from the top down
+	"eyes_open":    true, // the eyelids open from closed (waking up)
 	"eyes_slit":    true, // the eyelids close almost all the way (Forever)
 	"splash":       true, // blood on the camera (the Forever cut); the stain stays after it
 	"dim":          true, // the screen dims (the game falls asleep, 3:17)

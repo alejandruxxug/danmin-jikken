@@ -208,7 +208,32 @@ func TestBloodTimeline(t *testing.T) {
 			t.Errorf("drip %d slid %d, not less than drip %d (%d)", i+1, late.Drips[i], i, late.Drips[i-1])
 		}
 	}
-	if BloodAt(SplashTicks+300).Drips[0] > BloodAt(SplashTicks+301).Drips[0] {
+	if BloodAt(SplashTicks + 300).Drips[0] > BloodAt(SplashTicks + 301).Drips[0] {
 		t.Error("a drip moved up")
+	}
+}
+
+// Alejo: "black thoughts before waking up". Every night opens on black with a
+// thought; the eyes open onto the ward afterwards.
+func TestNightsOpenOnBlackThoughts(t *testing.T) {
+	for _, name := range []string{Night1, Night2, Night3} {
+		s, err := LoadScript(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		e, err := NewEngine(s, Flags{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if e.BG() != "black" || !e.Thinking() {
+			t.Errorf("%s opens on %q (thinking %v), want a thought on black", name, e.BG(), e.Thinking())
+		}
+		for e.BG() == "black" {
+			_ = e.Advance()
+			_ = e.Advance()
+		}
+		if _, on := e.FxTicks("eyes_open"); !on {
+			t.Errorf("%s: the eyes never open", name)
+		}
 	}
 }

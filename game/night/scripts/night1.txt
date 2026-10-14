@@ -1,11 +1,17 @@
 # Night 1: "go home" (docs: Danmin Jikken - Night 1).
 # The strobe into this night is the transition scene, not a line of the script.
-bg ward_c
-sfx monitor_far
+# Thoughts on black first (Alejo: "black thoughts before waking up"), then the
+# eyes open on Ward C.
+bg black
 
 ~ Closing time already.
 ~ I must have dozed off at the desk.
 ~ My uniform feels thin tonight.
+
+bg ward_c
+fx eyes_open
+sfx monitor_far
+wait 1
 
 bg corridor
 wait 1

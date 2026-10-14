@@ -9,6 +9,7 @@ import (
 // hallway (M3 regression: it must survive the ticks after the click).
 func TestNoRoomAlertStaysWhileTheSleeperIsInTheHallway(t *testing.T) {
 	sh := newTestShift(t, 3) // two rooms
+	sh.Day = 1               // day 3's memo changes attending (see memo_rules_test.go)
 	for i, g := range sh.Guests[:3] {
 		putToSleep(t, sh, g, float64(i))
 	}
