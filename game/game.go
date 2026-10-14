@@ -276,6 +276,9 @@ func (g *Game) crtOn() bool {
 // crtParams are the shader's numbers for this frame.
 func (g *Game) crtParams() CRTParams {
 	p := DefaultCRT(g.env.Day, float64(g.ticks)/60, g.env.Invert)
+	if n := g.env.Night; n != nil && n.DayLook() {
+		p.Filmed, p.Day = 0.3, 1 // the report seen from inside the night: a light glass, no day 3 breakdown
+	}
 	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn {
 		p.PowerOn = st.Progress
 	}

@@ -99,8 +99,15 @@ func (s *nightScene) Update() error {
 }
 
 // UsesCRT says whether this frame goes through the day's CRT: only the
-// realization's match cut to the day 3 report (a day picture inside a night).
-func (s *nightScene) UsesCRT() bool { return s.engine != nil && s.engine.DayLook() }
+// realization's match cut to the day 3 report (a day picture inside a night),
+// not the split-screen sting that follows it.
+func (s *nightScene) UsesCRT() bool {
+	if s.engine == nil || !s.engine.DayLook() {
+		return false
+	}
+	_, sting := s.engine.FxTicks("sting")
+	return !(sting && s.engine.FxProgress("sting") < 1)
+}
 
 // playCues plays the sounds the script asked for since the last frame.
 func (s *nightScene) playCues() {

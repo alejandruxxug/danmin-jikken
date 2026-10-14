@@ -95,7 +95,7 @@ type Art struct {
 	ui, choice         *sprites.Sheet
 	handMayu, handHana *sprites.Sheet // the name plate's copies: off-white ink
 	inkMayu, inkHana   *sprites.Sheet // black ink for the paper
-	cinema             *sprites.Sheet // fx_cinema: vignette, shade, bars
+	cinema             *sprites.Sheet // fx_cinema: shade, bars
 	// Pictures the camera and the shaders work on.
 	world, zoomed, keep *ebiten.Image
 	wash                [4]*ebiten.Image // the Wake ending's dither levels, made when first needed
@@ -234,6 +234,9 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	a.handMayu, a.handHana = a.handMayu.Remapped(onPlate), a.handHana.Remapped(onPlate)
 	return a, nil
 }
+
+// Where the AUTO label is written (caps top 252).
+const autoLabelX, autoLabelCapTop = 400, 252
 
 // AutoRect is the AUTO toggle on the text box, for the mouse (the pixels of
 // the auto_off / auto_on layers, with a little room around them).
@@ -383,12 +386,9 @@ func (a *Art) drawPicture(dst *ebiten.Image, e *Engine) {
 }
 
 // drawOverlay paints what sits on top of the picture and never moves: the
-// vignette and the bars in cinematic mode, the blood on the lens, then the
+// bars in cinematic mode, the blood on the lens, then the
 // words (subtitles in the bottom bar, or the text box), the arrow and the menu.
 func (a *Art) drawOverlay(dst *ebiten.Image, e *Engine) {
-	if zoom, _, _ := e.Zoom(); e.Cinematic() && !e.WhiteBars() && zoom == 1 && !e.DayLook() { // a punch-in is a plain crop
-		_ = a.cinema.Draw(dst, []string{"vignette"}, 0, 0, 0)
-	}
 	a.drawBars(dst, e)
 	if _, ok := e.FxTicks("sting"); ok && e.FxProgress("sting") < 1 {
 		a.drawSting(dst, e)
@@ -840,6 +840,12 @@ func (a *Art) drawTextBox(dst *ebiten.Image, e *Engine) {
 		autoLayer = "auto_on"
 	}
 	_ = a.ui.Draw(dst, []string{autoLayer}, a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond), 0, 0)
+	// The toggle's label: mid grey when AUTO is off, off-white when it is on.
+	label := color.Color(colMid)
+	if e.AutoPlay {
+		label = colPaper
+	}
+	a.font.Draw(dst, "AUTO", autoLabelX, autoLabelCapTop-capTopOffset, label)
 	if e.LineDone() && len(e.Options()) == 0 {
 		frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
 		_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)

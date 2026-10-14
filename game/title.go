@@ -189,7 +189,7 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 			}
 			s.font.Draw(screen, label, (ScreenW-s.font.Width(label))/2, s.startY()+i*titleStepY, c)
 		}
-		s.drawWarnings(screen, dim)
+		s.drawWarnings(screen, colDarkGrey)
 	}
 	if s.white {
 		if a := titleWhiteAlpha(s.ticks); a > 0 {
@@ -236,8 +236,8 @@ var titleWarnings = []string{
 
 const (
 	warningWidth = 440 // the widest a warning line may be, in pixels
-	warningStep  = 8   // distance between two warning lines
-	warningBase  = 9   // the last line's y, from the bottom edge (its letters end 1 px above it)
+	warningStep  = 9   // distance between two warning lines
+	warningBase  = 12  // the last line's y, from the bottom edge (its letters end 1 px above it)
 )
 
 // drawWarnings writes the warnings, centred, the flashing one last.
