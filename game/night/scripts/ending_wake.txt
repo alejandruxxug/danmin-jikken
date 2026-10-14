@@ -1,6 +1,7 @@
 # Wake ending (docs: Night 3 -> Wake ending).
 # Every ending opens in cinematic mode: the procedure room with the bars sliding
 # in, the lines as subtitles (Art Direction -> Cinematic pass).
+autoplay on # the ending plays by itself, on a fixed timeline
 bg procedure_room
 bars on
 ~ Ten...

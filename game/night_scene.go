@@ -176,6 +176,9 @@ func (s *nightScene) replayMusic() {
 // toggleAuto flips AUTO (the A key or a click on the toggle). The choice is
 // kept in Env so the next night starts with it.
 func (s *nightScene) toggleAuto() {
+	if s.engine.Forced() {
+		return // an ending plays by itself: AUTO is not the player's to turn off
+	}
 	s.engine.AutoPlay = !s.engine.AutoPlay
 	s.env.Auto = s.engine.AutoPlay
 }

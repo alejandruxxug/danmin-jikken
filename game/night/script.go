@@ -40,6 +40,8 @@ import (
 //	                              goes on after 2 s, the continue arrow shows)
 //	lock 5                        pause that clicks cannot cut short
 //	auto                          the next line goes on by itself when typed
+//	autoplay on                   the whole script plays by itself on a fixed timeline: every line
+//	                              goes on after AutoDelay, clicks and keys do nothing (the endings)
 //	route                         set route_mayu / route_hana / route_nobody from the flags
 //	writer mayu                   whose hand writes the Note:/Letter: lines on the paper
 //	                              (hana is the default; a new bg puts it back)
@@ -89,6 +91,7 @@ const (
 	OpPan
 	OpPaper
 	OpStill
+	OpAutoplay
 )
 
 // Part is one "key=value" change to a pose.
@@ -418,6 +421,11 @@ func parseCommand(n *Node, word, rest string) error {
 			}
 		} else {
 			n.Name, err = one()
+		}
+	case "autoplay":
+		n.Op = OpAutoplay
+		if len(args) != 1 || args[0] != "on" {
+			err = fmt.Errorf("autoplay: want `autoplay on`")
 		}
 	case "route":
 		n.Op = OpRoute

@@ -112,6 +112,11 @@ type Engine struct {
 	holdTick int  // ticks the hold has been on screen
 	locked   bool // the wait ignores clicks (the game "falls asleep")
 
+	// forced is "autoplay on": the script runs by itself and the player's
+	// clicks and keys do nothing, so its length is the same every time
+	// (see Timeline).
+	forced bool
+
 	autoNext bool // the next line goes on by itself
 	autoLine bool // ... this one does
 	doneFor  int  // ticks the auto line has been fully typed
@@ -218,6 +223,8 @@ func (e *Engine) exec(n Node) {
 		e.flags.Set("route_" + RouteFor(e.flags))
 	case OpAuto:
 		e.autoNext = true
+	case OpAutoplay:
+		e.forced, e.AutoPlay = true, true
 	case OpBG:
 		e.hopFor = ""
 		if e.OnPaperBG() { // the sting still needs the letter after a cut away from it
@@ -348,6 +355,9 @@ func (e *Engine) startLine(n Node) {
 // Tick runs one frame: the typewriter, the effect clocks and the waits.
 func (e *Engine) Tick() error {
 	e.ticks++
+	if e.forced {
+		e.AutoPlay = true // the AUTO toggle and the backdoor cannot turn it off
+	}
 	for name := range e.fx {
 		e.fx[name]++
 		// A one-shot effect that has played out is forgotten, so the dump and
@@ -360,13 +370,13 @@ func (e *Engine) Tick() error {
 	if e.autoLine && e.LineDone() && len(e.options) == 0 {
 		// A line that types itself, then goes on after a short beat.
 		if e.doneFor++; e.doneFor > autoBeat {
-			return e.Advance()
+			return e.advance()
 		}
 		return nil
 	}
 	if e.AutoPlay && e.HasLine() && e.LineDone() && len(e.options) == 0 && !e.locked && !e.fxRunning() {
 		if e.autoWait++; e.autoWait >= AutoDelay(len(e.text)) {
-			return e.Advance()
+			return e.advance()
 		}
 		return nil
 	}
@@ -429,6 +439,17 @@ func (e *Engine) leaveWait() error {
 // typing shows in full; a finished line goes on to the next. It cuts a wait
 // short and does nothing in a menu or at the end.
 func (e *Engine) Advance() error {
+	if e.forced {
+		return nil // the script plays by itself: a click changes nothing
+	}
+	return e.advance()
+}
+
+// Forced says whether the script plays by itself and ignores the player.
+func (e *Engine) Forced() bool { return e.forced }
+
+// advance is Advance without the forced check, for the backdoor's fast forward.
+func (e *Engine) advance() error {
 	switch {
 	case e.ended || len(e.options) > 0:
 		return nil
@@ -498,7 +519,7 @@ func (e *Engine) FastForward(line int) error {
 			err = e.leaveWait()
 		default:
 			e.shown = float64(len(e.text))
-			err = e.Advance()
+			err = e.advance()
 		}
 		if err != nil {
 			return err
@@ -778,3 +799,34 @@ func (e *Engine) FaceHop(character string) int {
 // BGNames lists the backgrounds the running script uses (the dump compares
 // them with the art that exists).
 func (e *Engine) BGNames() []string { return e.script.BGNames() }
+
+// maxTimeline stops Timeline on a script that never ends (10 minutes).
+const maxTimeline = 10 * 60 * TicksPerSecond
+
+// Timeline is how many ticks a script that says `autoplay on` takes from its
+// first line to its `end`, with the given flags and player name. It runs a
+// copy of the script with nobody clicking; because the script is forced,
+// clicking would not change the answer. The flags are copied, so the real
+// ones are not touched.
+func Timeline(s *Script, flags Flags, player string) (int, error) {
+	copied := Flags{}
+	for name, on := range flags {
+		copied[name] = on
+	}
+	e, err := NewEngineFor(s, copied, player)
+	if err != nil {
+		return 0, err
+	}
+	if !e.forced {
+		return 0, fmt.Errorf("%s: no `autoplay on`, so its length depends on the player", s.Name)
+	}
+	for e.ticks < maxTimeline {
+		if _, ended := e.Ended(); ended {
+			return e.ticks, nil
+		}
+		if err := e.Tick(); err != nil {
+			return 0, err
+		}
+	}
+	return 0, fmt.Errorf("%s: still running after %d ticks", s.Name, maxTimeline)
+}
