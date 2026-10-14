@@ -117,6 +117,7 @@ type Shift struct {
 
 	episodes    map[string]int    // episodes the hospital has recorded, by patient id
 	severeToday map[string]int    // the same for Severe patients, from SevereReport
+	desk        Desk              // the look-down desk (desk_state.go)
 	trace       map[string][]bool // the ward feed's last seconds per patient (records.go)
 	traceAt     int               // the game second last sampled
 
@@ -238,6 +239,7 @@ func (s *Shift) Update() {
 		}
 	}
 	s.layout()
+	s.updateDesk()
 	s.tutorialStep(now)
 
 	if s.alert != nil && s.stateOf(s.alert.Guest) != hospital.AsleepInHallway {
@@ -525,6 +527,7 @@ func (s *Shift) Stamp(st Stamp) error {
 	} else {
 		g.status = guestLeft
 	}
+	s.folderLeaves(g, st)
 	s.served++
 	s.stamps = append(s.stamps, StampRecord{Patient: g.Name, Stamp: st, Right: right})
 	if right {

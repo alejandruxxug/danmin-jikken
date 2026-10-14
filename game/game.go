@@ -45,6 +45,16 @@ func New(opts Options) (*Game, error) {
 	g.scenes.Register(SceneTitle, func() Scene { return &titleScene{} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
+	g.scenes.Register(SceneDayDesk, func() Scene { return &deskScene{} })
+	for id, open := range map[string]struct {
+		open bool
+		page Page
+	}{
+		SceneDeskClosed: {false, PageReferral}, SceneDeskReferral: {true, PageReferral},
+		SceneDeskSleepLog: {true, PageSleepLog}, SceneDeskWristband: {true, PageWristband},
+	} {
+		g.scenes.Register(id, func() Scene { return &deskScene{setup: deskSetup(open.open, open.page)} })
+	}
 	for id, tab := range map[string]string{SceneRecords: TabRecords, SceneSleepLogs: TabSleepLogs, SceneWardFeed: TabWardFeed} {
 		g.scenes.Register(id, func() Scene { return &computerScene{startTab: tab} })
 	}

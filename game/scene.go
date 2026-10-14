@@ -17,11 +17,17 @@ const (
 const (
 	SceneTitle        = "title"
 	SceneDayReception = "day.reception"
-	SceneDayComputer  = "day.computer" // the BEDS tab
-	SceneRecords      = "day.computer.records"
-	SceneSleepLogs    = "day.computer.sleeplogs"
-	SceneWardFeed     = "day.computer.wardfeed"
-	SceneDayTop10     = "day.top10"
+	SceneDayDesk      = "day.desk" // the look-down desk, with the tilt
+	// The same desk entered settled, with the folder on it (test mode).
+	SceneDeskClosed    = "day.desk.closed"
+	SceneDeskReferral  = "day.desk.referral"
+	SceneDeskSleepLog  = "day.desk.sleeplog"
+	SceneDeskWristband = "day.desk.wristband"
+	SceneDayComputer   = "day.computer" // the BEDS tab
+	SceneRecords       = "day.computer.records"
+	SceneSleepLogs     = "day.computer.sleeplogs"
+	SceneWardFeed      = "day.computer.wardfeed"
+	SceneDayTop10      = "day.top10"
 )
 
 // Env is what every scene shares: the clock, the shift, the input, the

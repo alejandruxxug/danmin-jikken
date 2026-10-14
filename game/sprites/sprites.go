@@ -176,9 +176,10 @@ func (m *Meta) durationOf(n int) time.Duration {
 // Sheet is a loaded spritesheet: the picture plus its Meta.
 type Sheet struct {
 	*Meta
-	img  *ebiten.Image
-	pic  image.Image               // the same picture on the CPU, for the darker copies
-	dark map[darkKey]*ebiten.Image // see darker.go
+	img     *ebiten.Image
+	pic     image.Image                 // the same picture on the CPU, for the darker copies
+	dark    map[darkKey]*ebiten.Image   // see darker.go
+	shadows map[shadowKey]*ebiten.Image // see shadow.go
 }
 
 // Load reads <name>.json and <name>.png from fsys (the game passes its

@@ -9,6 +9,7 @@ package game
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -90,7 +91,7 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op    string // "wait", "key", "click", "mouse", "pan", "advance", "type", "stamp", "shot" or "dump"
+	Op    string // "wait", "key", "click", "mouse", "down", "up", "pan", "advance", "type", "stamp", "shot" or "dump"
 	Text  string // type: the characters
 	N     int    // wait: frames; pan: camera x
 	Stamp Stamp  // stamp: which one
@@ -107,7 +108,17 @@ type Command struct {
 //	mouse 5 135     hold the cursor there (edge of the screen pans the camera)
 //	type marcus     type text (the RECORDS tab's name field)
 //	advance 120     run the shift 120 game seconds at once (queue, clock, ward)
+//	down 320 210    press the left button there and hold it (mouse moves it)
+//	up              let the button go
+//	drag 318 213 200 213   down, move, up: drag the page corner left
 //	pan 0           put the camera at x = 0 (0 to 240)
+//	desk            look down to the desk (reception: look back up)
+//	folder          open the folder on the desk
+//	turn            turn the open folder's page
+//	page sleeplog   show a page at once (referral, sleeplog, wristband)
+//	lift admit      lift a stamp off the desk into the hand
+//	apply           press the stamp in the hand on the open referral
+//	putback         put the stamp in the hand back on the desk
 //	stamp admit     use a stamp on the window patient (admit, refer, discharge)
 //	shot out.png    (1x)
 //	shot4 out.png   (x4, to compare with the Figma views)
@@ -126,6 +137,14 @@ func ParseScript(r io.Reader) ([]Command, error) {
 		if len(words) == 0 {
 			continue
 		}
+		if words[0] == "drag" {
+			steps, err := parseDrag(words[1:])
+			if err != nil {
+				return nil, fmt.Errorf("script line %d: %w", lineNo, err)
+			}
+			cmds = append(cmds, steps...)
+			continue
+		}
 		cmd, err := parseCommand(words)
 		if err != nil {
 			return nil, fmt.Errorf("script line %d: %w", lineNo, err)
@@ -136,6 +155,45 @@ func ParseScript(r io.Reader) ([]Command, error) {
 		return nil, fmt.Errorf("reading script: %w", err)
 	}
 	return cmds, nil
+}
+
+// parseDrag turns "drag X1 Y1 X2 Y2" into the presses it stands for: the
+// button goes down at the first point, the cursor moves to the middle and
+// then the end (one frame each), and the button comes up.
+func parseDrag(args []string) ([]Command, error) {
+	if len(args) != 4 {
+		return nil, fmt.Errorf("drag needs x1 y1 x2 y2")
+	}
+	var n [4]int
+	for i, a := range args {
+		v, err := strconv.Atoi(a)
+		if err != nil {
+			return nil, fmt.Errorf("drag %q: want four numbers", a)
+		}
+		n[i] = v
+	}
+	return []Command{
+		{Op: "down", X: n[0], Y: n[1]},
+		{Op: "mouse", X: (n[0] + n[2]) / 2, Y: (n[1] + n[3]) / 2},
+		{Op: "wait", N: 1},
+		{Op: "mouse", X: n[2], Y: n[3]},
+		{Op: "wait", N: 1},
+		{Op: "up"},
+	}, nil
+}
+
+// parseXY reads the two numbers of "down X Y".
+func parseXY(cmd Command, args []string) (Command, error) {
+	if len(args) != 2 {
+		return cmd, fmt.Errorf("%s needs x and y", cmd.Op)
+	}
+	x, errX := strconv.Atoi(args[0])
+	y, errY := strconv.Atoi(args[1])
+	if errX != nil || errY != nil {
+		return cmd, fmt.Errorf("%s %q %q: want two numbers", cmd.Op, args[0], args[1])
+	}
+	cmd.X, cmd.Y = x, y
+	return cmd, nil
 }
 
 func parseCommand(words []string) (Command, error) {
@@ -157,6 +215,12 @@ func parseCommand(words []string) (Command, error) {
 		}
 		if err := cmd.Key.UnmarshalText([]byte(args[0])); err != nil {
 			return cmd, fmt.Errorf("key %q: %w", args[0], err)
+		}
+	case "down":
+		return parseXY(cmd, args)
+	case "up":
+		if len(args) != 0 {
+			return cmd, fmt.Errorf("up takes no argument")
 		}
 	case "click", "mouse":
 		if len(args) != 2 {
@@ -191,9 +255,9 @@ func parseCommand(words []string) (Command, error) {
 			return cmd, fmt.Errorf("advance %q: want a number of game seconds", args[0])
 		}
 		cmd.N = n
-	case "stamp":
+	case "stamp", "lift":
 		if len(args) != 1 {
-			return cmd, fmt.Errorf("stamp needs admit, refer or discharge")
+			return cmd, fmt.Errorf("%s needs admit, refer or discharge", cmd.Op)
 		}
 		switch strings.ToLower(args[0]) {
 		case "admit":
@@ -203,7 +267,25 @@ func parseCommand(words []string) (Command, error) {
 		case "discharge":
 			cmd.Stamp = StampDischarge
 		default:
-			return cmd, fmt.Errorf("stamp %q: want admit, refer or discharge", args[0])
+			return cmd, fmt.Errorf("%s %q: want admit, refer or discharge", cmd.Op, args[0])
+		}
+	case "page":
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("page needs referral, sleeplog or wristband")
+		}
+		switch strings.ToLower(args[0]) {
+		case "referral":
+			cmd.N = int(PageReferral)
+		case "sleeplog":
+			cmd.N = int(PageSleepLog)
+		case "wristband":
+			cmd.N = int(PageWristband)
+		default:
+			return cmd, fmt.Errorf("page %q: want referral, sleeplog or wristband", args[0])
+		}
+	case "folder", "turn", "apply", "putback", "desk", "reception":
+		if len(args) != 0 {
+			return cmd, fmt.Errorf("%s takes no argument", cmd.Op)
 		}
 	case "shot", "shot4", "dump":
 		if len(args) != 1 {
@@ -336,6 +418,12 @@ func (a *Agent) runCommands(env *Env) {
 			return
 		case "mouse":
 			env.Input.InjectMouse(cmd.X, cmd.Y)
+		case "down":
+			env.Input.InjectDown(cmd.X, cmd.Y)
+			return
+		case "up":
+			env.Input.InjectUp()
+			return
 		case "type":
 			env.Input.InjectText(cmd.Text)
 			return
@@ -343,6 +431,16 @@ func (a *Agent) runCommands(env *Env) {
 			advance(env, cmd.N)
 		case "pan":
 			env.CameraX = float64(cmd.N)
+		case "desk":
+			env.SwitchTo(SceneDayDesk)
+			return
+		case "reception":
+			env.SwitchTo(SceneDayReception)
+			return
+		case "folder", "turn", "page", "lift", "apply", "putback":
+			if sh := env.Shift(); sh != nil {
+				runDeskCommand(sh, cmd) // a click that does nothing is no error, as for a person
+			}
 		case "stamp":
 			if sh := env.Shift(); sh != nil {
 				_ = sh.Stamp(cmd.Stamp) // nobody at the window: nothing happens, as for a click
@@ -354,6 +452,47 @@ func (a *Agent) runCommands(env *Env) {
 			a.pending = append(a.pending, output{"dump", cmd.Path})
 			return
 		}
+	}
+}
+
+// runDeskCommand does what the desk's clicks do: open the folder, turn the
+// page, lift a stamp, press it on the referral. Errors are dropped, like the
+// clicks that do nothing.
+func runDeskCommand(sh *Shift, cmd Command) {
+	switch cmd.Op {
+	case "folder":
+		_ = sh.OpenFolder()
+	case "turn":
+		_ = sh.TurnPage()
+	case "page":
+		_ = sh.GoToPage(Page(cmd.N))
+	case "lift":
+		sh.LiftStamp(cmd.Stamp)
+	case "apply":
+		_ = sh.ApplyStamp()
+	case "putback":
+		sh.PutBackStamp()
+	}
+}
+
+// deskSetup puts a folder on the desk for the scene ids "day.desk.*": it runs
+// the shift until the first guest stands at the window and their folder has
+// slid in, then opens it on a page if asked.
+func deskSetup(open bool, page Page) func(*Shift) error {
+	return func(sh *Shift) error {
+		for range 1200 {
+			if sh.FolderReady() {
+				break
+			}
+			sh.Update()
+		}
+		if !sh.FolderReady() {
+			return errors.New("desk scene: no folder arrived on the desk")
+		}
+		if !open {
+			return nil
+		}
+		return sh.GoToPage(page)
 	}
 }
 
@@ -483,6 +622,22 @@ type Dump struct {
 	Tab       string        `json:"computerTab"`
 	Top10     []DumpScore   `json:"top10"` // as the top-10 scene showed it
 	ShiftOver bool          `json:"shiftOver"`
+	Desk      DumpDesk      `json:"desk"`
+	CallLight bool          `json:"callLight"` // a Severe patient sleeps unattended
+}
+
+// DumpDesk is the look-down desk: the folder, the page, the stamp in the hand.
+type DumpDesk struct {
+	Folder       string `json:"folder"` // whose folder is on the desk, "" for none
+	State        string `json:"state"`  // none, arriving, closed, opening, open, leaving
+	Page         string `json:"page"`   // the page showing when the folder is open
+	Turning      bool   `json:"turning"`
+	Holding      string `json:"holding"`      // the stamp in the hand, "" for none
+	FilesWaiting bool   `json:"filesWaiting"` // the FILES tab shows files
+	Pulsing      bool   `json:"pulsing"`      // ... and pulses (day 1 tutorial)
+	Visited      bool   `json:"visited"`
+	Slip         string `json:"citation"` // the citation slip's text, "" for none
+	Ink          bool   `json:"ink"`      // the ink mark shows on the referral
 }
 
 // DumpPatient is one patient, with the enums written as text.
@@ -515,6 +670,10 @@ type DumpGuest struct {
 	RightStamp string `json:"rightStamp"`
 	Look       string `json:"look"`
 	Blinking   bool   `json:"blinking"`
+	Pips       int    `json:"pips"`     // 1, 2 or 3 dots for Mild, Moderate, Severe
+	Episodes   int    `json:"episodes"` // recorded by the hospital today
+	Darkness   int    `json:"darkness"` // palette steps darker (Severe patients)
+	LogRows    int    `json:"logRows"`  // rows on the sleep log
 	X          int    `json:"x"`
 	Y          int    `json:"y"`
 }
@@ -629,8 +788,11 @@ func (d *Dump) addShift(sh *Shift) {
 			ReferralOK: g.ReferralOK(), Problem: g.Problem(), Returning: g.Returning,
 			RightStamp: g.RightStamp().String(), Look: lookNames[sh.LookOf(g)], Blinking: sh.Blinking(g),
 			X: int(g.x), Y: int(g.y),
+			Pips: Pips(g.Level), Episodes: sh.EpisodesOf(g), Darkness: sh.Darkness(g), LogRows: len(g.Log),
 		})
 	}
+	d.CallLight = sh.SevereCalling()
+	d.Desk = dumpDesk(sh)
 	for _, st := range sh.Stamps() {
 		d.Stamps = append(d.Stamps, DumpStamp{Patient: st.Patient, Stamp: st.Stamp.String(), Right: st.Right})
 	}
@@ -651,6 +813,38 @@ func (d *Dump) addShift(sh *Shift) {
 	if a := sh.Alert(); a != nil {
 		d.Alerts = append(d.Alerts, "no room: "+a.Guest.Name)
 	}
+}
+
+// dumpDesk describes the desk the way the drawing sees it.
+func dumpDesk(sh *Shift) DumpDesk {
+	desk := sh.Desk()
+	dd := DumpDesk{State: "none", FilesWaiting: sh.FilesWaiting(), Pulsing: sh.Pulsing(), Visited: desk.Visited()}
+	if pose, ok := sh.FolderPose(); ok {
+		dd.Folder, dd.Page, dd.Ink = pose.guest.Name, pose.page.String(), pose.ink
+		switch {
+		case desk.FolderGuest() == nil:
+			dd.State = "leaving"
+		case !sh.FolderReady():
+			dd.State = "arriving"
+		case pose.open >= 1:
+			dd.State = "open"
+		case pose.open > 0:
+			dd.State = "opening"
+		default:
+			dd.State = "closed"
+		}
+	}
+	if _, turning := sh.Turning(); turning {
+		dd.Turning = true
+	}
+	if st, ok := desk.Holding(); ok {
+		dd.Holding = st.String()
+	}
+	if stamped, right, ok := sh.Slip(); ok {
+		l1, l2 := citationLines(stamped, right)
+		dd.Slip = l1 + " / " + l2
+	}
+	return dd
 }
 
 func writeDump(path string, d Dump) error {

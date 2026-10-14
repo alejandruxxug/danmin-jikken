@@ -9,11 +9,13 @@ import (
 // mixes the real keyboard and mouse with the inputs the agent backdoor
 // injects, so a scene cannot tell a script from a person.
 type Input struct {
-	keys    map[ebiten.Key]bool // injected this frame only
-	typed   []rune              // text injected this frame only (the script's "type")
-	clicked bool
-	clickX  int
-	clickY  int
+	keys     map[ebiten.Key]bool // injected this frame only
+	typed    []rune              // text injected this frame only (the script's "type")
+	fakeDown bool                // the backdoor holds the left button down
+	released bool                // the backdoor let go this frame
+	clicked  bool
+	clickX   int
+	clickY   int
 
 	// The agent backdoor holds the cursor still at a chosen spot. Without it
 	// the real mouse is used, except in test mode, where a stray mouse must
@@ -46,6 +48,30 @@ func (in *Input) Typed() []rune {
 
 // InjectText pretends the characters of s were typed on the next frame.
 func (in *Input) InjectText(s string) { in.typed = append(in.typed, []rune(s)...) }
+
+// Held is true while the left mouse button is down.
+func (in *Input) Held() bool {
+	return in.fakeDown || ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+}
+
+// Released is true on the frame the left button comes up.
+func (in *Input) Released() bool {
+	return in.released || inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft)
+}
+
+// InjectDown presses the left button at (x, y) and keeps it down (and the
+// cursor there) until InjectUp.
+func (in *Input) InjectDown(x, y int) {
+	in.InjectClick(x, y)
+	in.InjectMouse(x, y)
+	in.fakeDown = true
+}
+
+// InjectUp lets the left button go.
+func (in *Input) InjectUp() {
+	in.fakeDown = false
+	in.released = true
+}
 
 // SetView tells Input how the game picture is placed on the screen.
 func (in *Input) SetView(scale, offX, offY int) {
@@ -138,5 +164,6 @@ func (in *Input) InjectClick(x, y int) {
 func (in *Input) endFrame() {
 	clear(in.keys)
 	in.typed = nil
+	in.released = false
 	in.clicked = false
 }

@@ -74,11 +74,17 @@ func (s *receptionScene) click(x, y int) {
 		s.env.SwitchTo(SceneDayComputer)
 		return
 	}
+	if filesRect.has(x, y) {
+		s.env.SwitchTo(SceneDayDesk)
+		return
+	}
 	wx := x + int(s.env.CameraX) // the same click in the room's pixels
+	// The stamps are used on the look-down desk, on the papers (Game Design
+	// -> design log): a click on a stamp or its cubby looks down to the desk.
 	for _, st := range stampRects {
 		for _, r := range st.rects {
 			if r.has(wx, y) {
-				_ = s.shift.Stamp(st.stamp) // nobody at the window: nothing happens
+				s.env.SwitchTo(SceneDayDesk)
 				return
 			}
 		}

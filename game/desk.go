@@ -107,9 +107,13 @@ func deskLayers(day int) []string {
 
 // DeskArt is every sheet the day scenes draw, plus the font.
 type DeskArt struct {
-	room, desk, glass, waiting, hallway, computer, icons, iconsM4 *sprites.Sheet
-	window                                                        map[string]*sprites.Sheet // by Visitor.Sprite
-	font                                                          *Font
+	room, desk, glass, waiting, hallway, computer, icons, iconsM4                          *sprites.Sheet
+	deskTop, folder, docID, docReferral, docSleepLog, docWristband, docStamps, docCitation *sprites.Sheet
+	window                                                                                 map[string]*sprites.Sheet // by Visitor.Sprite
+	font                                                                                   *Font
+
+	// Scratch pictures the look-down desk draws into before bending them.
+	back, top, closed, open, page *ebiten.Image
 }
 
 // LoadDeskArt loads the sheets and the font.
@@ -122,6 +126,9 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		{&a.room, "reception_bg"}, {&a.desk, "desk"}, {&a.glass, "screen_glass"},
 		{&a.waiting, "waiting_fisher"}, {&a.hallway, "hallway_sleeper"},
 		{&a.computer, "computer"}, {&a.icons, "ui_icons"}, {&a.iconsM4, "ui_icons_m4"},
+		{&a.deskTop, "desk_top"}, {&a.folder, "folder"}, {&a.docID, "doc_settler_id"},
+		{&a.docReferral, "doc_referral"}, {&a.docSleepLog, "doc_sleep_log"}, {&a.docWristband, "doc_wristband"},
+		{&a.docStamps, "doc_stamps"}, {&a.docCitation, "doc_citation"},
 	} {
 		var err error
 		if *l.sheet, err = LoadSheet(fsys, l.name); err != nil {
@@ -136,6 +143,9 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		}
 		a.window[name] = sheet
 	}
+	a.back, a.top = ebiten.NewImage(ScreenW, ScreenH), ebiten.NewImage(ScreenW, ScreenH)
+	a.closed, a.open = ebiten.NewImage(folderW, folderH), ebiten.NewImage(folderW, folderH)
+	a.page = ebiten.NewImage(pageW, pageH)
 	var err error
 	if a.font, err = LoadFont(); err != nil {
 		return nil, err
@@ -284,6 +294,7 @@ func (p *painter) hud(sh *Shift, clock, tabLabel string) {
 	p.outline(rect{400, 8, 72, 18}, colInk)
 	p.text(fmt.Sprintf("PATIENTS %d/%d", sh.Served(), sh.Total()), 406, 16, colInk)
 	p.tab(tabLabel)
+	p.filesTab(sh)
 }
 
 // tab draws the black tab at the bottom of the screen.
