@@ -590,7 +590,7 @@ func (d *Dump) addShift(sh *Shift) {
 	for _, g := range sh.Guests {
 		d.Queue = append(d.Queue, DumpGuest{
 			ID: g.ID(), Name: g.Name, Status: g.status.String(),
-			ReferralOK: g.ReferralOK, Problem: g.Problem, Returning: g.Returning,
+			ReferralOK: g.ReferralOK(), Problem: g.Problem(), Returning: g.Returning,
 			RightStamp: g.RightStamp().String(), Look: lookNames[sh.LookOf(g)], Blinking: sh.Blinking(g),
 			X: int(g.x), Y: int(g.y),
 		})

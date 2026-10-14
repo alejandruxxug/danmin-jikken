@@ -4,6 +4,8 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+
+	"danmin/hospital"
 )
 
 func newTestShift(t *testing.T, day int) *Shift {
@@ -68,18 +70,24 @@ func TestWrongStampDoesNotScore(t *testing.T) {
 }
 
 func TestRightStampFromData(t *testing.T) {
+	valid := person("A", "cecily", "mouth_smile", 30, hospital.Mild, gullhaven, Date{1, 1, 80}, "NARCOLEPSY", "", "")
+	valid.Today = dayDate(1)
+	broken := valid
+	broken.Stamp = StampNone
+	returning, brokenReturning := valid, broken
+	returning.Returning, brokenReturning.Returning = true, true
 	cases := []struct {
 		v    Visitor
 		want Stamp
 	}{
-		{Visitor{ReferralOK: true}, StampAdmit},
-		{Visitor{ReferralOK: false}, StampRefer},
-		{Visitor{ReferralOK: true, Returning: true}, StampDischarge},
-		{Visitor{ReferralOK: false, Returning: true}, StampRefer},
+		{valid, StampAdmit},
+		{broken, StampRefer},
+		{returning, StampDischarge},
+		{brokenReturning, StampRefer},
 	}
 	for _, c := range cases {
 		if got := c.v.RightStamp(); got != c.want {
-			t.Errorf("%+v: %v, want %v", c.v, got, c.want)
+			t.Errorf("%+v: %v, want %v", c.v.Name, got, c.want)
 		}
 	}
 }
