@@ -75,7 +75,7 @@ func (s *nightScene) Update() error {
 	}
 	storyClick := false // a click that is for the story, not for the AUTO toggle
 	if x, y, ok := in.Click(); ok {
-		if image.Pt(x, y).In(night.AutoRect) {
+		if image.Pt(x, y).In(night.AutoRect) && !e.Cinematic() { // the toggle is hidden under the bars
 			s.toggleAuto()
 		} else {
 			storyClick = true
@@ -97,6 +97,10 @@ func (s *nightScene) Update() error {
 	}
 	return nil
 }
+
+// UsesCRT says whether this frame goes through the day's CRT: only the
+// realization's match cut to the day 3 report (a day picture inside a night).
+func (s *nightScene) UsesCRT() bool { return s.engine != nil && s.engine.DayLook() }
 
 // playCues plays the sounds the script asked for since the last frame.
 func (s *nightScene) playCues() {

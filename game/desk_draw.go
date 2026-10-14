@@ -1,6 +1,7 @@
 package game
 
 import (
+	"danmingame/night"
 	"fmt"
 	"image"
 	"image/color"
@@ -126,7 +127,7 @@ func (p *painter) shadow(s *sprites.Sheet, layer string, x, y, dx, dy int) {
 // cleared first) instead of the screen, and keeps its error.
 func (p *painter) into(buf *ebiten.Image, draw func(q *painter)) {
 	buf.Clear()
-	q := &painter{art: p.art, screen: buf, day: p.day, elapse: p.elapse}
+	q := &painter{art: p.art, screen: buf, day: p.day, elapse: p.elapse, forged: p.forged}
 	draw(q)
 	p.keep(q.err)
 }
@@ -335,6 +336,8 @@ func (p *painter) pageSheet(pg Page) *sprites.Sheet {
 		return p.art.docSleepLog
 	case PageWristband:
 		return p.art.docWristband
+	case PageReport:
+		return p.art.docReport
 	}
 	return p.art.docReferral
 }
@@ -364,6 +367,13 @@ func (p *painter) pageAt(g *Guest, pg Page, x, y int) {
 		p.pipsAfter(g.Level, letter, x+55, y+35, true)
 		p.text(g.Name, x+33, y+44, colInk)
 		p.text(g.LastStay.String(), x+8, y+71, colInk)
+	case PageReport:
+		p.sheet(p.art.docReport, layers, x, y)
+		hand, style := p.art.handHana, night.HanaStyle
+		if p.forged {
+			hand, style = p.art.handMayu, night.MayuStyle
+		}
+		p.keep(night.WriteReport(p.screen, hand, style, x, y))
 	default:
 		stamp := "stamp_barrow"
 		switch g.Stamp {

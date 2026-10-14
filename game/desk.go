@@ -109,6 +109,7 @@ func deskLayers(day int) []string {
 type DeskArt struct {
 	room, desk, glass, waiting, hallway, computer, icons, iconsM4                                     *sprites.Sheet
 	deskTop, folder, docID, docReferral, docSleepLog, docWristband, docStamps, docCitation, inkSpecks *sprites.Sheet
+	docReport, handHana, handMayu                                                                     *sprites.Sheet            // Hana's report and the two hands that can write it
 	window                                                                                            map[string]*sprites.Sheet // by Visitor.Sprite
 	font                                                                                              *Font
 
@@ -130,6 +131,7 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		{&a.deskTop, "desk_top"}, {&a.folder, "folder"}, {&a.docID, "doc_settler_id"},
 		{&a.docReferral, "doc_referral"}, {&a.docSleepLog, "doc_sleep_log"}, {&a.docWristband, "doc_wristband"},
 		{&a.docStamps, "doc_stamps"}, {&a.inkSpecks, "ink_specks"}, {&a.docCitation, "doc_citation"},
+		{&a.docReport, "doc_report"}, {&a.handHana, "hand_hana"}, {&a.handMayu, "hand_mayu"},
 	} {
 		var err error
 		if *l.sheet, err = LoadSheet(fsys, l.name); err != nil {
@@ -164,6 +166,7 @@ type painter struct {
 	day    int           // which day's memo the desk shows
 	elapse time.Duration // time since the scene started, for the boil
 	dark   int           // palette steps darker the next sheets are drawn (a Severe patient)
+	forged bool          // Mayu's hand wrote Hana's report (route_hana), see night.ReportHand
 	err    error
 }
 

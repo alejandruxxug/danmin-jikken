@@ -42,6 +42,11 @@ import (
 //	route                         set route_mayu / route_hana / route_nobody from the flags
 //	writer mayu                   whose hand writes the Note:/Letter: lines on the paper
 //	                              (hana is the default; a new bg puts it back)
+//	bars on|off|snap|white|60 1.5 letterbox bars: slide in (0.6 s), out (0.4 s), snap in at once,
+//	                              the dream's white bars, or grow to N pixels in S seconds
+//	punch 3 350 89 / punch off    hard cut to a whole-number zoom (2 or 3) centred on x y
+//	push 1.1 250 130 6            slow zoom to 1.1 centred on x y over 6 seconds (push off)
+//	pan 140 4                     slide the camera across a wide picture to x in 4 seconds
 //	end day                       the night is over; the game decides what follows
 //
 // Every error names the file and the line.
@@ -74,6 +79,10 @@ const (
 	OpRoute
 	OpLayer
 	OpWriter
+	OpBars
+	OpPunch
+	OpPush
+	OpPan
 )
 
 // Part is one "key=value" change to a pose.
@@ -95,8 +104,9 @@ type Node struct {
 	Parts   []Part // say/pose: parts changed after the expression; layer: {"+", name} or {"-", name}
 	Text    string // say/think: the words; jump, if: the label
 	Options []Option
-	Not     bool    // if: jump when the flag is OFF
-	Number  float64 // speed: letters per second; wait: seconds
+	Not     bool      // if: jump when the flag is OFF
+	Number  float64   // speed: letters per second; wait: seconds
+	Args    []float64 // bars, punch, push, pan: the numbers (see cinema.go)
 }
 
 // Script is a parsed file.
@@ -124,6 +134,10 @@ var knownFX = map[string]bool{
 	"dim":          true, // the screen dims (the game falls asleep, 3:17)
 	"figure":       true, // kanashibari: a faceless figure in the doorway
 	"figure_gone":  true, // ... gone
+	"dark":         true, // the picture goes dark at once (Hana's room before the red)
+	"dusk":         true, // a lighter dark: the red room with only the envelope bright
+	"light":        true, // ... and back to the light (ends dark and dusk)
+	"sting":        true, // the split-screen sting of the realization (0.8 s)
 	"clear":        true, // takes every running effect away (a cut)
 }
 
@@ -418,6 +432,14 @@ func parseCommand(n *Node, word, rest string) error {
 		if n.Name, err = one(); err == nil && !IsCharacter(n.Name) {
 			err = fmt.Errorf("unknown writer %q (want mayu or hana)", n.Name)
 		}
+	case "bars":
+		err = parseBars(n, args)
+	case "punch":
+		err = parsePunch(n, args)
+	case "push":
+		err = parsePush(n, args)
+	case "pan":
+		err = parsePan(n, args)
 	case "hold":
 		n.Op = OpHold
 		if len(args) != 0 {

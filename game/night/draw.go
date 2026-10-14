@@ -58,6 +58,7 @@ var (
 	colPaper  = color.RGBA{0xec, 0xec, 0xe6, 0xff} // speech, hovered choice label
 	colBlood  = color.RGBA{0x8a, 0x03, 0x03, 0xff}
 	colTraces = color.RGBA{0xb9, 0xb9, 0xb4, 0xff}
+	colSage   = color.RGBA{0x9f, 0xb1, 0x9f, 0xff} // deep sage: speakers' names in the white bars
 )
 
 // TextDrawer is the game's pixel font: it draws text with its top-left at
@@ -94,7 +95,10 @@ type Art struct {
 	ui, choice         *sprites.Sheet
 	handMayu, handHana *sprites.Sheet // the name plate's copies: off-white ink
 	inkMayu, inkHana   *sprites.Sheet // black ink for the paper
-	font               TextDrawer
+	cinema             *sprites.Sheet // fx_cinema: vignette, shade, bars
+	// Pictures the camera and the shaders work on.
+	world, zoomed, keep *ebiten.Image
+	font                TextDrawer
 	// Dream is on while the Prologue plays: its "black" (the screen before
 	// the fade in, the eyelids, the black between lines) is white, as it is
 	// all a dream (Game Design -> design log). The scene sets it when it starts.
@@ -115,12 +119,18 @@ type bgDef struct {
 }
 
 var bgTable = map[string]bgDef{
-	"ward_c":      {"ward_c", []string{"room", "sleepers", "blanket"}, false},
-	"corridor":    {"corridor", []string{"corridor", "sign_station"}, false},
-	"hana_far":    {"corridor", []string{"corridor", "sign_station", "hana_far"}, false},
-	"hana_door":   {"corridor", []string{"corridor", "sign_quarters", "door_crack"}, false},
+	"ward_c":    {"ward_c", []string{"room", "sleepers", "blanket"}, false},
+	"corridor":  {"corridor", []string{"corridor", "sign_station"}, false},
+	"hana_far":  {"corridor", []string{"corridor", "sign_station", "hana_far"}, false},
+	"hana_door": {"corridor", []string{"corridor", "sign_quarters", "door_crack"}, false},
+	// The day 3 report on the desk, for the match cut of the realization.
+	"report":      {"doc_report", []string{"fill", "lineart", "detail"}, false},
 	"supply_room": {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}, false},
 	"hana_room":   {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}, false},
+	// Hana's room in close-ups (Art log 2026-10-14, cinematic pass).
+	"door_closeup": {"hana_door", []string{"door", "card"}, false},                      // her name is written on the card
+	"hana_floor":   {"hana_floor", []string{"room", "fx_blood", "hand", "cans"}, false}, // 720 wide: the camera pans
+	"hana_desk":    {"hana_desk", []string{"desk", "fx_blood"}, false},                  // the envelope is drawn after the red
 	// The paper's writing is drawn by the game (drawPaper), in the writer's hand.
 	"note":        {"note", []string{"backdrop", "paper_note", "hands_note"}, false},
 	"letter":      {"note", []string{"backdrop", "paper_letter", "hands_letter"}, false},
@@ -186,7 +196,7 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	}
 	a.red = shader
 	a.bgs = map[string]*sprites.Sheet{}
-	extra := []bgDef{{sheet: BloodSheet}, {sheet: "mayu_day"}}
+	extra := []bgDef{{sheet: BloodSheet}, {sheet: "mayu_day"}, {sheet: "desk_top"}}
 	for _, def := range append(extra, bgTableDefs()...) {
 		if _, loaded := a.bgs[def.sheet]; loaded {
 			continue
@@ -202,7 +212,7 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	}
 	for name, dst := range map[string]**sprites.Sheet{
 		"mayu": &a.mayu, "hana": &a.hana, "bg_station": &a.station, "bg_ceiling": &a.ceiling,
-		"vn_ui": &a.ui, "vn_choice": &a.choice, "hand_mayu": &a.handMayu, "hand_hana": &a.handHana,
+		"vn_ui": &a.ui, "vn_choice": &a.choice, "fx_cinema": &a.cinema, "hand_mayu": &a.handMayu, "hand_hana": &a.handHana,
 	} {
 		sheet, err := sprites.Load(fsys, name)
 		if err != nil {
@@ -231,49 +241,112 @@ func ChoiceRects(n int) []image.Rectangle {
 	return rects
 }
 
-// Draw paints the whole night screen for the engine's current state. Order
-// (Art log): wall + monitor, traces, the girl, the counter and props, then
-// the effects and the UI on top.
+// Draw paints the whole night screen for the engine's current state. Two
+// steps: the picture (the wall, the girl, the props, the screen effects),
+// which the camera can zoom and the shake and the redscale can work on, then
+// the overlay on top that never moves (the bars, the subtitles or the text
+// box, the menu).
 func (a *Art) Draw(dst *ebiten.Image, e *Engine) {
 	_, shaking := e.FxTicks("shake")
 	shaking = shaking && e.FxProgress("shake") < 1
 	rise, drain := e.RedscaleAmounts()
-	if !shaking && rise == 0 {
-		a.drawScene(dst, e)
-		a.drawKeepWhite(dst, e)
+	scale, cx, cy := e.Zoom()
+	if !shaking && rise == 0 && scale == 1 {
+		a.drawPicture(dst, e)
+		a.drawKeepWhite(dst, e, scale, cx, cy)
+		a.drawOverlay(dst, e)
 		return
 	}
-	// The shake and the redscale work on the finished picture: draw it
-	// aside, then put it through the shader.
-	if a.scratch == nil {
-		a.scratch = ebiten.NewImage(screenW, screenH)
+	if a.world == nil {
+		a.world = ebiten.NewImage(screenW, screenH)
+		a.zoomed = ebiten.NewImage(screenW, screenH)
+		a.keep = ebiten.NewImage(screenW, screenH)
 	}
-	a.drawScene(a.scratch, e)
-	dx, dy := 0, 0
-	if shaking {
-		ticks, _ := e.FxTicks("shake")
-		dx, dy = ShakeOffset(ticks)
+	a.world.Clear()
+	a.drawPicture(a.world, e)
+	view := a.world
+	if scale != 1 {
+		a.zoomed.Clear()
+		blit(a.zoomed, a.world, scale, cx, cy)
+		view = a.zoomed
 	}
-	dst.Fill(colInk)
-	op := &ebiten.DrawRectShaderOptions{}
-	op.Images[0] = a.scratch
-	op.GeoM.Translate(float64(dx), float64(dy))
-	op.Uniforms = map[string]any{"Rise": float32(rise), "Drain": float32(drain)}
-	dst.DrawRectShader(screenW, screenH, a.red, op)
-	a.drawKeepWhite(dst, e)
+	if !shaking && rise == 0 {
+		dst.DrawImage(view, nil)
+	} else {
+		// The shake and the redscale work on the finished picture.
+		dx, dy := 0, 0
+		if shaking {
+			ticks, _ := e.FxTicks("shake")
+			dx, dy = ShakeOffset(ticks)
+		}
+		dst.Fill(colInk)
+		op := &ebiten.DrawRectShaderOptions{}
+		op.Images[0] = view
+		op.GeoM.Translate(float64(dx), float64(dy))
+		op.Uniforms = map[string]any{"Rise": float32(rise), "Drain": float32(drain)}
+		dst.DrawRectShader(screenW, screenH, a.red, op)
+	}
+	a.drawKeepWhite(dst, e, scale, cx, cy)
+	a.drawOverlay(dst, e)
 }
 
-// drawKeepWhite draws the envelope on Hana's desk after the redscale, so it
-// is the one thing in the room that stays white (Art Direction -> Hana's
-// room redscale).
-func (a *Art) drawKeepWhite(dst *ebiten.Image, e *Engine) {
-	if sheet := a.bgs["hana_room"]; sheet != nil && e.BG() == "hana_room" && e.Prop("envelope") {
-		_ = sheet.Draw(dst, []string{"envelope"}, 0, 0, 0)
+// blit draws src (a whole 480x270 picture) into dst as the camera sees it:
+// the part around (cx, cy) at the given scale. Nearest-neighbour, so a
+// whole-number scale stays crisp.
+func blit(dst, src *ebiten.Image, scale, cx, cy float64) {
+	ox, oy := CropOrigin(scale, cx, cy)
+	var op ebiten.DrawImageOptions
+	op.GeoM.Translate(-ox, -oy)
+	op.GeoM.Scale(scale, scale)
+	dst.DrawImage(src, &op)
+}
+
+// drawKeepWhite draws what stays white in Hana's red room, after the redscale
+// (Art Direction -> Hana's room redscale): the envelope, and "Four" written
+// on it. It follows the camera, so a zoom keeps it in place.
+func (a *Art) drawKeepWhite(dst *ebiten.Image, e *Engine, scale, cx, cy float64) {
+	var sheet *sprites.Sheet
+	switch {
+	case e.BG() == "hana_room" && e.Prop("envelope"):
+		sheet = a.bgs["hana_room"]
+	case e.BG() == "hana_desk":
+		sheet = a.bgs["hana_desk"]
+	}
+	if sheet == nil {
+		return
+	}
+	target := dst
+	if scale != 1 {
+		a.keep.Clear()
+		target = a.keep
+	}
+	_ = sheet.Draw(target, []string{"envelope"}, 0, 0, 0)
+	if e.BG() == "hana_desk" {
+		a.writeCentred(target, a.inkHana, HanaStyle, "Four", envelopeX, envelopeBase)
+	}
+	if scale != 1 {
+		blit(dst, a.keep, scale, cx, cy)
 	}
 }
 
-// drawScene paints the night screen without the shake or the redscale.
-func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
+// Where the name goes on the envelope (hana_desk) and on the door card.
+const (
+	envelopeX, envelopeBase = 242, 156
+	cardX, cardBase         = 222, 96
+)
+
+// writeCentred writes text in a handwriting sheet, centred on x, with its
+// baseline at the given y.
+func (a *Art) writeCentred(dst *ebiten.Image, hand *sprites.Sheet, style Style, text string, x, base int) {
+	placed, w := Layout(text, SheetMetrics{hand.Meta}, style)
+	for _, p := range placed {
+		_ = hand.Draw(dst, []string{p.Glyph}, 0, x-w/2+p.X, base-glyphBaseRow+p.Y)
+	}
+}
+
+// drawPicture paints the picture without the camera, the shake or the
+// redscale: the background, the girl, the props and the screen effects.
+func (a *Art) drawPicture(dst *ebiten.Image, e *Engine) {
 	tick := e.Ticks()
 	a.drawBackground(dst, e, tick)
 	switch {
@@ -300,25 +373,144 @@ func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 		_ = a.station.Draw(dst, layers, 0, 0, 0)
 	}
 	a.drawEffects(dst, e)
+}
+
+// drawOverlay paints what sits on top of the picture and never moves: the
+// vignette and the bars in cinematic mode, the blood on the lens, then the
+// words (subtitles in the bottom bar, or the text box), the arrow and the menu.
+func (a *Art) drawOverlay(dst *ebiten.Image, e *Engine) {
+	if zoom, _, _ := e.Zoom(); e.Cinematic() && !e.WhiteBars() && zoom == 1 && !e.DayLook() { // a punch-in is a plain crop
+		_ = a.cinema.Draw(dst, []string{"vignette"}, 0, 0, 0)
+	}
+	a.drawBars(dst, e)
+	if _, ok := e.FxTicks("sting"); ok && e.FxProgress("sting") < 1 {
+		a.drawSting(dst, e)
+		return
+	}
 	if t, ok := e.FxTicks("splash"); ok {
 		a.DrawBlood(dst, t)
 	}
-	if e.OnPaper() {
+	switch {
+	case e.OnPaper():
 		// A note or a letter is written on the paper: no text box, only the arrow.
 		if e.LineDone() {
-			frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
-			_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)
+			a.drawContinue(dst, e)
 		}
-	} else if e.HasLine() {
+	case e.HasLine() && e.Cinematic():
+		a.drawSubtitle(dst, e)
+		if e.LineDone() && len(e.Options()) == 0 {
+			a.drawContinue(dst, e)
+		}
+	case e.HasLine():
 		a.drawTextBox(dst, e)
 	}
 	if e.Holding() {
 		// A shot held for a click has no text box, only the arrow.
-		frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
-		_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)
+		a.drawContinue(dst, e)
 	}
 	if len(e.Options()) > 0 {
 		a.drawChoices(dst, e)
+	}
+}
+
+// drawContinue is the little bobbing arrow.
+func (a *Art) drawContinue(dst *ebiten.Image, e *Engine) {
+	frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
+	_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)
+}
+
+// drawBars paints the letterbox bars at their current height. The sheet's
+// bar is a solid block, so one row of it stretched to the height is the same
+// pixels; that lets the bars slide and grow to any size.
+func (a *Art) drawBars(dst *ebiten.Image, e *Engine) {
+	h := int(math.Round(e.BarsHeight()))
+	if h <= 0 {
+		return
+	}
+	layer := "bars"
+	if e.WhiteBars() {
+		layer = "bars_white"
+	}
+	frame, err := a.cinema.Frame(layer, 0)
+	if err != nil {
+		return
+	}
+	b := frame.Bounds()
+	top := frame.SubImage(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+1)).(*ebiten.Image)
+	bottom := frame.SubImage(image.Rect(b.Min.X, b.Max.Y-1, b.Max.X, b.Max.Y)).(*ebiten.Image)
+	var op ebiten.DrawImageOptions
+	op.GeoM.Scale(1, float64(h))
+	dst.DrawImage(top, &op)
+	op.GeoM.Reset()
+	op.GeoM.Scale(1, float64(h))
+	op.GeoM.Translate(0, float64(screenH-h))
+	dst.DrawImage(bottom, &op)
+}
+
+// Subtitles (Art Direction -> Cinematic pass): Silkscreen, centred on x 240,
+// wrapped to 360 px; the caps tops are 250 for one line, 245 and 255 for two.
+const (
+	subtitleWidth = 360
+	subtitleStep  = 10
+)
+
+// SubtitleTops are the y of each subtitle line's capital tops.
+func SubtitleTops(lines int) []int {
+	tops := make([]int, lines)
+	for i := range tops {
+		tops[i] = 250 - 5*(lines-1) + i*subtitleStep
+	}
+	return tops
+}
+
+// drawSubtitle writes the line in the bottom bar. Your thoughts are light
+// grey; speech is the speaker's name (mid grey) and two spaces, then the
+// words (off-white). In the dream's white bars the colours are inked.
+func (a *Art) drawSubtitle(dst *ebiten.Image, e *Engine) {
+	words, name := colPaper, color.Color(colMid)
+	if e.Thinking() {
+		words = colLight
+	}
+	if e.WhiteBars() {
+		words, name = colInk, colSage
+	}
+	text := strings.ReplaceAll(e.FullText(), "…", "...") // the font has no ellipsis glyph
+	label := ""
+	if !e.Thinking() && e.Speaker() != "" {
+		label = strings.ToUpper(e.Speaker())
+	}
+	whole := text
+	if label != "" {
+		whole = label + " " + text // the wrap sees one space; two are drawn
+	}
+	reveal := len([]rune(strings.ReplaceAll(e.Shown(), "…", "...")))
+	if label != "" {
+		reveal += len([]rune(label)) + 1
+	}
+	lines := WrapText(whole, subtitleWidth, a.font.Width)
+	tops := SubtitleTops(len(lines))
+	for i, line := range lines {
+		runes := []rune(line)
+		visible := min(max(reveal, 0), len(runes))
+		reveal -= len(runes) + 1
+		if visible == 0 {
+			continue
+		}
+		y := tops[i] - capTopOffset
+		if i == 0 && label != "" {
+			rest := string(runes[len([]rune(label))+1:])
+			full := label + "  " + rest
+			x := screenW/2 - a.font.Width(full)/2
+			nameRunes := min(visible, len([]rune(label)))
+			a.font.Draw(dst, string(runes[:nameRunes]), x, y, name)
+			if visible > len([]rune(label))+1 {
+				shown := string(runes[len([]rune(label))+1 : visible])
+				a.font.Draw(dst, shown, x+a.font.Width(label+"  "), y, words)
+			}
+			continue
+		}
+		x := screenW/2 - a.font.Width(line)/2
+		a.font.Draw(dst, string(runes[:visible]), x, y, words)
 	}
 }
 
@@ -355,6 +547,21 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 			}
 			if bg == "desk_day" {
 				a.drawDeskDay(dst, e)
+				return
+			}
+			switch bg {
+			case "hana_floor": // a wide picture: the camera pans across it
+				if e.Prop("clipboard") {
+					layers = append(append([]string(nil), layers...), "clipboard_snapped")
+				}
+				_ = a.bgs[def.sheet].Draw(dst, layers, 0, -int(e.PanX()), 0)
+				return
+			case "report":
+				a.drawReport(dst, e, def)
+				return
+			case "door_closeup":
+				_ = a.bgs[def.sheet].Draw(dst, layers, 0, 0, 0)
+				a.writeCentred(dst, a.inkHana, HanaStyle, "Hana", cardX, cardBase)
 				return
 			}
 			if bg == "note" || bg == "letter" {
@@ -537,11 +744,20 @@ func absInt(n int) int {
 
 // ---- effects ----
 
+// darkness are the effects that darken the picture at once: "dark" is the
+// dark room, "dusk" the red room with only the envelope bright.
+var darkness = map[string]float64{"dark": 0.7, "dusk": 0.55}
+
 func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 	if _, ok := e.FxTicks("fade_in"); ok {
 		if alpha := 1 - e.FxProgress("fade_in"); alpha > 0 {
 			c := a.lid()
 			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{c.R, c.G, c.B, uint8(alpha * 255)}, false)
+		}
+	}
+	for fx, alpha := range darkness {
+		if _, ok := e.FxTicks(fx); ok {
+			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(alpha * 255)}, false)
 		}
 	}
 	if _, ok := e.FxTicks("dim"); ok {
@@ -694,17 +910,6 @@ func WrapText(text string, width int, measure func(string) int) []string {
 // the hands holding it. The ink is every line so far in the writer's hand;
 // the line being typed is written glyph by glyph.
 func (a *Art) drawPaper(dst *ebiten.Image, e *Engine, def bgDef) {
-	sheet := a.bgs[def.sheet]
-	_ = sheet.Draw(dst, def.layers[:2], 0, 0, 0) // backdrop, paper
-	hand, style := a.inkHana, HanaStyle
-	if e.Writer() == "mayu" {
-		hand, style = a.inkMayu, MayuStyle
-	}
-	spec := LetterPaper
-	if e.BG() == "note" {
-		spec = NotePaper
-	}
-	metrics := SheetMetrics{hand.Meta}
 	lines := PaperText(e.Paper())
 	written := 0 // letters the pen has written so far
 	for i, line := range lines {
@@ -715,6 +920,23 @@ func (a *Art) drawPaper(dst *ebiten.Image, e *Engine, def bgDef) {
 		reveal := len([]rune(PaperText([]string{e.Shown()})[0]))
 		written += Written(line, reveal)
 	}
+	a.paperPicture(dst, def, e.BG(), e.Writer(), lines, written, e.LineDone())
+}
+
+// paperPicture paints a sheet of paper with the first `written` letters of
+// the lines on it. signed says whether the note carries Hana's "- H.".
+func (a *Art) paperPicture(dst *ebiten.Image, def bgDef, bg, writer string, lines []string, written int, signed bool) {
+	sheet := a.bgs[def.sheet]
+	_ = sheet.Draw(dst, def.layers[:2], 0, 0, 0) // backdrop, paper
+	hand, style := a.inkHana, HanaStyle
+	if writer == "mayu" {
+		hand, style = a.inkMayu, MayuStyle
+	}
+	spec := LetterPaper
+	if bg == "note" {
+		spec = NotePaper
+	}
+	metrics := SheetMetrics{hand.Meta}
 	for _, row := range PaperRows(lines, spec, metrics, style) {
 		for _, p := range row.Glyphs {
 			if row.First+p.Char <= written {
@@ -722,7 +944,7 @@ func (a *Art) drawPaper(dst *ebiten.Image, e *Engine, def bgDef) {
 			}
 		}
 	}
-	if e.BG() == "note" && e.LineDone() {
+	if bg == "note" && signed {
 		// Hana signs her note; the signature is not a line of the script.
 		sign, w := Layout(noteSignature, metrics, style)
 		for _, p := range sign {
@@ -747,3 +969,78 @@ const (
 	noteSignature = "- H."
 	noteSignBase  = 138
 )
+
+// ---- the day 3 report (the realization's match cut) ----
+
+// Where the report page lies on the look-down desk (the same place the
+// folder's page has), and the desk's look.
+const reportX, reportY = 186, 41
+
+// drawReport paints the desk from above with Hana's report on it, written
+// in the hand ReportHand names. It is a day picture, so the scene puts the
+// CRT on it (DayLook).
+func (a *Art) drawReport(dst *ebiten.Image, e *Engine, def bgDef) {
+	desk := a.bgs["desk_top"]
+	frame := desk.FrameAt(sprites.BoilTag, time.Duration(e.Ticks())*time.Second/TicksPerSecond)
+	_ = desk.Draw(dst, []string{"fill", "lineart", "detail", "memo_day3"}, frame, 0, 0)
+	page := a.bgs[def.sheet]
+	_ = page.Draw(dst, def.layers, page.FrameAt(sprites.BoilTag, time.Duration(e.Ticks())*time.Second/TicksPerSecond), reportX, reportY)
+	hand, style := a.inkHana, HanaStyle
+	if sheet, _ := ReportHand(e.Flags()); sheet == "hand_mayu" {
+		hand, style = a.inkMayu, MayuStyle
+	}
+	_ = WriteReport(dst, hand, style, reportX, reportY)
+}
+
+// ---- the split-screen sting ----
+
+// Sting: the letter's signature above, the report's below, both at x4
+// (Figma: Cine - Opt 1 . B4). The strip shown is rows 68-201 of the x4 crop.
+const (
+	stingScale = 4
+	stingRow0  = 68
+	stingRows  = 134
+)
+
+// stingSignature are the centres the two crops are taken on: the letter's
+// and the report's signature.
+var (
+	stingLetterAt = [2]float64{350, 89}
+	stingReportAt = [2]float64{301, 196}
+)
+
+// drawSting fills the screen with the two signatures one above the other, a
+// 2 px divider between. They are the same words in the same hand, so they
+// match pixel for pixel. It covers the whole screen (bars and words too).
+func (a *Art) drawSting(dst *ebiten.Image, e *Engine) {
+	if a.world == nil {
+		a.world = ebiten.NewImage(screenW, screenH)
+		a.zoomed = ebiten.NewImage(screenW, screenH)
+		a.keep = ebiten.NewImage(screenW, screenH)
+	}
+	dst.Fill(colInk)
+	letter, report := bgTable["letter"], bgTable["report"]
+	lines := PaperText(e.LastPaper())
+	all := 0
+	for _, l := range lines {
+		all += countLetters(l)
+	}
+	a.world.Clear()
+	a.paperPicture(a.world, letter, "letter", e.LastWriter(), lines, all, true)
+	a.stingStrip(dst, a.world, stingLetterAt, 0)
+	a.world.Clear()
+	a.drawReport(a.world, e, report)
+	a.stingStrip(dst, a.world, stingReportAt, stingRows+2)
+}
+
+// stingStrip draws the middle rows of src at x4 around the point into dst,
+// starting at row y.
+func (a *Art) stingStrip(dst, src *ebiten.Image, at [2]float64, y int) {
+	strip := dst.SubImage(image.Rect(0, y, screenW, y+stingRows)).(*ebiten.Image)
+	ox, oy := CropOrigin(stingScale, at[0], at[1])
+	var op ebiten.DrawImageOptions
+	op.GeoM.Translate(-ox, -oy)
+	op.GeoM.Scale(stingScale, stingScale)
+	op.GeoM.Translate(0, float64(y-stingRow0))
+	strip.DrawImage(src, &op)
+}

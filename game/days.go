@@ -54,6 +54,10 @@ type Visitor struct {
 	// Returning patients wear a wristband. This one has no new sleep
 	// episodes, so the right call is DISCHARGE.
 	Returning bool
+
+	// Report clips Hana's night report to this folder (day 3): the page the
+	// realization in Night 3 points back at.
+	Report bool
 }
 
 // SendToWardC says whether the day's memo sends this visitor to Ward C:
@@ -128,6 +132,7 @@ func buildDays() []DayRules {
 	you.Returning, you.Ward, you.LastStay = true, "WARD C", dayDate(2)
 	cecilyBack := cecily
 	cecilyBack.Returning, cecilyBack.Ward, cecilyBack.LastStay = true, "WARD B", dayDate(1)
+	cecilyBack.Report = true // the first folder of day 3 carries Hana's report
 
 	d := []DayRules{
 		{Rooms: 3, ShiftSeconds: 180, ArrivalGap: 30, Visitors: []Visitor{

@@ -73,8 +73,18 @@ writer mayu # Mayu forged it, so her hand writes it
 Letter: I'm so sorry!! I was just SO tired <3
 Letter: Don't be sad, okay? Be happy. Be happy with Mayu!
 Letter: - Hana
+# The realization (Cinematic pass, Option 1): punch in on the signature, match
+# cut to the day 3 report (the same signature, in the same hand), a split-screen
+# sting, then back to the room. The words are the script's; only the staging is new.
+bars snap
+punch 3 350 89
 ~ The loops on the letters. Round, happy loops.
+bg report
+punch 3 301 196
 ~ I've been reading this handwriting on Hana's reports all day.
+fx sting
+wait 0.8
+punch off
 label letter_done
 bg hana_room
 jump gurney
@@ -85,6 +95,7 @@ label leave_it
 
 # ---- The gurney ----
 label gurney
+bars off
 fx redscale_off
 wait 1.2
 prop clear

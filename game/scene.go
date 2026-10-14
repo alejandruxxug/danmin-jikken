@@ -27,7 +27,8 @@ const (
 	SceneDeskReferral  = "day.desk.referral"
 	SceneDeskSleepLog  = "day.desk.sleeplog"
 	SceneDeskWristband = "day.desk.wristband"
-	SceneDayComputer   = "day.computer" // the BEDS tab
+	SceneDeskReport    = "day.desk.report" // day 3: Hana's night report, the last page of the first folder
+	SceneDayComputer   = "day.computer"    // the BEDS tab
 	SceneRecords       = "day.computer.records"
 	SceneSleepLogs     = "day.computer.sleeplogs"
 	SceneWardFeed      = "day.computer.wardfeed"

@@ -35,7 +35,7 @@ func TestFolderArrivesWithTheGuestAtTheWindow(t *testing.T) {
 }
 
 func TestOpenAndTurnPages(t *testing.T) {
-	sh := folderOnDesk(t, 3) // day 3 starts with Old Cecily, a returning patient
+	sh := folderOnDesk(t, 3) // day 3 starts with Old Cecily: returning, and Hana's report is clipped to her folder
 	if err := sh.TurnPage(); !errors.Is(err, ErrFolderClosed) {
 		t.Errorf("turning a closed folder: %v, want ErrFolderClosed", err)
 	}
@@ -44,14 +44,14 @@ func TestOpenAndTurnPages(t *testing.T) {
 	}
 	runTicks(sh, openTicks)
 	var seen []Page
-	for range 3 {
+	for range 4 {
 		seen = append(seen, sh.Desk().Page())
 		if err := sh.TurnPage(); err != nil {
 			t.Fatal(err)
 		}
 		runTicks(sh, flipTestTicks)
 	}
-	want := []Page{PageReferral, PageSleepLog, PageWristband}
+	want := []Page{PageReferral, PageSleepLog, PageWristband, PageReport}
 	for i := range want {
 		if seen[i] != want[i] {
 			t.Fatalf("pages seen %v, want %v", seen, want)
@@ -571,6 +571,42 @@ func TestCitationLinesFit(t *testing.T) {
 					t.Errorf("%q is %d px wide, the slip line is %d", l, w, citationLineWidth)
 				}
 			}
+		}
+	}
+}
+
+// Hana's report is the last page of the first folder of day 3 and of no other.
+func TestReportPageOnlyInTheFirstFolderOfDay3(t *testing.T) {
+	d3, err := RulesForDay(3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := &Guest{Visitor: d3.Visitors[0]}
+	order := pageOrder(first)
+	want := []Page{PageReferral, PageSleepLog, PageWristband, PageReport}
+	if len(order) != len(want) {
+		t.Fatalf("pages = %v, want %v", order, want)
+	}
+	for i := range want {
+		if order[i] != want[i] {
+			t.Fatalf("pages = %v, want %v", order, want)
+		}
+	}
+	if got := nextPage(first, PageReport); got != PageReferral {
+		t.Errorf("after the report the stack cycles to %v", got)
+	}
+	if got := nextPage(first, PageWristband); got != PageReport {
+		t.Errorf("after the wristband comes %v", got)
+	}
+	for _, v := range d3.Visitors[1:] {
+		if hasPage(&Guest{Visitor: v}, PageReport) {
+			t.Errorf("%s has the report but only the first folder should", v.Name)
+		}
+	}
+	d1, _ := RulesForDay(1)
+	for _, v := range d1.Visitors {
+		if v.Report {
+			t.Errorf("%s: no report before day 3", v.Name)
 		}
 	}
 }

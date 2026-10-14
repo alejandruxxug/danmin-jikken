@@ -39,6 +39,7 @@ var fxLength = map[string]int{
 	"dim":          120,
 	"eyes_slit":    150,
 	"eyes_open":    72,
+	"sting":        48, // 0.8 s
 }
 
 // hopTable is the talk hop: how many pixels up (negative) the speaking girl
@@ -70,8 +71,15 @@ type Engine struct {
 	layers map[string]bool // a CG background: the layers switched on by "layer"
 	// The paper (bg note / bg letter): whose hand writes on it, and every
 	// Note:/Letter: line so far. Earlier lines stay; a new bg empties it.
-	writer  string
-	paper   []string
+	writer string
+	paper  []string
+	// The last paper that was put away (the realization's sting shows it).
+	lastWriter string
+	lastPaper  []string
+	// Cinematic mode: the bars, the camera zoom and the sideways pan.
+	bars    barState
+	zoom    zoomState
+	pan     panState
 	visible string // the character on screen ("" for none)
 	faces   bool   // the Prologue's two upside-down faces
 	poses   map[string]Pose
@@ -192,11 +200,16 @@ func (e *Engine) exec(n Node) {
 		e.autoNext = true
 	case OpBG:
 		e.hopFor = ""
+		if e.OnPaperBG() { // the sting still needs the letter after a cut away from it
+			e.lastWriter, e.lastPaper = e.writer, e.paper
+		}
 		e.bg = n.Name
 		e.layers = map[string]bool{} // a new picture starts with its layers off
 		e.writer, e.paper = "hana", nil
 	case OpWriter:
 		e.writer = n.Name
+	case OpBars, OpPunch, OpPush, OpPan:
+		e.execCinema(n)
 	case OpLayer:
 		for _, p := range n.Parts {
 			if p.Key == "+" {
@@ -227,6 +240,14 @@ func (e *Engine) exec(n Node) {
 		switch n.Name {
 		case "clear":
 			e.fx = map[string]int{}
+			return
+		case "dark":
+			delete(e.fx, "dusk")
+		case "dusk":
+			delete(e.fx, "dark")
+		case "light":
+			delete(e.fx, "dark")
+			delete(e.fx, "dusk")
 			return
 		case "figure_gone":
 			delete(e.fx, "figure")
@@ -453,6 +474,7 @@ func (e *Engine) FastForward(line int) error {
 // a backdoor jump lands on the settled picture (open eyes, risen red) and
 // not on the first frame of a fade.
 func (e *Engine) finishEffects() {
+	e.bars.dur, e.zoom.dur, e.pan.dur = 0, 0, 0
 	for name := range e.fx {
 		if length, timed := fxLength[name]; timed {
 			e.fx[name] = length
@@ -506,8 +528,17 @@ func (e *Engine) HasLine() bool {
 }
 
 // OnPaperBG says whether the picture is a sheet of paper held up to the
-// camera (the note or the letter).
-func (e *Engine) OnPaperBG() bool { return e.bg == "note" || e.bg == "letter" }
+// camera (the note, the letter or the report).
+func (e *Engine) OnPaperBG() bool { return e.bg == "note" || e.bg == "letter" || e.bg == "report" }
+
+// LastWriter and LastPaper are the hand and the lines of the paper that was
+// on screen before the last cut away from it.
+func (e *Engine) LastWriter() string  { return e.lastWriter }
+func (e *Engine) LastPaper() []string { return e.lastPaper }
+
+// DayLook says whether the picture is a day picture (the report on the
+// desk) that is shown through the day's CRT.
+func (e *Engine) DayLook() bool { return e.bg == "report" }
 
 // Writer is whose hand writes on the paper: "hana" or "mayu".
 func (e *Engine) Writer() string { return e.writer }
@@ -595,29 +626,34 @@ func (e *Engine) Name() string { return e.script.Name }
 
 // State is a snapshot for the agent dump.
 type State struct {
-	Script    string   `json:"script"`
-	Line      int      `json:"line"`
-	Speaker   string   `json:"speaker"`
-	Text      string   `json:"text"`
-	Thinking  bool     `json:"thinking"`
-	LineDone  bool     `json:"lineDone"`
-	Options   []string `json:"options"`
-	Hover     int      `json:"hover"`
-	BG        string   `json:"bg"`
-	Visible   string   `json:"visible"`
-	Faces     bool     `json:"faces"`
-	Layers    []string `json:"poseLayers"`
-	Props     []string `json:"props"`
-	CGLayers  []string `json:"cgLayers"`
-	Effects   []string `json:"effects"`
-	Ended     bool     `json:"ended"`
-	EndsTo    string   `json:"endsTo"`
-	Auto      bool     `json:"auto"`
-	Holding   bool     `json:"holding"`
-	Writer    string   `json:"writer"` // whose hand is on the paper
-	Paper     []string `json:"paper"`  // the lines written on it so far
-	LastSFX   string   `json:"sfx"`
-	LastMusic string   `json:"music"`
+	Script    string     `json:"script"`
+	Line      int        `json:"line"`
+	Speaker   string     `json:"speaker"`
+	Text      string     `json:"text"`
+	Thinking  bool       `json:"thinking"`
+	LineDone  bool       `json:"lineDone"`
+	Options   []string   `json:"options"`
+	Hover     int        `json:"hover"`
+	BG        string     `json:"bg"`
+	Visible   string     `json:"visible"`
+	Faces     bool       `json:"faces"`
+	Layers    []string   `json:"poseLayers"`
+	Props     []string   `json:"props"`
+	CGLayers  []string   `json:"cgLayers"`
+	Effects   []string   `json:"effects"`
+	Ended     bool       `json:"ended"`
+	EndsTo    string     `json:"endsTo"`
+	Auto      bool       `json:"auto"`
+	Holding   bool       `json:"holding"`
+	Bars      float64    `json:"bars"`      // letterbox bar height now, in pixels
+	Cinematic bool       `json:"cinematic"` // the bars are up: subtitles instead of the text box
+	Zoom      float64    `json:"zoom"`      // camera scale (1 = the whole picture)
+	ZoomAt    [2]float64 `json:"zoomAt"`    // the centre of the zoom
+	PanX      float64    `json:"panX"`      // camera x on a wide picture
+	Writer    string     `json:"writer"`    // whose hand is on the paper
+	Paper     []string   `json:"paper"`     // the lines written on it so far
+	LastSFX   string     `json:"sfx"`
+	LastMusic string     `json:"music"`
 }
 
 // Snapshot describes the engine for the dump.
@@ -627,8 +663,9 @@ func (e *Engine) Snapshot() State {
 		Text: e.Shown(), Thinking: e.thinking, LineDone: e.LineDone(),
 		Options: []string{}, Hover: e.hover, BG: e.bg, Visible: e.visible,
 		Faces: e.faces, Layers: []string{}, Props: []string{}, CGLayers: []string{}, Effects: []string{},
-		Writer: e.writer, Paper: append([]string{}, e.paper...), Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, Holding: e.holding, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
+		Bars: e.BarsHeight(), Cinematic: e.Cinematic(), PanX: e.PanX(), Writer: e.writer, Paper: append([]string{}, e.paper...), Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, Holding: e.holding, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
 	}
+	st.Zoom, st.ZoomAt[0], st.ZoomAt[1] = e.Zoom()
 	for _, o := range e.options {
 		st.Options = append(st.Options, o.Text)
 	}

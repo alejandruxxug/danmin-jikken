@@ -176,7 +176,7 @@ func (s *deskScene) click(x, y int) {
 
 func (s *deskScene) Draw(screen *ebiten.Image) {
 	elapse := time.Duration(s.ticks) * time.Second / 60
-	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: elapse}
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: elapse, forged: s.env.Flags.Has("route_hana")}
 	cx, cy := s.env.Input.Cursor()
 	if s.t < 1 {
 		// The reception goes into its own picture first, so it can be squashed.

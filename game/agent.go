@@ -327,7 +327,7 @@ func parseCommand(words []string) (Command, error) {
 		}
 	case "page":
 		if len(args) != 1 {
-			return cmd, fmt.Errorf("page needs referral, sleeplog or wristband")
+			return cmd, fmt.Errorf("page needs referral, sleeplog, wristband or report")
 		}
 		switch strings.ToLower(args[0]) {
 		case "referral":
@@ -336,8 +336,10 @@ func parseCommand(words []string) (Command, error) {
 			cmd.N = int(PageSleepLog)
 		case "wristband":
 			cmd.N = int(PageWristband)
+		case "report":
+			cmd.N = int(PageReport)
 		default:
-			return cmd, fmt.Errorf("page %q: want referral, sleeplog or wristband", args[0])
+			return cmd, fmt.Errorf("page %q: want referral, sleeplog, wristband or report", args[0])
 		}
 	case "auto": // auto, auto on, auto off
 		switch {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 )
 
@@ -21,6 +22,7 @@ const (
 	PageReferral Page = iota
 	PageSleepLog
 	PageWristband // returning patients only
+	PageReport    // Hana's night report: clipped to the first folder of day 3
 )
 
 func (p Page) String() string {
@@ -31,6 +33,8 @@ func (p Page) String() string {
 		return "sleep log"
 	case PageWristband:
 		return "wristband"
+	case PageReport:
+		return "report"
 	}
 	return "unknown page"
 }
@@ -112,12 +116,24 @@ func (d *Desk) Visited() bool { return d.visited }
 func (d *Desk) MarkVisited() { d.visited = true }
 
 // pages is how many pages the guest's folder has.
-func pages(g *Guest) int {
+func pages(g *Guest) int { return len(pageOrder(g)) }
+
+// pageOrder is the order the pages lie in the guest's folder: the referral
+// and the sleep log, then the wristband (returning patients) and Hana's
+// report (the one folder that has it).
+func pageOrder(g *Guest) []Page {
+	order := []Page{PageReferral, PageSleepLog}
 	if g.Returning {
-		return 3
+		order = append(order, PageWristband)
 	}
-	return 2
+	if g.Report {
+		order = append(order, PageReport)
+	}
+	return order
 }
+
+// hasPage says whether the guest's folder has the page.
+func hasPage(g *Guest, p Page) bool { return slices.Contains(pageOrder(g), p) }
 
 // FilesWaiting is true while a folder lies on the desk: the FILES tab shows
 // it (pulsing in the day 1 tutorial, a folder mark afterwards).
@@ -261,7 +277,10 @@ func (f *pageFlip) step() {
 
 // nextPage is the page after p in the guest's folder; the stack cycles, the
 // turned page goes to the back.
-func nextPage(g *Guest, p Page) Page { return Page((int(p) + 1) % pages(g)) }
+func nextPage(g *Guest, p Page) Page {
+	order := pageOrder(g)
+	return order[(slices.Index(order, p)+1)%len(order)]
+}
 
 // flipReady checks the folder is open and still before a flip starts.
 func (s *Shift) flipReady() error {
@@ -321,7 +340,7 @@ func (s *Shift) GoToPage(p Page) error {
 	if d.guest == nil {
 		return ErrNoFolder
 	}
-	if int(p) < 0 || int(p) >= pages(d.guest) {
+	if !hasPage(d.guest, p) {
 		return fmt.Errorf("%s: %w", p, ErrNoSuchPage)
 	}
 	if !d.open {

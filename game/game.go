@@ -72,6 +72,7 @@ func New(opts Options) (*Game, error) {
 	}{
 		SceneDeskClosed: {false, PageReferral}, SceneDeskReferral: {true, PageReferral},
 		SceneDeskSleepLog: {true, PageSleepLog}, SceneDeskWristband: {true, PageWristband},
+		SceneDeskReport: {true, PageReport},
 	} {
 		g.scenes.Register(id, func() Scene { return &deskScene{setup: deskSetup(open.open, open.page)} })
 	}
