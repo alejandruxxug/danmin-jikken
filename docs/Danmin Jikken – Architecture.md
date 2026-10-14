@@ -86,7 +86,9 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-shot <file.png>` | Saves a screenshot at **1× (480×270)**, plus `-shot4` at ×4 to compare with the Figma view | The agent *sees* the screen |
 | `-dump <file.json>` | Writes the game state: scene, day, clock, patients (state, room), rooms, scores, flags | Check logic, not only pixels |
 | `-pan X` | Camera x at the start, 0–240 (default 120 = the Figma frame's crop). Reception only | Shots line up with the Figma view, or show the far ends of the room |
-| `-nocrt` | Turns the day CRT filter off (Art Direction → Day screen) | Screenshots line up pixel for pixel with the Figma views |
+| `-nocrt` | Turns the day CRT filter off (Art Direction → Day screen). **Works without `-agent` too** (a player option; **F10** toggles it in the game). With the filter on, `-shot4` and `shot4` are the filtered picture; `-shot` (1×) is always the plain canvas | Screenshots line up pixel for pixel with the Figma views |
+| `-line N` | Night scenes: start at the first command on or after line N of the script file (it plays the story up to there silently; a menu on the way is answered with the option your `-flags` already chose, else the first) | Jump into the middle of a night |
+| `-reduce-flashing` | Replaces the strobe with one slow invert-and-fade (Settings → Reduce flashing). **Works without `-agent`** | Check the safe version |
 | `-scores <file>` | Scores file to read and write. Without it the top-10 keeps scores in memory (the real `danmin_scores.txt` is never touched in test mode) | Top-10 and the ghost row on a scratch file |
 | `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |
 | `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
@@ -102,6 +104,9 @@ key Space
 click 212 140      # 1× game coordinates (Figma px ÷ 4)
 mouse 5 135        # hold the cursor there; within 48 px of a side it pans the camera
 pan 240            # put the camera at x = 240 right away
+next               # night: press Space (first shows the whole line, then goes on; in a menu it picks the highlighted option)
+choose 2           # night: pick option 2 of the open menu (1 to 3)
+skipstrobe         # the day-to-night strobe ends on its next frame
 stamp admit        # use a stamp on the window patient (admit, refer, discharge) straight away, skipping the desk
 advance 120        # run the shift 120 game seconds at once (queue, clock; the patients' own timers stay real-time)
 dark 2             # draw every guest 2 palette steps darker (0-3); -1 flag value = off
@@ -172,6 +177,26 @@ game/sprites/           loader for the Aseprite sheet + json (+ testdata fixture
 **Scores without `-scores`:** the top-10 keeps the rows in memory for the run (`Env.MemScores`) and shows `KEPT IN MEMORY`; the real `danmin_scores.txt` is never touched in test mode.
 
 Notes on the backdoor as built: `-shot`, `-shot4` and `-dump` are written when the run ends (after `-frames N`, or when the `-input` script ends, or after one frame if neither is given); `shot`/`dump` lines inside a script write mid-run. Without `-quit` the window stays open after the run ends. `-speed N` multiplies both the clock and the patients' timers. `-seed 0` means a random seed.
+
+## 🌙 Night script format (M5)
+
+One plain text file per night in `game/night/scripts/` (embedded with `go:embed`), one command per line; `#` starts a comment. The parser is `night/script.go`, every error names the file and line (`night1.txt line 12: unknown expression ...`). The engine (`night/engine.go`) knows nothing about drawing, so tests run it without a window; `night/draw.go` paints it; `game/night_scene.go` is the glue.
+
+| Line | Does |
+|---|---|
+| `Mayu (smile): words` | A line. The word in brackets is the expression (`night/faces.go`: Mayu `smile bright laugh happy soft blank pout`, Hana `tired flat soft`). More parts can follow: `Mayu (smile eyes=half arms=clasp): ...` (keys `eyes brows mouth fx arml armr arms`, values are the layer names). A speaker with no sprites (`Note: ...`) gets the name plate only |
+| `~ words` | Your thought: light grey, no name plate |
+| `choice` + `option Text \| set flag \| jump label` | A menu of 2 to 3 options. Hover with the mouse or Up/Down; click or Enter/Space picks |
+| `label x`, `jump x`, `if flag jump x`, `ifnot flag jump x`, `set flag` | Branches and flags |
+| `bg station / ceiling / black / white / <other>` | Backdoor-reachable backgrounds. Any other name draws a black screen with `PLACEHOLDER: <NAME>` (the batch 2 art that does not exist yet) |
+| `prop can` (`coffee can syringe note monitor`, `prop clear`) | Things on the counter; `monitor` draws the ward traces in the monitor rect |
+| `show mayu`, `hide`, `faces` | One girl at (112, 2), or the Prologue's two upside-down faces |
+| `fx fade_in / eyes_close / red_pixel / flat_line / line_back / seventh` | Screen effects |
+| `speed N`, `wait S`, `sfx x`, `music x`, `end day2` | Typewriter letters per second; a pause (a click skips it); sound cues (logged only, sound is M7); the end: `dayN` is the day that follows |
+
+**Flags** (`night.Flags`, one map on `Env.Flags`): choices write into it, the day will read it (M4's day 2 and 3 memo rules still need that wiring). The dump lists them. The name plate is written in the speaker's handwriting (`night/handwriting.go`: Hana joins, Mayu's seeded joins and ±1 px jitter; reusable for the notes), other speakers use Silkscreen.
+
+**The CRT** (`game/crt.kage`, `crt.go`): one Kage shader on the finished picture, day scenes only (`usesCRT`), seven uniforms (`Scanline Vignette Curve Day Invert Time Filmed`). The strobe scene sets `Env.Invert` and the shader swaps black and white.
 
 ## ✅ Assignment checklist
 
