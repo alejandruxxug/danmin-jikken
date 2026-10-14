@@ -21,6 +21,12 @@ snore.wav         "snore", 80 CC0 creature SFX, rubberduck (opengameart.org/cont
 snore_2.wav       snore_02, 80 CC0 creature SFX 2, rubberduck (opengameart.org/content/80-cc0-creture-sfx-2), mono, peak 0.5
 snore_3.wav       Breathing tired, CC0 (opengameart.org/content/breathing-tired), mono, peak 0.5
 snore_4.wav       littlegrunts, crueltyinc, CC0 (opengameart.org/content/little-grunts), mono, peak 0.5
+folder_open.wav   Paper Sound - 3, Various paper sound effects, Luckius, CC0 (opengameart.org/content/various-paper-sound-effects), mono, peak 0.6
+folder_close.wav  Paper Sound - 1, same pack
+folder_slide.wav  Paper Sound - 2, same pack
+page_1.ogg        book_flip.8, 10 book page flips, StarNinjas, CC0 (opengameart.org/content/10-book-page-flips), the pack's own ogg
+page_2.ogg        book_flip.4, same pack
+page_3.ogg        book_flip.1, same pack
 chime_right.mp3   Chime_Confirm, Chimey UI sounds, MouseBYTE, CC0 "no rights reserved" (opengameart.org/content/chimey-ui-sounds), the right-stamp ding
 breath.wav        "breath", same pack
 stamp_thunk.wav   thud3, Metal Impact Sounds, Brian MacIntosh (opengameart.org/content/metal-impact-sounds)

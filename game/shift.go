@@ -115,6 +115,7 @@ type Shift struct {
 	ward   *Ward
 	rng    *rand.Rand // the guests' blink timers; only the game thread uses it
 	snore  snoreState // the ward's snoring (snore.go)
+	paper  paperState // which page rustle played last (foley.go)
 	speed  float64
 	scores map[string]int // Env.Scores, written under the key "day<N>"
 	ticks  int
@@ -160,6 +161,7 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 		Day: day, Rules: rules, ward: ward, speed: speed, scores: scores,
 		rng:       rand.New(rand.NewSource(seed + int64(day)*100 - 1)),
 		snore:     snoreState{rng: rand.New(rand.NewSource(seed + int64(day)*100 - 2))},
+		paper:     paperState{rng: rand.New(rand.NewSource(seed + int64(day)*100 - 3))},
 		sleepers:  make(map[string]*Sleeper),
 		busyUntil: make(map[string]float64),
 		trace:     make(map[string][]bool),

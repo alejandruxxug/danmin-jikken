@@ -2,6 +2,7 @@ package game
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"path"
 	"strings"
@@ -58,6 +59,10 @@ func TestEveryCodeCueHasAFile(t *testing.T) {
 		"bell", "snore", "stamp_thunk", "stamp_lift", "chime_right", // the day
 		"stun_hit", "stun_ring", "heartbeat", // the strobe's stun
 		"driftwell_jingle",
+	}
+	cues = append(cues, "folder_open", "folder_close", "folder_slide")
+	for v := 1; v <= pageVariants; v++ {
+		cues = append(cues, fmt.Sprintf("page_%d", v))
 	}
 	for v := 1; v <= snoreVariants; v++ {
 		cues = append(cues, snoreName(v))

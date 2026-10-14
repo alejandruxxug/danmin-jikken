@@ -71,6 +71,8 @@ type sent struct {
 	// and points what it scored; both are for the landing effects.
 	impact int
 	points int
+	// closeHeard and slideHeard: the folder's close and slide sounds have played.
+	closeHeard, slideHeard bool
 }
 
 // citation is the slip handed out for a wrong stamp (flavour, no penalty).
@@ -153,17 +155,23 @@ func (s *Shift) updateDesk() {
 	if d.out != nil && s.ticks-d.out.at >= inkTicks+closeTicks+slideOutTicks {
 		d.out = nil
 	}
+	released := d.flip.active && !d.flip.dragging // a flip that moves by itself
 	d.flip.step()
 	if d.flip.done {
 		d.page = nextPage(d.guest, d.page)
 		d.flip = pageFlip{}
+		s.pageSound(pageTurnGain)
+	} else if released && !d.flip.active {
+		s.pageSound(pageBackGain) // it sprang back flat
 	}
+	s.folderSounds()
 	if d.slip != nil && s.ticks >= d.slip.until {
 		d.slip = nil
 	}
 	w := s.window()
 	if d.guest == nil && d.out == nil && w != nil && s.atWindow(w) {
 		*d = Desk{guest: w, arrivedAt: s.ticks, visited: d.visited, slip: d.slip}
+		playSFX("folder_slide")
 	}
 }
 
@@ -190,6 +198,7 @@ func (s *Shift) OpenFolder() error {
 		return nil
 	}
 	d.open, d.openedAt, d.page = true, s.ticks, PageReferral
+	playSFX("folder_open")
 	return nil
 }
 
@@ -302,6 +311,7 @@ func (s *Shift) BeginFlipDrag(x, y int) error {
 		return err
 	}
 	s.desk.flip = pageFlip{active: true, dragging: true, startX: x, startY: y}
+	s.pageSound(pageLiftGain)
 	return nil
 }
 

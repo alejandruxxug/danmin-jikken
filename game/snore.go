@@ -52,18 +52,21 @@ func snoreName(variant int) string {
 	return fmt.Sprintf("snore_%d", variant)
 }
 
-// nextSnoreVariant picks a variant from 1 to snoreVariants that is not last
-// (last 0 means none yet).
-func nextSnoreVariant(last int, roll float64) int {
-	if last < 1 || last > snoreVariants {
-		return int(roll*snoreVariants) + 1
+// nextVariant picks a variant from 1 to n that is not last (last 0 means
+// none yet). The snores and the paper rustles both use it.
+func nextVariant(last, n int, roll float64) int {
+	if last < 1 || last > n {
+		return int(roll*float64(n)) + 1
 	}
-	v := int(roll*(snoreVariants-1)) + 1 // one of the other variants
+	v := int(roll*float64(n-1)) + 1 // one of the other variants
 	if v >= last {
 		v++ // skip over the last one
 	}
 	return v
 }
+
+// nextSnoreVariant picks a snore variant that is not last.
+func nextSnoreVariant(last int, roll float64) int { return nextVariant(last, snoreVariants, roll) }
 
 // snoreGain is the volume of one snore: quiet through a wall, loud in the open.
 func snoreGain(place snorePlace, roll float64) float64 {
