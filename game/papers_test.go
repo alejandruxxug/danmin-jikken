@@ -89,3 +89,9 @@ func TestProblemOrder(t *testing.T) {
 		t.Errorf("first problem = %q, want the expired ID", got)
 	}
 }
+
+func TestDateShortIsMonthAndDay(t *testing.T) {
+	if got := (Date{10, 9, 77}).Short(); got != "10/09" {
+		t.Errorf("Short = %q, want 10/09", got)
+	}
+}

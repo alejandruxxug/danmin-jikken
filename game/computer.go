@@ -276,9 +276,15 @@ func (p *painter) beds(sh *Shift) {
 		p.icon("fx_z", card.x+6, 70)
 		p.text("ASLEEP", card.x+38, 85, colPaper)
 		if g := sh.GuestByPatient(room.Occupants[0]); g != nil {
+			// The pips are right-aligned in the card (10 px wide, 6 px from its
+			// edge); when the name and level would run into them the level
+			// word is left out and the pips say it.
 			label := g.Name + "  " + levelName(g.Level)
+			if p.art.font.Width(label) > 100 {
+				label = g.Name
+			}
 			p.text(label, card.x+6, 97, colPaper)
-			p.pipsAfter(g.Level, label, card.x+6, 97, false)
+			p.pips(g.Level, card.x+card.w-16, 99, false)
 		}
 	}
 

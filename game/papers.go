@@ -19,6 +19,9 @@ type Date struct{ Month, Day, Year int }
 
 func (d Date) String() string { return fmt.Sprintf("%02d/%02d/%02d", d.Month, d.Day, d.Year%100) }
 
+// Short is the date without the year, MM/DD.
+func (d Date) Short() string { return fmt.Sprintf("%02d/%02d", d.Month, d.Day) }
+
 // Before says whether d is an earlier day than other.
 func (d Date) Before(other Date) bool {
 	if d.Year != other.Year {

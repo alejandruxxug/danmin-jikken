@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -202,11 +204,11 @@ func (p *painter) folder(sh *Shift, pose folderPose) {
 	case pose.open >= 1:
 		p.shadow(p.art.folder, "open_fill", fx, fy, 2, 2)
 		p.sheet(p.art.folder, open, fx, fy)
-		p.settlerID(g, fy-folderPos.Y)
+		p.settlerID(g, 0, fy-folderPos.Y)
 		p.sheet(p.art.folder, []string{"open_clip"}, fx, fy) // the clip is over the ID
 		p.pages(sh, g, pose, fy-folderPos.Y)
 	default:
-		p.swing(fx, fy, pose.open)
+		p.swing(sh, g, pose, fx, fy)
 	}
 	// The name and the severity pips are on the tab, closed or open.
 	p.text(g.Name, 231, 28+pose.y, colInk)
@@ -216,12 +218,17 @@ func (p *painter) folder(sh *Shift, pose folderPose) {
 // swing draws the cover opening like a book, bent in code: the closed cover
 // narrows toward the spine (it swings up on its hinge), then the inside
 // left cover widens away from it. e is how far open, 0 to 1.
-func (p *painter) swing(fx, fy int, e float64) {
+func (p *painter) swing(sh *Shift, g *Guest, pose folderPose, fx, fy int) {
+	e := pose.open
 	p.into(p.art.closed, func(q *painter) {
 		q.sheet(q.art.folder, []string{"closed_fill", "closed_lineart", "closed_detail"}, 0, 0)
 	})
+	// The inside cover carries the Settler ID with it, so it is drawn into the
+	// picture that is bent (its coordinates start at the folder's corner).
 	p.into(p.art.open, func(q *painter) {
 		q.sheet(q.art.folder, []string{"open_fill", "open_lineart", "open_detail"}, 0, 0)
+		q.settlerID(g, -folderPos.X, -(folderPos.Y))
+		q.sheet(q.art.folder, []string{"open_clip"}, 0, 0)
 	})
 	half := hingeX - folderPos.X // 162: the spine, in the sheet
 	hx, top, bottom := float32(hingeX), float32(fy), float32(fy+folderH)
@@ -229,6 +236,9 @@ func (p *painter) swing(fx, fy int, e float64) {
 	var op ebiten.DrawImageOptions
 	op.GeoM.Translate(float64(fx+half), float64(fy))
 	p.screen.DrawImage(p.art.open.SubImage(image.Rect(half, 0, folderW, folderH)).(*ebiten.Image), &op)
+	// The top page stays, with its writing and ink, every frame; the cover
+	// swinging over it (drawn after) hides the part it has reached.
+	p.pages(sh, g, pose, fy-folderPos.Y)
 	span := float32(folderW - half)
 	if e < 0.5 {
 		s := float32(1 - 2*e) // the cover narrows from full width to nothing
@@ -245,19 +255,23 @@ func (p *painter) swing(fx, fy int, e float64) {
 
 // settlerID draws the Settler ID clipped inside the left cover: the fields,
 // and the photo, which is the visitor's window sprite cut to the photo box.
-func (p *painter) settlerID(g *Guest, dy int) {
-	x, y := idPos.X, idPos.Y+dy
+//
+// dx and dy move everything: the full-open folder passes 0 and how far the
+// folder has slid; the swing draws it into a picture whose corner is the
+// folder's, so it passes minus the folder's place.
+func (p *painter) settlerID(g *Guest, dx, dy int) {
+	x, y := idPos.X+dx, idPos.Y+dy
 	p.shadow(p.art.docID, "fill", x, y, 1, 1)
 	p.sheet(p.art.docID, []string{"fill", "lineart", "detail"}, x, y)
-	p.text(g.Name, 34, 78+dy, colInk)
-	p.text(g.Home, 83, 95+dy, colInk)
-	p.text(g.Expires.String(), 83, 112+dy, colInk)
+	p.text(g.Name, 34+dx, 78+dy, colInk)
+	p.text(g.Home, 83+dx, 95+dy, colInk)
+	p.text(g.Expires.String(), 83+dx, 112+dy, colInk)
 	faceY := g.FaceY
 	if faceY == 0 {
 		faceY = 14
 	}
 	// The photo is a crop of the sprite whose top-left is (26, faceY).
-	box := rect{photoBox.x, photoBox.y + dy, photoBox.w, photoBox.h}
+	box := rect{photoBox.x + dx, photoBox.y + dy, photoBox.w, photoBox.h}
 	p.sheetIn(box, p.art.window[g.Sprite], windowAwake(g.Visitor), box.x-26, box.y-faceY)
 }
 
@@ -301,14 +315,16 @@ func (p *painter) pageAt(g *Guest, pg Page, x, y int) {
 				break
 			}
 			row := y + 52 + 10*i
-			p.text(r.Date.String(), x+8, row, colInk)
+			p.text(r.Date.Short(), x+8, row, colInk) // MM/DD: the divider is at x 46
 			p.text(r.TimeString(), x+50, row, colInk)
 			p.text(fmt.Sprint(r.Minutes), x+92, row, colInk)
 		}
 	case PageWristband:
 		p.sheet(p.art.docWristband, layers, x, y)
-		p.text(g.Ward, x+51, y+35, colInk)
-		p.pipsAfter(g.Level, g.Ward, x+51, y+35, true)
+		// "WARD" is already printed on the band; only the letter is written.
+		letter := strings.TrimPrefix(g.Ward, "WARD ")
+		p.text(letter, x+51, y+35, colInk)
+		p.pipsAfter(g.Level, letter, x+51, y+35, true)
 		p.text(g.Name, x+33, y+44, colInk)
 		p.text(g.LastStay.String(), x+8, y+71, colInk)
 	default:
@@ -334,16 +350,20 @@ func (p *painter) pageAt(g *Guest, pg Page, x, y int) {
 	}
 }
 
-// backOfPage is the colour of the reverse of a page: mint, so it reads as
-// the other side (no mirrored writing needed).
-var backOfPage = color.RGBA{0xdd, 0xe5, 0xd9, 0xff}
+// Colours of the curl (all on the day palette).
+var (
+	backOfPage = color.RGBA{0xdd, 0xe5, 0xd9, 0xff} // mint: the reverse of the page
+	sageLine   = color.RGBA{0xc3, 0xd1, 0xc0, 0xff}
+)
 
 // curledPage draws the top page being turned like a real page (curl.go): the
 // grabbed corner follows the cursor, the part still flat shows the page, the
-// part peeled away shows the next page underneath with a thin shadow along the
-// fold, and the peeled part is mirrored across the fold as the back of the
-// page, with a drop shadow under it. When the turn is finished the page fades
-// down to the back of the stack.
+// part peeled away shows the next page underneath, and the peeled part is
+// mirrored across the fold as the back of the page: mint, with a 1 px ink
+// outline on every edge, one sage line parallel to the fold, and a 2 px
+// deep-sage shadow along its free edges. The flat part gets an ink edge along
+// the fold so the cut does not read as a hole. When the turn is finished the
+// page fades down to the back of the stack.
 func (p *painter) curledPage(sh *Shift, g *Guest, top Page, x, y int) {
 	under := nextPage(g, top)
 	p.shadow(p.pageSheet(under), "fill", x, y, 1, 1)
@@ -351,25 +371,90 @@ func (p *painter) curledPage(sh *Shift, g *Guest, top Page, x, y int) {
 	p.into(p.art.page, func(q *painter) { q.pageAt(g, top, 0, 0) })
 
 	corner, tuck := sh.Curl()
-	flat, peeled, flap, f, ok := curl(pageW, pageH, corner)
+	flat, _, flap, f, ok := curl(pageW, pageH, corner)
 	origin := point{float32(x), float32(y) + float32(8*tuck)} // the tucked page sinks a little
 	alpha := float32(1 - tuck)
-	if ok {
-		// A thin shadow along the fold, on the page underneath: the strip of
-		// the peeled part within 3 px of the fold.
-		near := fold{m: point{f.m.x - 3*f.n.x, f.m.y - 3*f.n.y}, n: f.n}
-		p.poly(near.clip(peeled, true), origin, nil, colDim, 1)
-	}
 	p.poly(flat, origin, p.art.page, color.RGBA{0xff, 0xff, 0xff, 0xff}, alpha)
-	if ok {
-		flap = clipToPage(flap)
-		shade := make([]point, len(flap))
-		for i, v := range flap {
-			shade[i] = point{v.x + 1, v.y + 2} // the usual drop shadow, a little bigger
-		}
-		p.poly(clipToPage(shade), origin, nil, colDim, alpha)
-		p.poly(flap, origin, nil, backOfPage, alpha)
+	if !ok {
+		return
 	}
+	flap = clipToPage(flap)
+	// The shadow: the flap moved 2 px right and down, kept on the flat side
+	// of the fold (it never reaches across it).
+	shade := make([]point, len(flap))
+	for i, v := range flap {
+		shade[i] = point{v.x + 2, v.y + 2}
+	}
+	p.poly(f.clip(clipToPage(shade), true), origin, nil, colDim, alpha)
+	p.poly(flap, origin, nil, backOfPage, alpha)
+	if tuck > 0.5 { // the outline is not drawn while the page fades out
+		return
+	}
+	// A sage line 2 px inside the flap, parallel to the fold.
+	inner := fold{m: point{f.m.x + 2*f.n.x, f.m.y + 2*f.n.y}, n: f.n}
+	if a, b, found := edgeOn(inner, inner.clip(flap, false)); found {
+		p.line(a, b, origin, sageLine)
+	}
+	// The ink: the fold line (on the flat part and the flap) and every free
+	// edge of the flap.
+	for i, a := range flap {
+		p.line(a, flap[(i+1)%len(flap)], origin, colInk)
+	}
+	if a, b, found := edgeOn(f, flat); found {
+		p.line(a, b, origin, colInk)
+	}
+}
+
+// edgeOn finds the two vertices of a polygon that lie on the fold line.
+func edgeOn(f fold, poly []point) (a, b point, ok bool) {
+	var on []point
+	for _, v := range poly {
+		if s := f.side(v); s > -0.01 && s < 0.01 {
+			on = append(on, v)
+		}
+	}
+	if len(on) < 2 {
+		return point{}, point{}, false
+	}
+	return on[0], on[1], true
+}
+
+// line draws a 1 px hard line (Bresenham, no anti-aliasing) between two
+// points of the page, at origin on the screen.
+func (p *painter) line(a, b, origin point, c color.RGBA) {
+	x0, y0 := int(math.Round(float64(origin.x+a.x))), int(math.Round(float64(origin.y+a.y)))
+	x1, y1 := int(math.Round(float64(origin.x+b.x))), int(math.Round(float64(origin.y+b.y)))
+	dx, dy := abs(x1-x0), -abs(y1-y0)
+	sx, sy := 1, 1
+	if x0 > x1 {
+		sx = -1
+	}
+	if y0 > y1 {
+		sy = -1
+	}
+	err := dx + dy
+	for {
+		p.screen.Set(x0, y0, c)
+		if x0 == x1 && y0 == y1 {
+			return
+		}
+		e2 := 2 * err
+		if e2 >= dy {
+			err += dy
+			x0 += sx
+		}
+		if e2 <= dx {
+			err += dx
+			y0 += sy
+		}
+	}
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 // clipToPage keeps the part of a polygon inside the page rectangle, so a
