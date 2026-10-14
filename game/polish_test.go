@@ -320,3 +320,35 @@ func TestPrologueSkipOnlyWhenSeen(t *testing.T) {
 		}
 	}
 }
+
+// The arrow keys move the Settings selection even when the cursor rests on
+// a row (as it does in test mode), and Enter changes the selected row.
+func TestSettingsKeysWorkWithRestingCursor(t *testing.T) {
+	env := testEnv(t)
+	env.Input.IgnoreReal = true // the cursor rests mid-screen, over a row
+	s := &settingsScene{}
+	if err := s.Enter(env); err != nil {
+		t.Fatal(err)
+	}
+	press := func(k ebiten.Key) {
+		env.Input.InjectKey(k)
+		if err := s.Update(); err != nil {
+			t.Fatal(err)
+		}
+		env.Input.endFrame()
+	}
+	press(ebiten.KeyArrowDown)
+	press(ebiten.KeyArrowDown)
+	if s.sel != 2 {
+		t.Fatalf("after two Down presses sel = %d, want 2", s.sel)
+	}
+	press(ebiten.KeyArrowUp)
+	if s.sel != 1 {
+		t.Errorf("after Up sel = %d, want 1", s.sel)
+	}
+	was := env.ReduceFlashing
+	press(ebiten.KeyEnter)
+	if env.ReduceFlashing == was {
+		t.Error("Enter on REDUCE FLASHING should flip it")
+	}
+}

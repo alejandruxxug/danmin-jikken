@@ -34,10 +34,18 @@ type settingsScene struct {
 	env  *Env
 	font *Font
 	sel  int
+
+	// The cursor's spot on the last frame: a row is picked by hovering only
+	// when the cursor moves, so a cursor resting on a row does not undo the
+	// arrow keys.
+	lastCursor image.Point
 }
 
 func (s *settingsScene) Enter(env *Env) error {
 	s.env = env
+	s.sel = 0
+	cx, cy := env.Input.Cursor()
+	s.lastCursor = image.Pt(cx, cy)
 	var err error
 	s.font, err = LoadFont()
 	return err
@@ -52,10 +60,13 @@ func rowRect(i int) image.Rectangle {
 func (s *settingsScene) Update() error {
 	in := s.env.Input
 	cx, cy := in.Cursor()
-	for i := 0; i < rowCount; i++ {
-		if image.Pt(cx, cy).In(rowRect(i)) {
-			s.sel = i
+	if cur := image.Pt(cx, cy); cur != s.lastCursor {
+		for i := 0; i < rowCount; i++ {
+			if cur.In(rowRect(i)) {
+				s.sel = i
+			}
 		}
+		s.lastCursor = cur
 	}
 	if in.KeyPressed(ebiten.KeyArrowUp) {
 		s.sel = (s.sel + rowCount - 1) % rowCount
