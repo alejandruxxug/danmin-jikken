@@ -43,7 +43,7 @@ func (l strobeLayer) String() string {
 type StrobeState struct {
 	Layer  strobeLayer
 	Invert float64 // 0 normal, 1 inverted; between the two only in "reduce flashing"
-	Fall   float64 // layerFall: progress from 0 to 1
+	Fall   float64 // layerFall: progress from 0 to 1; layerWhite in "reduce flashing": how far the day has gone to white
 }
 
 // flickerFlips are the ticks of the first phase where the picture inverts
@@ -78,6 +78,11 @@ func StrobeAt(n, tick int, reduce bool) StrobeState {
 		}
 		return strobeFrames[(t/ticksPerStrobeFrame)%len(strobeFrames)]
 	case tick < flickerTicks+strobe+whiteTicks:
+		if reduce {
+			// No hard flash: the inverted day goes to white over the same 0.5 s.
+			// The shader inverts, so black laid over the day becomes white.
+			return StrobeState{Layer: layerWhite, Invert: 1, Fall: float64(tick-flickerTicks-strobe) / whiteTicks}
+		}
 		return StrobeState{Layer: layerWhite}
 	}
 	fall := float64(tick-flickerTicks-strobe-whiteTicks) / fallTicks
@@ -140,7 +145,8 @@ func (s *strobeScene) Update() error {
 // UsesCRT: the day half is still the CRT (the shader does the inversion);
 // once the night comes up through the white there is no glass any more.
 func (s *strobeScene) UsesCRT() bool {
-	return s.state().Layer != layerFall && s.state().Layer != layerWhite
+	st := s.state()
+	return st.Layer == layerDay || (st.Layer == layerWhite && s.env.ReduceFlashing)
 }
 
 func (s *strobeScene) Draw(screen *ebiten.Image) {
@@ -151,6 +157,13 @@ func (s *strobeScene) Draw(screen *ebiten.Image) {
 		p.room(nil, DefaultCameraX)
 		p.glass()
 	case layerWhite:
+		if s.env.ReduceFlashing { // the day, going to white through the shader's inversion
+			p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
+			p.room(nil, DefaultCameraX)
+			p.glass()
+			vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(st.Fall * 255)}, false)
+			return
+		}
 		screen.Fill(colPaper)
 	case layerFall:
 		screen.Fill(paletteInk) // the fall ends on solid black

@@ -146,3 +146,47 @@ func TestForeverRopeSteps(t *testing.T) {
 		t.Errorf("smiling: the rope lies loose and she smiles, got %v", seen[smile])
 	}
 }
+
+// Nobody is drawn in front of a paper or a CG: the painter asks GirlShown.
+// Every script is played through on a few routes and every cut is checked.
+func TestNobodyStandsInFrontOfAPaperOrACG(t *testing.T) {
+	names, err := ScriptNames()
+	if err != nil {
+		t.Fatal(err)
+	}
+	routes := [][]string{
+		{"route_mayu", "read_letter", "closed_eyes"}, {"route_hana", "read_letter"},
+		{"route_nobody", "read_letter"}, {"route_mayu"}, {"route_hana", "closed_eyes"},
+	}
+	for _, name := range names {
+		script, err := LoadScript(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, flags := range routes {
+			f := Flags{}
+			for _, fl := range flags {
+				f.Set(fl)
+			}
+			e, err := NewEngine(script, f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for range 2000 {
+				if _, ended := e.Ended(); ended {
+					break
+				}
+				if def, ok := bgTable[e.BG()]; (e.OnPaperBG() || (ok && def.cg)) && e.GirlShown() {
+					t.Fatalf("%s %v line %d: %s would be drawn over %q", name, flags, e.Line(), e.Visible(), e.BG())
+				}
+				if len(e.Options()) > 0 {
+					_ = e.Choose(e.pickedOption())
+					continue
+				}
+				_ = e.Tick()
+				_ = e.Advance()
+				_ = e.Advance()
+			}
+		}
+	}
+}

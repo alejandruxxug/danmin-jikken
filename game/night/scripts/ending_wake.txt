@@ -15,6 +15,7 @@ Mayu (crying): No, no, no, you're supposed to stay, you promised-
 label w_letter
 ifnot read_letter jump w_end
 # The letter in his pocket: a x2 look at the paper with only that line written.
+hide
 bg letter
 paper 4 Please don't close your eyes.
 punch 2 190 90

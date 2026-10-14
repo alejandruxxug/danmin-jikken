@@ -43,6 +43,10 @@ var fxLength = map[string]int{
 	"wash":         150,
 }
 
+// oneShotFX are the effects that leave nothing behind once they have played:
+// the shake, the red pixel, the sting, the fade-in and the eyes opening.
+var oneShotFX = map[string]int{"shake": 45, "red_pixel": 30, "sting": 48, "fade_in": 90, "eyes_open": 72}
+
 // hopTable is the talk hop: how many pixels up (negative) the speaking girl
 // is, tick by tick after she starts talking. 20 ticks = 0.33 s, whole pixels:
 // a slow rise, a short hang at the top, the fall, then a small bounce.
@@ -334,6 +338,12 @@ func (e *Engine) Tick() error {
 	e.ticks++
 	for name := range e.fx {
 		e.fx[name]++
+		// A one-shot effect that has played out is forgotten, so the dump and
+		// the painter do not carry it on (the persistent ones stay: redscale,
+		// dim, the closed eyelids).
+		if length, shot := oneShotFX[name]; shot && e.fx[name] > length {
+			delete(e.fx, name)
+		}
 	}
 	if e.autoLine && e.LineDone() && len(e.options) == 0 {
 		// A line that types itself, then goes on after a short beat.
@@ -540,6 +550,13 @@ func (e *Engine) Thinking() bool { return e.thinking }
 // shown (or, in a menu, stays shown above the buttons).
 func (e *Engine) HasLine() bool {
 	return !e.ended && !e.waiting && len(e.text) > 0
+}
+
+// GirlShown says whether the standing girl is drawn: she is not in front of
+// a paper held up to the camera, nor in a CG that is its own picture.
+func (e *Engine) GirlShown() bool {
+	def, ok := bgTable[e.bg]
+	return e.visible != "" && !e.faces && !e.OnPaperBG() && !(ok && def.cg)
 }
 
 // OnPaperBG says whether the picture is a sheet of paper held up to the

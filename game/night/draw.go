@@ -363,7 +363,7 @@ func (a *Art) drawPicture(dst *ebiten.Image, e *Engine) {
 		// A CG replaces the background and the girl in one picture.
 	case e.BG() == "desk_day":
 		// A day scene: no night portrait, Mayu is part of the background.
-	case e.Visible() != "":
+	case e.GirlShown():
 		sheet := a.mayu
 		if e.Visible() == "hana" {
 			sheet = a.hana

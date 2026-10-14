@@ -68,7 +68,7 @@ func (s *top10Scene) Enter(env *Env) error {
 	return nil
 }
 
-func (s *top10Scene) Exit() {}
+func (s *top10Scene) Exit() { s.env.MusicCue = "" } // the ending's rock is over
 
 // saveScore writes today's score to the scores file (or keeps it in memory
 // in test mode) and returns the row.

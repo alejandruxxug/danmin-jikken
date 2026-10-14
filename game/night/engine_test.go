@@ -370,3 +370,29 @@ func TestHoldAutoAndFastForward(t *testing.T) {
 		t.Errorf("fast-forward should pass a hold, got %q (%v)", e.FullText(), err)
 	}
 }
+
+// A finished one-shot effect is forgotten (the dump no longer lists it); a
+// persistent one stays.
+func TestOneShotEffectsAreForgotten(t *testing.T) {
+	e := newEngine(t, "fx shake\nfx dim\n~ A long enough line to wait for.\n", Flags{})
+	for range 60 {
+		_ = e.Tick()
+	}
+	if _, on := e.FxTicks("shake"); on {
+		t.Error("the shake is over after 45 ticks and must be forgotten")
+	}
+	if _, on := e.FxTicks("dim"); !on {
+		t.Error("dim stays on until it is cleared")
+	}
+}
+
+// -line N stops on a hold the way it stops on a line.
+func TestFastForwardStopsOnAHold(t *testing.T) {
+	e := newEngine(t, "~ One.\nbg corridor\nhold\nbg station\n~ Two.\n", Flags{})
+	if err := e.FastForward(2); err != nil {
+		t.Fatal(err)
+	}
+	if !e.Holding() || e.Line() != 3 {
+		t.Errorf("holding %v at line %d, want the hold on line 3", e.Holding(), e.Line())
+	}
+}

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"testing"
 
 	"danmingame/night"
@@ -169,5 +170,33 @@ func TestLiveStrobeFollowsTheLastGuest(t *testing.T) {
 	}
 	if !handOver || env.StrobeTick < flickerTicks+strobeTicks[1] {
 		t.Errorf("hand over %v at tick %d: want it at the white", handOver, env.StrobeTick)
+	}
+}
+
+// With "reduce flashing" nothing jumps: from one frame to the next the
+// inversion and the fade to white move by a small step, also where the day
+// hands over to the white (the hard white frame used to be here).
+func TestReducedStrobeHasNoHardFlash(t *testing.T) {
+	for night := 1; night <= 3; night++ {
+		// brightness is a rough model of what the player sees: the inversion
+		// raises it, and the fade to white takes it the rest of the way.
+		level := func(tick int) float64 {
+			st := StrobeAt(night, tick, true)
+			switch st.Layer {
+			case layerDay:
+				return st.Invert
+			case layerWhite:
+				return st.Invert + (1-st.Invert)*st.Fall
+			}
+			return 1 - st.Fall // the fall: white thins out
+		}
+		for tick := 1; tick < StrobeLength(night); tick++ {
+			if step := math.Abs(level(tick) - level(tick-1)); step > 0.1 {
+				t.Fatalf("night %d: the picture jumps by %.2f at tick %d", night, step, tick)
+			}
+		}
+		if level(flickerTicks+strobeTicks[night]+whiteTicks) < 0.99 {
+			t.Errorf("night %d: the fade must end on white", night)
+		}
 	}
 }
