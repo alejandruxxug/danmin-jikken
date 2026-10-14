@@ -1,6 +1,10 @@
 package game
 
-import "danmin/hospital"
+import (
+	"strings"
+
+	"danmin/hospital"
+)
 
 // Very sick patients (Game Design -> Marking very sick patients). Severe
 // patients get four things: severity pips on every list, a nurse call light
@@ -49,24 +53,47 @@ func (w *Ward) SevereToday() map[string]int {
 // episode a Severe patient had today, at most maxDarkness. Everyone else is
 // never darkened.
 func (s *Shift) Darkness(g *Guest) int {
+	if s.forceDark >= 0 { // the backdoor shows a chosen step on everybody
+		return s.forceDark
+	}
 	if g.Level != hospital.Severe {
 		return 0
 	}
 	return min(s.severeToday[g.ID()], maxDarkness)
 }
 
+// ForceDark makes every guest be drawn steps darker (0 to maxDarkness), so a
+// tester can see each step; a negative number gives control back to the game.
+func (s *Shift) ForceDark(steps int) { s.forceDark = min(steps, maxDarkness) }
+
 // EpisodesOf is how many episodes the hospital recorded for a guest today.
 func (s *Shift) EpisodesOf(g *Guest) int { return s.episodes[g.ID()] }
 
-// SevereCalling is true while a Severe patient is asleep and no staff has
-// come: the nurse call light blinks for it.
-func (s *Shift) SevereCalling() bool {
+// CallingGuest is the Severe patient who is asleep with no staff come, the
+// one the nurse call light blinks for, or nil.
+func (s *Shift) CallingGuest() *Guest {
 	for _, g := range s.Guests {
 		if sl := s.sleepers[g.ID()]; sl != nil && !sl.Attended && g.Level == hospital.Severe {
-			return true
+			return g
 		}
 	}
-	return false
+	return nil
+}
+
+// SevereCalling is true while a Severe patient is asleep and no staff has
+// come: the nurse call light blinks for it.
+func (s *Shift) SevereCalling() bool { return s.CallingGuest() != nil }
+
+// Banner is the line of the black bar at the top of the reception: the last
+// message, or while the call light is on, who is down.
+func (s *Shift) Banner() string {
+	if msg := s.Message(); msg != "" {
+		return msg
+	}
+	if g := s.CallingGuest(); g != nil {
+		return "NURSE CALL: " + strings.ToUpper(g.Name) + " IS DOWN"
+	}
+	return ""
 }
 
 // quickBonus is the bonus for attending a sleeper: pointsSevereQuick when

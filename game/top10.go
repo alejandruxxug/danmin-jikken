@@ -42,20 +42,29 @@ func (s *top10Scene) Enter(env *Env) error {
 	}
 	s.score = env.Scores[fmt.Sprintf("day%d", env.Day)]
 
-	before, err := LoadScores(env.ScoresPath)
-	if err != nil {
-		return err
+	// With no scores file (test mode without -scores) the rows are kept in
+	// memory for this run, as the backdoor docs say.
+	before := env.MemScores
+	if env.ScoresPath != "" {
+		var err error
+		if before, err = LoadScores(env.ScoresPath); err != nil {
+			return err
+		}
 	}
 	s.newRecord = s.score > 0 && s.score > BestScore(before)
 	rows := before
 	// A shift that was played (or a score the backdoor set) is saved.
-	if env.ScoresPath != "" && (ranShift || s.score > 0) {
+	if ranShift || s.score > 0 {
 		row := ScoreRow{Name: Username(), Score: s.score, Time: time.Now().Format("15:04")}
-		if err := AppendScore(env.ScoresPath, row); err != nil {
-			return err
+		if env.ScoresPath != "" {
+			if err := AppendScore(env.ScoresPath, row); err != nil {
+				return err
+			}
+		} else {
+			env.MemScores = append(env.MemScores, row)
 		}
 		s.saved = true
-		rows = append(rows, row)
+		rows = append(append([]ScoreRow(nil), rows...), row)
 	}
 	s.rows = RankScores(rows)
 	env.Ranked = s.rows
@@ -121,8 +130,11 @@ func (s *top10Scene) Draw(screen *ebiten.Image) {
 	}
 	p.text(footer, textLeft, 195, colPaper)
 	saved := "SAVED: " + ScoresFile
-	if !s.saved {
+	switch {
+	case !s.saved:
 		saved = "NOT SAVED"
+	case s.env.ScoresPath == "":
+		saved = "KEPT IN MEMORY"
 	}
 	p.text(saved, 280, 195, colPaper)
 

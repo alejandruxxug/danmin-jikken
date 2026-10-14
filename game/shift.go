@@ -117,6 +117,7 @@ type Shift struct {
 
 	episodes    map[string]int    // episodes the hospital has recorded, by patient id
 	severeToday map[string]int    // the same for Severe patients, from SevereReport
+	forceDark   int               // test mode: darkness of every guest, -1 = off (severe.go)
 	desk        Desk              // the look-down desk (desk_state.go)
 	trace       map[string][]bool // the ward feed's last seconds per patient (records.go)
 	traceAt     int               // the game second last sampled
@@ -155,6 +156,7 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 		sleepers:  make(map[string]*Sleeper),
 		busyUntil: make(map[string]float64),
 		trace:     make(map[string][]bool),
+		forceDark: -1,
 	}
 	for i, v := range rules.Visitors {
 		id := fmt.Sprintf("P-%03d", i+1)

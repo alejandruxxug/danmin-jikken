@@ -148,7 +148,7 @@ func (s *receptionScene) Draw(screen *ebiten.Image) {
 	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
 	p.room(s.shift, int(s.env.CameraX))
 	p.hud(s.shift, s.env.Clock.String(), "^ PATIENT COMPUTER ^")
-	p.toast(s.shift.Message())
+	p.toast(s.shift.Banner())
 	if a := s.shift.Alert(); a != nil {
 		p.alert(a)
 	}

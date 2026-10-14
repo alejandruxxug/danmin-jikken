@@ -35,6 +35,7 @@ func New(opts Options) (*Game, error) {
 		Clock:   NewClock(9, 0), // the day shift opens at nine
 		Flags:   make(map[string]bool),
 		Scores:  make(map[string]int),
+		Dark:    -1,
 		Input:   NewInput(),
 		Sprites: fsys,
 		CameraX: DefaultCameraX,

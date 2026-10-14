@@ -53,11 +53,12 @@ var (
 func roomCard(i int) rect { return rect{40 + 136*i, 64, 128, 44} }
 
 // hallwayRows rows fit between the HALLWAY header and STAFF ON SHIFT; the
-// 16 px icons are stacked 14 px apart so the second one ends at y 162, just
-// above the header at 163. The first row is exactly as in the approved view.
+// 16 px icons are stacked 12 px apart (their art is only 8 px tall), so the
+// second bed ends well above the header at 163. The first row is exactly as
+// in the approved view.
 const (
 	hallwayRows  = 2
-	hallwayPitch = 14
+	hallwayPitch = 12
 )
 
 // hallwayRow is where the k-th sleeper with no bed is shown.
@@ -293,7 +294,12 @@ func (p *painter) beds(sh *Shift) {
 		row := hallwayRow(k)
 		p.icon("sleeper", row.x, row.y)
 		secs := int(sh.SleptFor(g))
-		p.text(fmt.Sprintf("%s  %s  %02d:%02d", g.Name, levelName(g.Level), secs/60, secs%60), 72, row.y+7, colPaper)
+		label := g.Name + "  " + levelName(g.Level)
+		p.text(label, 72, row.y+7, colPaper)
+		p.pipsAfter(g.Level, label, 72, row.y+7, false)
+		// The time follows the pips (3 dots are 10 px wide at most).
+		after := 72 + p.art.font.Width(label) + 4 + 4*Pips(g.Level) + 4
+		p.text(fmt.Sprintf("%02d:%02d", secs/60, secs%60), after, row.y+7, colPaper)
 	}
 	if len(waiting) > 0 {
 		p.fill(callStaff, colPaper)

@@ -51,6 +51,8 @@ type Env struct {
 	ClockRate  float64    // in-game minutes per second at x1; the shift sets it
 	Sleepy     bool       // test mode: patients fall asleep fast and sleep long
 	ScoresPath string     // the scores file; "" keeps scores in memory only
+	Dark       int        // test mode: every guest this many steps darker, -1 = off
+	MemScores  []ScoreRow // the rows kept in memory when there is no file
 	Tab        string     // the open tab of the patient computer
 	Query      string     // what is typed in the RECORDS name field
 	LogPick    string     // the name picked on the SLEEP LOGS tab
@@ -90,6 +92,7 @@ func (e *Env) StartShift() error {
 		return err
 	}
 	e.shift = sh
+	sh.forceDark = e.Dark
 	e.ClockRate = shiftMinutes / float64(sh.Rules.ShiftSeconds)
 	if !e.KeepClock {
 		e.Clock = NewClock(9, 0)

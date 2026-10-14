@@ -45,6 +45,7 @@ type Options struct {
 	Scores  string // the scores file (without it scores stay in memory)
 	Score   int    // today's score at the start (day.top10 saves it)
 	Sleepy  bool   // patients fall asleep within a second and sleep long
+	Dark    int    // -dark N: draw every guest N palette steps darker (0-3), -1 = as the game decides
 
 	// Fullscreen is an ordinary option for players, so it also works
 	// without -agent.
@@ -73,6 +74,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
 	fs.StringVar(&o.Scores, "scores", "", "scores file to use (default: none, kept in memory)")
 	fs.IntVar(&o.Score, "score", 0, "today's score at the start")
+	fs.IntVar(&o.Dark, "dark", -1, "draw every guest N palette steps darker, 0-3 (to judge the Severe darkening)")
 	fs.BoolVar(&o.Sleepy, "sleepy", false, "patients fall asleep fast and sleep long")
 	fs.BoolVar(&o.Fullscreen, "fullscreen", false, "start in fullscreen (F11 or Alt+Enter toggles it)")
 	if err := fs.Parse(args); err != nil {
@@ -91,7 +93,7 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op    string // "wait", "key", "click", "mouse", "down", "up", "pan", "advance", "type", "stamp", "shot" or "dump"
+	Op    string // "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "shot" or "dump"
 	Text  string // type: the characters
 	N     int    // wait: frames; pan: camera x
 	Stamp Stamp  // stamp: which one
@@ -107,6 +109,7 @@ type Command struct {
 //	click 212 140   1x game coordinates
 //	mouse 5 135     hold the cursor there (edge of the screen pans the camera)
 //	type marcus     type text (the RECORDS tab's name field)
+//	dark 2          draw every guest 2 palette steps darker (0-3); -dark N does it from the start
 //	advance 120     run the shift 120 game seconds at once (queue, clock, ward)
 //	down 320 210    press the left button there and hold it (mouse moves it)
 //	up              let the button go
@@ -246,6 +249,15 @@ func parseCommand(words []string) (Command, error) {
 			return cmd, fmt.Errorf("type needs some text")
 		}
 		cmd.Text = strings.Join(args, " ")
+	case "dark":
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("dark needs a number of steps")
+		}
+		n, err := strconv.Atoi(args[0])
+		if err != nil || n < 0 || n > maxDarkness {
+			return cmd, fmt.Errorf("dark %q: want a number from 0 to %d", args[0], maxDarkness)
+		}
+		cmd.N = n
 	case "advance":
 		if len(args) != 1 {
 			return cmd, fmt.Errorf("advance needs one number of game seconds")
@@ -338,6 +350,10 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 	}
 	env.ScoresPath = opts.Scores
 	env.Sleepy = opts.Sleepy
+	if opts.Dark > maxDarkness {
+		return nil, fmt.Errorf("-dark %d: want 0 to %d", opts.Dark, maxDarkness)
+	}
+	env.Dark = opts.Dark
 	if opts.Score > 0 {
 		env.Scores[fmt.Sprintf("day%d", env.Day)] = opts.Score
 	}
@@ -427,6 +443,10 @@ func (a *Agent) runCommands(env *Env) {
 		case "type":
 			env.Input.InjectText(cmd.Text)
 			return
+		case "dark":
+			if sh := env.Shift(); sh != nil {
+				sh.ForceDark(cmd.N)
+			}
 		case "advance":
 			advance(env, cmd.N)
 		case "pan":
@@ -611,6 +631,7 @@ type Dump struct {
 	Served    int           `json:"served"`
 	Total     int           `json:"total"`
 	ShiftSecs float64       `json:"shiftSeconds"`
+	ForceDark int           `json:"forceDark"` // -dark / dark: steps every guest is drawn darker, -1 when off
 	Queue     []DumpGuest   `json:"queue"`
 	Stamps    []DumpStamp   `json:"stamps"`
 	Sleepers  []DumpSleeper `json:"sleepers"`
@@ -624,6 +645,7 @@ type Dump struct {
 	ShiftOver bool          `json:"shiftOver"`
 	Desk      DumpDesk      `json:"desk"`
 	CallLight bool          `json:"callLight"` // a Severe patient sleeps unattended
+	Banner    string        `json:"banner"`    // the reception's top bar: the message or the nurse call
 }
 
 // DumpDesk is the look-down desk: the folder, the page, the stamp in the hand.
@@ -791,7 +813,8 @@ func (d *Dump) addShift(sh *Shift) {
 			Pips: Pips(g.Level), Episodes: sh.EpisodesOf(g), Darkness: sh.Darkness(g), LogRows: len(g.Log),
 		})
 	}
-	d.CallLight = sh.SevereCalling()
+	d.ForceDark = sh.forceDark
+	d.CallLight, d.Banner = sh.SevereCalling(), sh.Banner()
 	d.Desk = dumpDesk(sh)
 	for _, st := range sh.Stamps() {
 		d.Stamps = append(d.Stamps, DumpStamp{Patient: st.Patient, Stamp: st.Stamp.String(), Right: st.Right})

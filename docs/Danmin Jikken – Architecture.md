@@ -91,6 +91,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |
 | `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
 | `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11, Alt+Enter and Cmd+F toggle it too; the window opens at the biggest whole-number scale that fits 90% of the screen and can be resized, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
+| `-dark N` | Draws **every** guest N palette steps darker (0-3), to judge the Severe darkening without waiting for a Severe patient to wake up (`dark N` does the same inside a script). In the dump: `forceDark` | The darkening is otherwise hidden: a Severe patient in a bed is not drawn |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
 **Input script** (one command per line, `#` = comment):
@@ -103,6 +104,7 @@ mouse 5 135        # hold the cursor there; within 48 px of a side it pans the c
 pan 240            # put the camera at x = 240 right away
 stamp admit        # use a stamp on the window patient (admit, refer, discharge) straight away, skipping the desk
 advance 120        # run the shift 120 game seconds at once (queue, clock; the patients' own timers stay real-time)
+dark 2             # draw every guest 2 palette steps darker (0-3); -1 flag value = off
 type marcus        # type into the RECORDS name field (Tab fills in the window patient)
 desk               # look down to the desk (the 0.3 s tilt plays); reception looks back up
 folder             # open the closed folder on the desk
@@ -163,6 +165,10 @@ game/sprites/           loader for the Aseprite sheet + json (+ testdata fixture
 ```
 
 **Who attends a sleeper (M3):** a patient only enters the hospital when the player stamps ADMIT, and then gets a goroutine (`simulation.Run` with `ManualAttend`). The goroutine only announces "fell asleep" / "woke up"; the player's click calls `Hospital.RegisterEpisode`, so the next attender in line (round robin) attends and a room is assigned if one is free. `AssignRoom` then tells the game which room, or `ErrNoRoomAvailable` (checked with `errors.Is`), which opens the no-room alert and lays the patient in the hallway. A patient nobody attends just wakes up on their own.
+
+**Shooting mid-tilt:** a script command that changes the scene ends its frame, so `desk` then `wait 2` then `shot4` lands about 3 frames into the 18-frame tilt (`wait 7` is about halfway); `wait 20` shows the settled desk. The same works for `reception` (tilting back up).
+
+**Scores without `-scores`:** the top-10 keeps the rows in memory for the run (`Env.MemScores`) and shows `KEPT IN MEMORY`; the real `danmin_scores.txt` is never touched in test mode.
 
 Notes on the backdoor as built: `-shot`, `-shot4` and `-dump` are written when the run ends (after `-frames N`, or when the `-input` script ends, or after one frame if neither is given); `shot`/`dump` lines inside a script write mid-run. Without `-quit` the window stays open after the run ends. `-speed N` multiplies both the clock and the patients' timers. `-seed 0` means a random seed.
 

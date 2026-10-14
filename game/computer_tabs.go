@@ -181,7 +181,7 @@ func (p *painter) wardFeed(sh *Shift) {
 }
 
 // whereIs is where the ward feed says a patient is: their room, the
-// hallway, or the place they fell asleep or are walking.
+// hallway (every sleeper with no bed), or the ward when awake.
 func (s *Shift) whereIs(g *Guest) string {
 	for _, pv := range s.snap.Patients {
 		if pv.ID != g.ID() {
@@ -193,8 +193,8 @@ func (s *Shift) whereIs(g *Guest) string {
 		case hospital.AsleepInHallway:
 			return "HALLWAY"
 		}
-		if sl := s.sleepers[g.ID()]; sl != nil {
-			return strings.ToUpper(sl.Location)
+		if s.sleepers[g.ID()] != nil {
+			return "HALLWAY" // asleep and no bed yet: they lie in the hallway
 		}
 	}
 	return "WARD A"
