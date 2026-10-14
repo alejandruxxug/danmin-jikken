@@ -1,4 +1,8 @@
 # Sleep ending (docs: Night 3 -> Sleep ending).
+# Every ending opens in cinematic mode: the procedure room with the bars sliding
+# in, the lines as subtitles (Art Direction -> Cinematic pass).
+bg procedure_room
+bars on
 ~ Ten... nine...
 ~ It's easier. It's so much easier.
 fx eyes_close
@@ -6,6 +10,7 @@ wait 1.2
 fx clear
 hide
 bg white
+bars white # the dream has white bars
 music jingle
 wait 0.8
 Reel: Welcome to your first day at Halcyon Rest!
@@ -20,5 +25,6 @@ Mayu (happy): Hi! I'm new too. Isn't this place perfect?
 label s_boil
 hide
 ~ The lines boil. And boil. And boil.
+push 1.25 288 150 3 # this framing is the still the title comes back to
 wait 3
 end card

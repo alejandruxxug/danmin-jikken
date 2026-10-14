@@ -40,6 +40,7 @@ var fxLength = map[string]int{
 	"eyes_slit":    150,
 	"eyes_open":    72,
 	"sting":        48, // 0.8 s
+	"wash":         150,
 }
 
 // hopTable is the talk hop: how many pixels up (negative) the speaking girl
@@ -116,6 +117,8 @@ type Engine struct {
 
 	ended  bool
 	endsTo string
+
+	still string // see CutToStill
 
 	cues []Cue // sound cues not yet taken by the scene
 
@@ -208,6 +211,13 @@ func (e *Engine) exec(n Node) {
 		e.writer, e.paper = "hana", nil
 	case OpWriter:
 		e.writer = n.Name
+	case OpPaper:
+		for range int(n.Number) { // empty lines are blank rows, so the words land on their row
+			e.paper = append(e.paper, "")
+		}
+		e.paper = append(e.paper, n.Text)
+	case OpStill:
+		e.still = n.Name
 	case OpBars, OpPunch, OpPush, OpPan:
 		e.execCinema(n)
 	case OpLayer:
@@ -241,6 +251,10 @@ func (e *Engine) exec(n Node) {
 		case "clear":
 			e.fx = map[string]int{}
 			return
+		case "wash":
+			if _, on := e.fx["wash"]; on {
+				return // already washing: do not start over
+			}
 		case "dark":
 			delete(e.fx, "dusk")
 		case "dusk":
@@ -535,6 +549,19 @@ func (e *Engine) OnPaperBG() bool { return e.bg == "note" || e.bg == "letter" ||
 // on screen before the last cut away from it.
 func (e *Engine) LastWriter() string  { return e.lastWriter }
 func (e *Engine) LastPaper() []string { return e.lastPaper }
+
+// CutToStill is what an ending does when its script is over and the title
+// comes back: if the script named a "still", that background is up, and the
+// picture is the same as at the end of the script otherwise. It reports
+// whether there was one.
+func (e *Engine) CutToStill() bool {
+	if e.still == "" {
+		return false
+	}
+	e.bg, e.layers = e.still, map[string]bool{}
+	e.visible = ""
+	return true
+}
 
 // DayLook says whether the picture is a day picture (the report on the
 // desk) that is shown through the day's CRT.

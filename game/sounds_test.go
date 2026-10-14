@@ -83,24 +83,24 @@ func TestRockStartsCoverEveryEnding(t *testing.T) {
 	}
 }
 
-// The rock must last through the silence-free part of the ending (card and
+// The rock must last through the silence-free part of the ending (title and
 // credits) plus the fade, or the credits would roll in silence. The files are
 // 80 s long.
 func TestRockOutlastsTheCredits(t *testing.T) {
 	const rockTicks = 80 * 60
-	need := secretCardTicks + creditsTotalTicks(len(CreditLines()))
+	need := secretTitleTicks + CreditsTicks(CreditCards())
 	if need > rockTicks {
-		t.Errorf("card + credits last %d ticks but the rock tracks only %d", need, rockTicks)
+		t.Errorf("title + credits last %d ticks but the rock tracks only %d", need, rockTicks)
 	}
-	if creditsTotalTicks(len(CreditLines()))-creditsFadeTicks < 0 {
+	if CreditsTicks(CreditCards())-creditsFadeTicks < 0 {
 		t.Error("the fade starts before the credits")
 	}
 }
 
-// creditsTotalTicks is the tick the roll finishes on, as creditsDone sees it.
-func TestCreditsTotalTicksMatchesCreditsDone(t *testing.T) {
-	s := &endingScene{credits: make([]string, 40)}
-	total := creditsTotalTicks(len(s.credits))
+// The roll is over exactly when the last card and its gap are done.
+func TestCreditsDoneMatchesCreditsTicks(t *testing.T) {
+	s := &endingScene{cards: CreditCards()}
+	total := CreditsTicks(s.cards)
 	s.ticks = total - 5
 	if s.creditsDone() {
 		t.Error("credits done 5 ticks early")
@@ -108,6 +108,39 @@ func TestCreditsTotalTicksMatchesCreditsDone(t *testing.T) {
 	s.ticks = total + 5
 	if !s.creditsDone() {
 		t.Error("credits not done 5 ticks late")
+	}
+}
+
+// CardAt walks the cards: each shows for its ticks, then a quarter second of
+// empty bar, and the roll ends after the last.
+func TestCardAt(t *testing.T) {
+	cards := []creditCard{{"A", "a", 100}, {"B", "b", 50}}
+	for _, c := range []struct {
+		ticks   int
+		index   int
+		showing bool
+	}{{0, 0, true}, {99, 0, true}, {100, 0, false}, {100 + cardGapTicks - 1, 0, false}, {100 + cardGapTicks, 1, true}, {100 + cardGapTicks + 49, 1, true}, {100 + cardGapTicks + 50, 1, false}, {CreditsTicks(cards), 2, false}} {
+		if i, showing := CardAt(cards, c.ticks); i != c.index || showing != c.showing {
+			t.Errorf("CardAt(%d) = %d, %v; want %d, %v", c.ticks, i, showing, c.index, c.showing)
+		}
+	}
+}
+
+// The last card is the thank-you, 4 s; every card line fits the bottom bar.
+func TestCreditCards(t *testing.T) {
+	cards := CreditCards()
+	last := cards[len(cards)-1]
+	if last.Heading != "Thank you for staying awake" || last.Ticks != 240 {
+		t.Errorf("last card %+v", last)
+	}
+	font, err := LoadFont()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range cards {
+		if w := font.Width(c.Line); w > 360 {
+			t.Errorf("card line %q is %d px wide, the bar takes 360", c.Line, w)
+		}
 	}
 }
 

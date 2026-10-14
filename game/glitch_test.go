@@ -44,18 +44,18 @@ func TestEndingTitlesAreInTheFont(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	art, err := loadCardArt(fsys, night.EndingForever)
+	art, err := loadTitleArt(fsys, night.EndingForever)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, ending := range night.Endings {
-		title := cardTitles[ending]
+		title := titleWords[ending]
 		placed, _ := night.Layout(title, endingMetrics{art.font.Meta}, endingStyle)
 		if len(placed) != len([]rune(title)) {
 			t.Errorf("%s: %d glyphs placed for %q: the font is missing a letter", ending, len(placed), title)
 		}
-		if w := art.titleWidth(title); w > 320 {
-			t.Errorf("%s: the title is %d px wide, it must leave room for the girl", ending, w)
+		if w := art.titleWidth(title); w > 300 {
+			t.Errorf("%s: the title is %d px wide, it must fit the shade (about 300 px)", ending, w)
 		}
 	}
 }

@@ -1,4 +1,8 @@
 # Wake ending (docs: Night 3 -> Wake ending).
+# Every ending opens in cinematic mode: the procedure room with the bars sliding
+# in, the lines as subtitles (Art Direction -> Cinematic pass).
+bg procedure_room
+bars on
 ~ Ten...
 ~ No.
 fx shake
@@ -10,11 +14,20 @@ Mayu (crying): No, no, no, you're supposed to stay, you promised-
 ~ They take her instead. Gently. They put her to sleep, and this time someone will be watching.
 label w_letter
 ifnot read_letter jump w_end
+# The letter in his pocket: a x2 look at the paper with only that line written.
+bg letter
+paper 4 Please don't close your eyes.
+punch 2 190 90
 ~ In my pocket, Hana's letter. "Please don't close your eyes."
+punch off
+bg procedure_empty
+fx wash
 ~ I didn't.
+jump w_wait
 label w_end
+bg procedure_empty
+fx wash
+label w_wait
 hide
-bg grey
-fx fade_in
 wait 2.5
 end card

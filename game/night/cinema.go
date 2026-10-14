@@ -248,3 +248,26 @@ func parsePan(n *Node, args []string) error {
 	}
 	return nil
 }
+
+// ---- the Wake ending's wash ----
+
+// WashLevel says how much of a 2x2 dither is light grey at a progress from 0
+// to 1: 0 (none), 1 (one pixel in four), 2 (a checker) or 3 (three in four).
+func WashLevel(progress float64) int { return min(3, max(0, int(progress*4))) }
+
+// WashPixels is the RGBA picture of a dither level: every 2x2 block has
+// `level` pixels of c, filled in this order (0,0), (1,1), (1,0).
+func WashPixels(level, w, h int, c [4]byte) []byte {
+	order := [3][2]int{{0, 0}, {1, 1}, {1, 0}}
+	pix := make([]byte, w*h*4)
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			for i := 0; i < level; i++ {
+				if x%2 == order[i][0] && y%2 == order[i][1] {
+					copy(pix[(y*w+x)*4:], c[:])
+				}
+			}
+		}
+	}
+	return pix
+}

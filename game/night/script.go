@@ -47,6 +47,9 @@ import (
 //	punch 3 350 89 / punch off    hard cut to a whole-number zoom (2 or 3) centred on x y
 //	push 1.1 250 130 6            slow zoom to 1.1 centred on x y over 6 seconds (push off)
 //	pan 140 4                     slide the camera across a wide picture to x in 4 seconds
+//	paper 4 Words here            write words on the paper at once, on row 4 (no typing; a staging
+//	                              command for the Wake ending's letter insert)
+//	still procedure_blank         the picture an ending's title comes back to (see Engine.CutToStill)
 //	end day                       the night is over; the game decides what follows
 //
 // Every error names the file and the line.
@@ -83,6 +86,8 @@ const (
 	OpPunch
 	OpPush
 	OpPan
+	OpPaper
+	OpStill
 )
 
 // Part is one "key=value" change to a pose.
@@ -137,6 +142,7 @@ var knownFX = map[string]bool{
 	"dark":         true, // the picture goes dark at once (Hana's room before the red)
 	"dusk":         true, // a lighter dark: the red room with only the envelope bright
 	"light":        true, // ... and back to the light (ends dark and dusk)
+	"wash":         true, // the Wake ending: a light-grey dither washes over the picture (2.5 s)
 	"sting":        true, // the split-screen sting of the realization (0.8 s)
 	"clear":        true, // takes every running effect away (a cut)
 }
@@ -432,6 +438,17 @@ func parseCommand(n *Node, word, rest string) error {
 		if n.Name, err = one(); err == nil && !IsCharacter(n.Name) {
 			err = fmt.Errorf("unknown writer %q (want mayu or hana)", n.Name)
 		}
+	case "paper":
+		n.Op = OpPaper
+		row, words, _ := strings.Cut(rest, " ")
+		r, convErr := strconv.Atoi(row)
+		if convErr != nil || r < 0 || r > 12 || strings.TrimSpace(words) == "" {
+			return fmt.Errorf("paper is `paper row words` (row 0 to 12)")
+		}
+		n.Number, n.Text = float64(r), strings.TrimSpace(words)
+	case "still":
+		n.Op = OpStill
+		n.Name, err = one()
 	case "bars":
 		err = parseBars(n, args)
 	case "punch":

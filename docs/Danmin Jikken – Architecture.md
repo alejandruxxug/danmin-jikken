@@ -99,7 +99,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-seen-prologue` | Pretends the Prologue was seen on an earlier launch: any key skips it (the cold open). Normally the saved settings file (`danmin_settings.json`, next to the scores file) remembers it | Check the skip |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
 
-**Dump fields for M6:** `route` (from the flags), `ending`, `endingPhase` (`script`, `silence`, `card`, `credits`), `musicCue`, `sleepLogPath` / `sleepLogError`, and `placeholders` (the backgrounds of the playing night script that still have no sheet). `go test -run TestPlaceholdersInUse -v ./game` lists every placeholder of every script. `-line N` jumps let every timed effect finish first (open eyes, risen red), so a jump lands on the settled picture. **`advance N` is not a faithful shift:** it runs the clock past the strobe (a guest can still be at the desk with 0 served), so test the strobe with real stamps, not `advance`.
+**Dump fields for M6:** `route` (from the flags), `ending`, `endingPhase` (`script`, `silence`, `title`, `credits`), `musicCue`, `sleepLogPath` / `sleepLogError`, and `placeholders` (the backgrounds of the playing night script that still have no sheet). `go test -run TestPlaceholdersInUse -v ./game` lists every placeholder of every script. `-line N` jumps let every timed effect finish first (open eyes, risen red), so a jump lands on the settled picture. **`advance N` is not a faithful shift:** it runs the clock past the strobe (a guest can still be at the desk with 0 served), so test the strobe with real stamps, not `advance`.
 
 **Input script** (one command per line, `#` = comment):
 
@@ -146,7 +146,7 @@ dump after_admit.json
 | `night.prologue`, `night.1`, `night.2`, `night.3` | The night VN scripts (`-line N` starts at that line of the script file, `-flags` pre-sets choices) | **built** |
 | `transition.night1` / `2` / `3` | The day → night strobe into that night (longer each night) | **built**. Every day ends in its strobe, which starts while the last patient is at the desk |
 | `day.desk.report` | The look-down desk entered on Hana's night report, the fourth page of day 3's first folder (needs `-day 3`; `-flags route_hana` makes it Mayu's hand: `page report` in a script does the same) | **built** |
-| `ending.sleep`, `ending.wake`, `ending.forever`, `ending.317` | An ending: its script, black + silence, the ending card (rock cue), the credits, then the top-10 (once per run), then the title. `ending.317` also writes `sleep_log_317.txt` and the game closes after the top-10. Pre-set the route with `-flags route_mayu` / `route_hana` / `route_nobody`, `read_letter`, `closed_eyes`, `stamped_discharge` | **built** |
+| `ending.sleep`, `ending.wake`, `ending.forever`, `ending.317` | An ending: its script (cinematic: bars from the first line), a hard cut to black + 1.5 s silence, then the rock slams in and the ending's last picture comes back with its title over a dither shade (6 s, 3:17: 10 s), the credits as cards in the bottom bar over that picture (3 s each; `Thank you for staying awake` 4 s), then the top-10 (once per run), then the title. `ending.317` also writes `sleep_log_317.txt` and the game closes after the top-10. Pre-set the route with `-flags route_mayu` / `route_hana` / `route_nobody`, `read_letter`, `closed_eyes`, `stamped_discharge` | **built** |
 
 The run in order: launch → `night.prologue` (white, a dream; later launches skip it with any key) → `title` → day 1 → `transition.night1` → `night.1` → day 2 → `transition.night2` → `night.2` → day 3 → `transition.night3` → `night.3` → `ending.<name>` (picked by `night.EndingFor(flags)`) → `day.top10` → title.
 
@@ -217,6 +217,9 @@ One plain text file per night in `game/night/scripts/` (embedded with `go:embed`
 | `fx sting` | The realization's 0.8 s split-screen: the letter's signature above, the report's below, both x4, a 2 px divider (no text). Needs `bg report` up and a paper shown earlier |
 | `fx dark` / `dusk` / `light` | The picture goes dark at once (0.7) or a little less (0.55); `light` ends both |
 | `bg report` | The day 3 report on the look-down desk (`doc_report` on `desk_top`, written in `night.ReportHand`: Mayu's hand on route_hana, Hana's otherwise); the scene puts the day CRT on this shot only (`nightScene.UsesCRT`). See: `-agent -scene night.3 -flags route_hana,read_letter -line 75` then `next` |
+| `paper 4 Words` | Writes words on the paper at once, on row 4 (a staging command: the Wake ending's letter insert) |
+| `still procedure_blank` | Names the picture an ending's title comes back to when the script is over (`Engine.CutToStill`); without one the last picture of the script returns. 3:17 uses it for the dimmed room with Barrow blank |
+| `fx wash` | The Wake ending's wash: a light-grey 2x2 dither grows from nothing to three pixels in four over 2.5 s |
 | `hold` | A shot with no line (a corridor, a chair): stays up until a click, with the continue arrow; AUTO goes on after 2 s; fast-forward and the backdoor `next` pass it (dump: `holding`) |
 | `speed N`, `wait S`, `sfx x`, `music x`, `end day2` | Typewriter letters per second; a pause (a click skips it); sound cues (played by `game/cues.go`, files in `game/assets/sound`; muted and logged in the dump under `-agent`); the end: `dayN` is the day that follows |
 

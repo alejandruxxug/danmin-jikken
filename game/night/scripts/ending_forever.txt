@@ -1,4 +1,8 @@
 # Forever ending (docs: Night 3 -> Forever ending). Hana's route, whatever you chose.
+# Every ending opens in cinematic mode: the procedure room with the bars sliding
+# in, the lines as subtitles (Art Direction -> Cinematic pass).
+bg procedure_room
+bars on
 ifnot closed_eyes jump f_open
 ~ Ten... nine...
 jump f_mayu
@@ -9,7 +13,7 @@ Mayu (soft): I know. That's why I'm doing it for you.
 label f_mayu
 Mayu (soft): Shh. I'm sorry. I'm sorry. Now nobody can take you.
 sfx drip_fast
-fx eyes_slit
+bars 62 1.5 # the bars grow into the eyelids
 wait 1.5
 hide
 ~ Through the gap, I can still see her.

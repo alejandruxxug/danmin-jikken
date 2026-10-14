@@ -98,6 +98,7 @@ type Art struct {
 	cinema             *sprites.Sheet // fx_cinema: vignette, shade, bars
 	// Pictures the camera and the shaders work on.
 	world, zoomed, keep *ebiten.Image
+	wash                [4]*ebiten.Image // the Wake ending's dither levels, made when first needed
 	font                TextDrawer
 	// Dream is on while the Prologue plays: its "black" (the screen before
 	// the fade in, the eyelids, the black between lines) is white, as it is
@@ -124,9 +125,13 @@ var bgTable = map[string]bgDef{
 	"hana_far":  {"corridor", []string{"corridor", "sign_station", "hana_far"}, false},
 	"hana_door": {"corridor", []string{"corridor", "sign_quarters", "door_crack"}, false},
 	// The day 3 report on the desk, for the match cut of the realization.
-	"report":      {"doc_report", []string{"fill", "lineart", "detail"}, false},
-	"supply_room": {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}, false},
-	"hana_room":   {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}, false},
+	"report": {"doc_report", []string{"fill", "lineart", "detail"}, false},
+	// The Wake ending's last picture: the procedure room with nobody in it.
+	"procedure_empty": {"procedure", []string{"room", "lamp_glow", "rail"}, false},
+	// The secret ending's: Barrow with no expression at all.
+	"procedure_blank": {"procedure", []string{"room", "lamp_glow", "barrow", "barrow_blank", "rail"}, false},
+	"supply_room":     {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}, false},
+	"hana_room":       {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}, false},
 	// Hana's room in close-ups (Art log 2026-10-14, cinematic pass).
 	"door_closeup": {"hana_door", []string{"door", "card"}, false},                      // her name is written on the card
 	"hana_floor":   {"hana_floor", []string{"room", "fx_blood", "hand", "cans"}, false}, // 720 wide: the camera pans
@@ -753,6 +758,16 @@ func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 		if alpha := 1 - e.FxProgress("fade_in"); alpha > 0 {
 			c := a.lid()
 			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{c.R, c.G, c.B, uint8(alpha * 255)}, false)
+		}
+	}
+	if _, ok := e.FxTicks("wash"); ok {
+		if level := WashLevel(e.FxProgress("wash")); level > 0 {
+			if a.wash[level] == nil {
+				img := ebiten.NewImage(screenW, screenH)
+				img.WritePixels(WashPixels(level, screenW, screenH, [4]byte{colLight.R, colLight.G, colLight.B, 0xff}))
+				a.wash[level] = img
+			}
+			dst.DrawImage(a.wash[level], nil)
 		}
 	}
 	for fx, alpha := range darkness {

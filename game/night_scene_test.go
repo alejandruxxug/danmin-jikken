@@ -105,12 +105,12 @@ func TestEndingPhasesInOrder(t *testing.T) {
 		}
 		g.env.Input.endFrame()
 	}
-	want := []string{"silence", "card"}
+	want := []string{"silence", "title"}
 	if len(seen) < 2 || seen[0] != want[0] || seen[1] != want[1] {
 		t.Errorf("phases = %v, want to start with %v", seen, want)
 	}
 	if g.env.MusicCue != "ending_rock_wake" {
-		t.Errorf("music cue = %q: the rock starts with the card", g.env.MusicCue)
+		t.Errorf("music cue = %q: the rock starts with the title", g.env.MusicCue)
 	}
 }
 
@@ -181,6 +181,48 @@ func TestDeskDayHasArt(t *testing.T) {
 	for _, bg := range s.BGNames() {
 		if art.IsPlaceholder(bg) {
 			t.Errorf("ending_sleep uses placeholder %q", bg)
+		}
+	}
+}
+
+// Each ending's title comes back over its own last picture, and the credits
+// run over the same picture until the top-10.
+func TestEndingTitleComesBackOverTheLastPicture(t *testing.T) {
+	for _, c := range []struct {
+		ending, flags, bg string
+	}{
+		{night.EndingSleep, "route_mayu", "desk_day"},
+		{night.EndingWake, "route_mayu,read_letter", "procedure_empty"},
+		{night.EndingForever, "route_hana", "black"}, // the stain stays on the glass
+		{night.Ending317, "route_nobody", "procedure_blank"},
+	} {
+				g, err := New(Options{Enabled: true, Scene: endingSceneID(c.ending), Line: 1 << 20, Flags: c.flags})
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := g.scenes.Current().(*endingScene)
+		phases := []string{}
+		for i := 0; i < 6000 && g.env.nextScene == ""; i++ {
+			if err := s.Update(); err != nil {
+				t.Fatal(err)
+			}
+			if n := len(phases); n == 0 || phases[n-1] != s.phase.String() {
+				phases = append(phases, s.phase.String())
+				if s.phase == phaseTitle && s.script.engine.BG() != c.bg {
+					t.Errorf("%s: the title comes back over %q, want %q", c.ending, s.script.engine.BG(), c.bg)
+				}
+			}
+			g.env.Input.endFrame()
+		}
+		want := []string{"silence", "title", "credits"}
+		if len(phases) != 3 || phases[0] != want[0] || phases[1] != want[1] || phases[2] != want[2] {
+			t.Errorf("%s: phases %v, want %v then the top-10", c.ending, phases, want)
+		}
+		if g.env.nextScene != SceneDayTop10 {
+			t.Errorf("%s: after the credits the game goes to %q, want the top-10", c.ending, g.env.nextScene)
+		}
+		if !s.script.engine.Cinematic() {
+			t.Errorf("%s: the bars must still be up in the title and the credits", c.ending)
 		}
 	}
 }

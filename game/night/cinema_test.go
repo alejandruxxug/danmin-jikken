@@ -127,3 +127,36 @@ func TestFastForwardSettlesTheCamera(t *testing.T) {
 		t.Errorf("a backdoor jump lands on settled bars, got %v", got)
 	}
 }
+
+func TestWashLevels(t *testing.T) {
+	for _, c := range []struct {
+		p    float64
+		want int
+	}{{0, 0}, {0.24, 0}, {0.3, 1}, {0.6, 2}, {0.9, 3}, {1, 3}} {
+		if got := WashLevel(c.p); got != c.want {
+			t.Errorf("WashLevel(%v) = %d, want %d", c.p, got, c.want)
+		}
+	}
+	pix := WashPixels(2, 4, 2, [4]byte{1, 2, 3, 255})
+	covered := 0
+	for i := 3; i < len(pix); i += 4 {
+		if pix[i] == 255 {
+			covered++
+		}
+	}
+	if covered != 4 { // half of 8 pixels: a checker
+		t.Errorf("level 2 covers %d of 8 pixels, want 4", covered)
+	}
+}
+
+func TestPaperCommandWritesOnARow(t *testing.T) {
+	e := newEngine(t, "bg letter\npaper 4 Please.\n~ Ok.\n", Flags{})
+	p := e.Paper()
+	if len(p) != 5 || p[4] != "Please." || p[0] != "" {
+		t.Fatalf("paper = %q: four blank rows, then the words", p)
+	}
+	rows := PaperRows(p, LetterPaper, fakeMetrics{}, HanaStyle)
+	if len(rows) != 1 || rows[0].Base != 93 {
+		t.Errorf("rows %+v: the words sit on baseline 93 (row 4 of the letter)", rows)
+	}
+}

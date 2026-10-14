@@ -173,6 +173,10 @@ func PaperRows(lines []string, p Paper, m Metrics, st Style) []PaperRow {
 	base := p.FirstBase
 	first := 0
 	for _, line := range lines {
+		if line == "" { // a blank row
+			base += p.RowStep
+			continue
+		}
 		if IsSignature(line) {
 			base += p.RowStep // one blank row
 			glyphs, w := Layout(line, m, st)

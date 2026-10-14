@@ -1,10 +1,15 @@
 # 3:17, the secret ending (docs: Night 3 -> Secret ending).
+# Every ending opens in cinematic mode: the procedure room with the bars sliding
+# in, the lines as subtitles (Art Direction -> Cinematic pass).
+bg procedure_room
+bars on
 ~ Ten...
 ~ No.
 fx shake
 ~ I sit up. I'm awake. I'm really awake.
 # The game falls asleep: the screen dims and clicks stop working for 5 seconds.
 fx dim
+bars 52 5 # the bars creep in by themselves: the game is falling asleep
 lock 5
 speed 10
 auto
@@ -13,4 +18,6 @@ fx clear
 bg black
 hide
 wait 1
+fx dark
+still procedure_blank # the dimmed room, Barrow blank: what the title comes back to
 end card
