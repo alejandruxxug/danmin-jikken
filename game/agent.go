@@ -34,6 +34,7 @@ type Options struct {
 	Clock   string
 	Seed    int64
 	Flags   string // story flags, comma separated
+	Scenes  string // SCENES gallery cards to unlock: all, or card ids separated by commas
 	Auto    bool   // the VN's AUTO play starts on
 	Line    int    // night scenes: start at this line of the script file
 	Speed   float64
@@ -73,6 +74,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Clock, "clock", "", "in-game time, HH:MM")
 	fs.Int64Var(&o.Seed, "seed", 0, "random seed (0 = random)")
 	fs.StringVar(&o.Flags, "flags", "", "story flags, comma separated")
+	fs.StringVar(&o.Scenes, "scenes", "", "SCENES gallery: unlock these cards (all, or ids like gurney,coffee)")
 	fs.BoolVar(&o.Auto, "auto", false, "night scenes: start with AUTO play on")
 	fs.IntVar(&o.Line, "line", 0, "night scenes: start at this line of the script file")
 	fs.Float64Var(&o.Speed, "speed", 1, "game time multiplier")
@@ -419,6 +421,14 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 		env.KeepClock = true
 	}
 	env.ScoresPath = opts.Scores
+	if opts.Scores != "" { // test mode only touches the settings file when -scores names a scratch one
+		env.SettingsPath = SettingsPathFor(opts.Scores)
+		saved, _ := LoadSettings(env.SettingsPath)
+		env.Unlocked, env.SavedFlags = saved.Scenes, saved.SceneFlags
+	}
+	if err := env.UnlockFromOption(opts.Scenes); err != nil {
+		return nil, err
+	}
 	env.Sleepy = opts.Sleepy
 	if opts.Dark > maxDarkness {
 		return nil, fmt.Errorf("-dark %d: want 0 to %d", opts.Dark, maxDarkness)
@@ -762,9 +772,15 @@ type Dump struct {
 	SleepLogPath string   `json:"sleepLogPath"`
 	SleepLogErr  string   `json:"sleepLogError"`
 	Placeholders []string `json:"placeholders"`
-	MusicGain    float64  `json:"musicGain"`    // how loud the music plays right now (0 to 1), to see a fade
-	SoundLog     []string `json:"soundLog"`     // the last 30 sound requests (muted in test mode)
-	SoundMissing []string `json:"soundMissing"` // cues asked for that have no file (real playback only)
+	// The SCENES gallery: the unlocked cards, the flags saved for the
+	// replays, the card that is replaying, and the gallery's own state.
+	ScenesUnlocked []string     `json:"scenesUnlocked"`
+	SceneFlags     []string     `json:"sceneFlags"`
+	Replaying      string       `json:"replaying"`
+	Gallery        *DumpGallery `json:"gallery,omitempty"`
+	MusicGain      float64      `json:"musicGain"`    // how loud the music plays right now (0 to 1), to see a fade
+	SoundLog       []string     `json:"soundLog"`     // the last 30 sound requests (muted in test mode)
+	SoundMissing   []string     `json:"soundMissing"` // cues asked for that have no file (real playback only)
 	// SoundFiles maps each cue in SoundLog to the file the game would play
 	// ("" when there is none), so a muted test run still shows what resolves.
 	SoundFiles map[string]string `json:"soundFiles"`
@@ -934,6 +950,8 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.EndingGlitch = env.EndingGlitch
 	d.Settings = env.Settings()
+	d.ScenesUnlocked, d.SceneFlags = append([]string{}, env.Unlocked...), append([]string{}, env.SavedFlags...)
+	d.Replaying, d.Gallery = env.Replaying, env.GalleryState
 	d.Placeholders = []string{}
 	d.SoundLog, d.SoundMissing, d.SoundFiles = []string{}, []string{}, map[string]string{}
 	if env.Sound != nil {

@@ -22,6 +22,9 @@ type Settings struct {
 	Music          float64 `json:"music"`          // 0 to 1
 	SFX            float64 `json:"sfx"`            // 0 to 1
 	SeenPrologue   bool    `json:"seenPrologue"`   // later launches may skip the Prologue with a key
+	// The SCENES gallery. An older settings file has neither: nothing unlocked.
+	Scenes     []string `json:"scenes"`     // ids of the unlocked cards
+	SceneFlags []string `json:"sceneFlags"` // flags of the run seen most recently
 }
 
 // DefaultSettings are the settings of a first launch.
@@ -56,6 +59,7 @@ func LoadSettings(path string) (Settings, error) {
 		return DefaultSettings(), fmt.Errorf("reading the settings %s: %w", path, err)
 	}
 	s.Music, s.SFX = min(max(s.Music, 0), 1), min(max(s.SFX, 0), 1)
+	s.Scenes = knownCards(s.Scenes)
 	return s, nil
 }
 
@@ -77,7 +81,8 @@ func SaveSettings(path string, s Settings) error {
 // Settings gathers the settings the game is running with.
 func (e *Env) Settings() Settings {
 	return Settings{CRT: e.CRT, ReduceFlashing: e.ReduceFlashing, Auto: e.Auto,
-		Music: e.MusicVolume, SFX: e.SFXVolume, SeenPrologue: e.SeenPrologue}
+		Music: e.MusicVolume, SFX: e.SFXVolume, SeenPrologue: e.SeenPrologue,
+		Scenes: e.Unlocked, SceneFlags: e.SavedFlags}
 }
 
 // Apply puts settings into the running game: the flags, and the two volumes
@@ -85,6 +90,7 @@ func (e *Env) Settings() Settings {
 func (e *Env) Apply(s Settings) {
 	e.CRT, e.ReduceFlashing, e.Auto = s.CRT, s.ReduceFlashing, s.Auto
 	e.MusicVolume, e.SFXVolume, e.SeenPrologue = s.Music, s.SFX, s.SeenPrologue
+	e.Unlocked, e.SavedFlags = s.Scenes, s.SceneFlags
 	if e.Sound != nil {
 		e.Sound.SetMusicVolume(s.Music)
 		e.Sound.SetSFXVolume(s.SFX)

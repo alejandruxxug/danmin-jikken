@@ -134,6 +134,12 @@ func (in *Input) Click() (x, y int, ok bool) {
 	return 0, 0, false
 }
 
+// RightClicked is true on the frame the right button goes down (the gallery's
+// way back). The backdoor does not inject it: Esc does the same there.
+func (in *Input) RightClicked() bool {
+	return inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+}
+
 // Cursor returns the 1x game position of the mouse.
 func (in *Input) Cursor() (x, y int) {
 	switch {

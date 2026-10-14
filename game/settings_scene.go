@@ -2,15 +2,19 @@ package game
 
 import (
 	"image"
+	"io/fs"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"danmingame/sprites"
 )
 
 // The settings screen (Build Plan -> M7): CRT on/off, reduce flashing, AUTO
 // play, music and sound volume. Every change is saved at once, in the
-// settings file next to the scores file. Plain text rows on black; the real
-// look waits for an approved Figma view.
+// settings file next to the scores file. Off-white like the title and the
+// SCENES gallery (Figma: Overnight review -> Settings off-white, 2026-10-14):
+// the title sheet's "bg", ink for the heading and the selected row.
 
 // The rows, top to bottom.
 const (
@@ -33,6 +37,7 @@ const (
 type settingsScene struct {
 	env  *Env
 	font *Font
+	page *sprites.Sheet // the title sheet, for its "bg" (nil: plain off-white)
 	sel  int
 
 	// The cursor's spot on the last frame: a row is picked by hovering only
@@ -47,7 +52,12 @@ func (s *settingsScene) Enter(env *Env) error {
 	cx, cy := env.Input.Cursor()
 	s.lastCursor = image.Pt(cx, cy)
 	var err error
-	s.font, err = LoadFont()
+	if s.font, err = LoadFont(); err != nil {
+		return err
+	}
+	if _, statErr := fs.Stat(env.Sprites, "title.json"); statErr == nil {
+		s.page, err = LoadSheet(env.Sprites, "title")
+	}
 	return err
 }
 
@@ -172,15 +182,19 @@ func (s *settingsScene) rowText(i int) (label, value string) {
 }
 
 func (s *settingsScene) Draw(screen *ebiten.Image) {
-	screen.Fill(paletteInk)
+	if s.page != nil {
+		_ = s.page.Draw(screen, []string{"bg"}, 0, 0, 0)
+	} else {
+		screen.Fill(colPaper)
+	}
 	title := "SETTINGS"
-	s.font.Draw(screen, title, (ScreenW-s.font.Width(title))/2, 30, colPaperRGBA)
+	s.font.Draw(screen, title, (ScreenW-s.font.Width(title))/2, 30, colInk)
 	for i := 0; i < rowCount; i++ {
 		label, value := s.rowText(i)
 		y := settingsFirstY + i*settingsStepY
 		c := colMidRGBA
 		if i == s.sel {
-			c = colPaperRGBA
+			c = colInk
 			s.font.Draw(screen, ">", 108, y, c)
 		}
 		if i == rowBack {
@@ -191,7 +205,7 @@ func (s *settingsScene) Draw(screen *ebiten.Image) {
 		s.font.Draw(screen, value, ScreenW-124-s.font.Width(value), y, c)
 	}
 	hint := "UP / DOWN: CHOOSE   LEFT / RIGHT: CHANGE   ESC: BACK"
-	s.font.Draw(screen, hint, (ScreenW-s.font.Width(hint))/2, ScreenH-20, colMidRGBA)
+	s.font.Draw(screen, hint, (ScreenW-s.font.Width(hint))/2, ScreenH-20, colDarkGrey)
 }
 
 func (s *settingsScene) Exit() {}

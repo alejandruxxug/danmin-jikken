@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -331,14 +332,15 @@ func TestColdOpen(t *testing.T) {
 func TestSettingsFileRoundTrip(t *testing.T) {
 	path := SettingsPathFor(filepath.Join(t.TempDir(), ScoresFile))
 	got, err := LoadSettings(path)
-	if err != nil || got != DefaultSettings() {
+	if err != nil || !reflect.DeepEqual(got, DefaultSettings()) {
 		t.Fatalf("a missing file must give the defaults: %+v, %v", got, err)
 	}
-	want := Settings{CRT: false, ReduceFlashing: true, Auto: true, Music: 0.3, SFX: 1, SeenPrologue: true}
+	want := Settings{CRT: false, ReduceFlashing: true, Auto: true, Music: 0.3, SFX: 1, SeenPrologue: true,
+		Scenes: []string{"gurney", "coffee", "317"}, SceneFlags: []string{"stay_mayu", "route_mayu", "closed_eyes"}}
 	if err := SaveSettings(path, want); err != nil {
 		t.Fatal(err)
 	}
-	if got, err = LoadSettings(path); err != nil || got != want {
+	if got, err = LoadSettings(path); err != nil || !reflect.DeepEqual(got, want) {
 		t.Errorf("read back %+v, %v; want %+v", got, err, want)
 	}
 	if SettingsPathFor("") != "" || SaveSettings("", want) != nil {

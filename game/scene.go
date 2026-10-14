@@ -20,6 +20,7 @@ const (
 const (
 	SceneTitle        = "title"
 	SceneSettings     = "settings"
+	SceneScenes       = "scenes" // the SCENES gallery (replays: "replay.<card id>")
 	SceneDayReception = "day.reception"
 	SceneDayDesk      = "day.desk" // the look-down desk, with the tilt
 	// The same desk entered settled, with the folder on it (test mode).
@@ -88,6 +89,14 @@ type Env struct {
 	TitleSettled bool   // the title is entered with its logo already down (coming back from the settings)
 	SeenPrologue bool   // saved: later launches may skip the Prologue with a key
 	SettingsPath string // the settings file ("" in test mode: nothing is saved)
+
+	// The SCENES gallery (gallery_cards.go). Unlocked and SavedFlags are saved
+	// in the settings file.
+	Unlocked     []string // ids of the cards the player has reached, in grid order
+	SavedFlags   []string // flags of the run seen most recently (the replays' variants)
+	Replaying    string   // the card that is replaying ("" when none), for the dump
+	GallerySel   int      // the card selected in the gallery, kept while a replay plays
+	GalleryState *DumpGallery
 
 	// The end of the run.
 	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)

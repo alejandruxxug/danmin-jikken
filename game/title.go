@@ -29,8 +29,11 @@ const (
 	titleDagger   = 14 // the dagger starts to fall this many ticks after the logo
 	titleBloodAt  = 52 // the blood shows on the dagger from here
 	titleLogoY    = 40 // top of the fallback logo's glyph cells
-	// The menu rows: START sits in the gap of the sheet's "press rule" (y 228).
-	titleStartY, titleStepY = 223, 16
+	// The menu rows: START sits in the gap of the sheet's "press rule". Three
+	// rows and the warnings do not fit lower, so the menu moved up 16 px (it
+	// was 223 for two rows) and the rule is drawn 16 px higher to match.
+	titleStartY, titleStepY = 207, 16
+	titleRuleDY             = -16
 	fallbackStartY          = 190
 	titleDropFrom           = -150
 )
@@ -72,10 +75,11 @@ func titleWhiteAlpha(ticks int) float64 {
 // Menu entries of the title.
 const (
 	titleStart = iota
+	titleScenes
 	titleSettings
 )
 
-var titleItems = []string{"START", "SETTINGS"}
+var titleItems = []string{"START", "SCENES", "SETTINGS"}
 
 // titleScene is the title.
 type titleScene struct {
@@ -146,6 +150,9 @@ func (s *titleScene) Update() error {
 		s.env.NewRun()
 		s.env.StartPowerOn() // day 1 turns on like a CRT
 		s.env.SwitchTo(SceneDayReception)
+	case titleScenes:
+		s.env.TitleSettled = true // coming back, the logo is already there
+		s.env.SwitchTo(SceneScenes)
 	case titleSettings:
 		s.env.TitleSettled = true // coming back, the logo is already there
 		s.env.SwitchTo(SceneSettings)
@@ -220,6 +227,7 @@ func (s *titleScene) drawSheet(screen *ebiten.Image) {
 			if s.ticks < titleMenuFrom {
 				continue
 			}
+			y += titleRuleDY
 		}
 		_ = s.art.Draw(screen, []string{layer}, 0, x, y)
 	}

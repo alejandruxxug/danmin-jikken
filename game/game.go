@@ -65,6 +65,11 @@ func New(opts Options) (*Game, error) {
 	g := &Game{env: env, scenes: NewSceneManager(env), crt: crt, shotCRT: &CRT{shader: crt.shader}}
 	g.scenes.Register(SceneTitle, func() Scene { return &titleScene{} })
 	g.scenes.Register(SceneSettings, func() Scene { return &settingsScene{} })
+	g.scenes.Register(SceneScenes, func() Scene { return &galleryScene{} })
+	for _, card := range sceneCards {
+		// "replay.<card id>": the card's stretch of the story, back to the gallery at its end.
+		g.scenes.Register("replay."+card.ID, func() Scene { return &nightScene{script: card.Script, replay: &card} })
+	}
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
 	g.scenes.Register(SceneDayDesk, func() Scene { return &deskScene{} })

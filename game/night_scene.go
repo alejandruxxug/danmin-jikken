@@ -19,7 +19,12 @@ type nightScene struct {
 	script string // night.Prologue, night.Night1 ... or an ending's script
 	// onEnd, when set, takes over the end of the script (the ending scene
 	// uses it for "end card"); otherwise finish decides.
-	onEnd  func(to string) error
+	onEnd func(to string) error
+	// replay, when set, makes this a replay from the SCENES gallery: one
+	// stretch of the script, played with a copy of the saved flags. It never
+	// unlocks anything or saves anything, and its end (or Esc) goes back to
+	// the gallery.
+	replay *sceneCard
 	art    *night.Art
 	engine *night.Engine
 
@@ -32,14 +37,22 @@ func (s *nightScene) Enter(env *Env) error {
 	if s.art, err = env.NightArt(); err != nil {
 		return err
 	}
-	script, err := night.LoadScript(s.script)
-	if err != nil {
-		return err
+	if s.replay != nil {
+		if s.engine, err = newReplayEngine(*s.replay, env.SavedFlags); err != nil {
+			return err
+		}
+		s.engine.TakeCues() // the sounds of the skipped lines are not played
+		env.Replaying = s.replay.ID
+	} else {
+		script, err := night.LoadScript(s.script)
+		if err != nil {
+			return err
+		}
+		if s.engine, err = night.NewEngineFor(script, env.Flags, Username()); err != nil {
+			return err
+		}
 	}
-	if s.engine, err = night.NewEngineFor(script, env.Flags, Username()); err != nil {
-		return err
-	}
-	if env.NightLine > 0 { // the backdoor's -line N
+	if env.NightLine > 0 && s.replay == nil { // the backdoor's -line N
 		if err := s.engine.FastForward(env.NightLine); err != nil {
 			return err
 		}
@@ -47,6 +60,8 @@ func (s *nightScene) Enter(env *Env) error {
 	}
 	s.engine.AutoPlay = env.Auto
 	switch {
+	case s.replay != nil:
+		s.replayMusic()
 	case s.onEnd != nil: // the endings bring their own music
 	case s.script == night.Night3:
 		// Night 3 is silent in its black opening; the script starts its music.
@@ -68,6 +83,9 @@ func (s *nightScene) Enter(env *Env) error {
 func (s *nightScene) Update() error {
 	in := s.env.Input
 	e := s.engine
+	if s.replay != nil && in.KeyPressed(ebiten.KeyEscape) {
+		return s.finish("") // Esc leaves a replay at any time
+	}
 	if s.script == night.Prologue && s.env.SeenPrologue && s.engine.Ticks() > 0 {
 		// A later launch: Esc skips the Prologue. Clicks, Space and Enter
 		// still read it line by line, so a click never throws it away.
@@ -97,6 +115,11 @@ func (s *nightScene) Update() error {
 		return err
 	}
 	s.playCues()
+	if s.replay == nil { // reaching a gallery card unlocks it (a replay never does)
+		if err := s.env.NoteScene(s.script, e.Line()); err != nil {
+			return err
+		}
+	}
 	if to, ended := e.Ended(); ended {
 		return s.finish(to)
 	}
@@ -131,6 +154,21 @@ func (s *nightScene) playCues() {
 		case c.Kind == "music":
 			s.env.SetMusic(c.Name)
 		}
+	}
+}
+
+// replayMusic starts the music a replay needs: night 3 and the endings are
+// silent until their script asks for a track (the one the skipped lines asked
+// for last), the other nights have the ambience.
+func (s *nightScene) replayMusic() {
+	env := s.env
+	if !quietScript(s.script) {
+		env.SetMusic("night_ambience")
+		return
+	}
+	env.SetMusic("")
+	if m := s.engine.LastMusic; m != "" && m != "off" && m != "fade" {
+		env.SetMusic(m)
 	}
 }
 
@@ -180,6 +218,10 @@ func (s *nightScene) updateMenu(n int) {
 // finish leaves the night: the script's "end" says which day comes next.
 // The next day starts at the reception, as it did before the nights existed.
 func (s *nightScene) finish(to string) error {
+	if s.replay != nil { // the end of a replay: back to the gallery, nothing else changes
+		s.env.SwitchTo(SceneScenes)
+		return nil
+	}
 	if s.onEnd != nil {
 		return s.onEnd(to)
 	}
@@ -211,6 +253,9 @@ func (s *nightScene) Draw(screen *ebiten.Image) {
 }
 
 func (s *nightScene) Exit() {
+	if s.replay != nil {
+		s.env.Replaying = ""
+	}
 	if s.env.Night == s.engine {
 		s.env.Night = nil
 	}
