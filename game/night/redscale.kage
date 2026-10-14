@@ -1,0 +1,33 @@
+//kage:unit pixels
+
+package main
+
+// Hana's room (Art Direction -> Hana's room redscale): the five greys of the
+// night palette become their blood-red twins. The red comes up from the
+// floor and later drains away from the top down.
+var Rise float  // 0..1: how much of the picture, from the bottom up, has turned red
+var Drain float // 0..1: how much, from the top down, is grey again
+
+func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
+	size := imageDstSize()
+	y := (dstPos.y - imageDstOrigin().y) / size.y // 0 at the top, 1 at the floor
+	c := imageSrc0At(srcPos)
+	if y < 1-Rise || y < Drain {
+		return c // still grey
+	}
+	// Which of the five greys is this? The light of the pixel decides.
+	l := dot(c.rgb, vec3(0.299, 0.587, 0.114))
+	if l < 0.11 {
+		return c // black stays black
+	}
+	if l < 0.30 {
+		return vec4(0x4a/255.0, 0, 0, c.a) // dark grey -> dark blood
+	}
+	if l < 0.57 {
+		return vec4(0x8a/255.0, 0x03/255.0, 0x03/255.0, c.a) // mid grey -> blood red
+	}
+	if l < 0.82 {
+		return vec4(0xc4/255.0, 0x1a/255.0, 0x1a/255.0, c.a) // light grey -> red
+	}
+	return vec4(0xe8/255.0, 0xa6/255.0, 0xa0/255.0, c.a) // off-white -> pink
+}

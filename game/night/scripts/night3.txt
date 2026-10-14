@@ -1,0 +1,120 @@
+# Night 3: Hana's room, the gurney, the choice (docs: Danmin Jikken - Night 3).
+# Flags in: route_mayu / route_hana / route_nobody (night 2), stamped_self and
+# stamped_discharge (the day 3 desk). Out: read_letter, closed_eyes. The
+# script ends with `end ending`; the game then picks the ending scene from
+# the flags (night.EndingFor) and plays ending_<name>.txt.
+bg ward_c
+sfx monitor_far
+~ I'm not at the desk.
+~ I was never at the desk.
+~ There's a band on my wrist. It says 4.
+
+bg station
+hide
+prop monitor
+sfx monitor_beep
+~ Nobody at the station. The monitor beeps by itself. Seven lines.
+~ Hana didn't come in today. But somebody filed her reports.
+
+# ---- Hana's room ----
+prop clear
+bg hana_door
+~ Her name is on the door, in her small, neat letters.
+sfx door_creak
+bg hana_room
+music off
+~ It's dark. It smells like copper.
+fx redscale
+sfx drip
+wait 1.2
+~ Red.
+~ The floor. The walls. The sheets. The ceiling, somehow.
+~ So much of it that the room stops looking like a room.
+~ Hana is there.
+~ She isn't asleep. I know before I touch her hand. It's cold, and it's wet.
+~ Fourteen days awake, and now she'll never have to fight it again.
+~ The pale cans are all over the floor, standing in it. Dozens.
+~ The newest ones are still sealed. She stopped.
+ifnot route_hana jump envelope
+~ Her clipboard is on the floor, snapped in half. Her nails are broken.
+~ Nobody does this much to themselves.
+label envelope
+prop envelope
+~ On the desk there's an envelope. It's the only clean thing in here. It says Four.
+
+# Choice 4
+choice
+option Read the letter | set read_letter | jump letter
+option Leave it | jump leave_it
+
+label letter
+if route_mayu jump letter_mayu
+if route_hana jump letter_hana
+Letter: Four. You didn't read my note. That's okay.
+Letter: I wrote you another one.
+Letter: I was always going to say it, and then I never got to.
+Letter: Please don't close your eyes.
+Letter: - H.
+jump letter_done
+label letter_mayu
+Letter: Four. You chose her. I understand.
+Letter: I'd choose the white place too, if you were in it.
+Letter: I kept myself awake for you. I don't have a reason to anymore.
+Letter: Please don't close your eyes. Not for her. Not for me.
+Letter: - H.
+jump letter_done
+label letter_hana
+Letter: I'm so sorry!! I was just SO tired <3
+Letter: Don't be sad, okay? Be happy. Be happy with Mayu!
+Letter: - Hana
+~ The loops on the letters. Round, happy loops.
+~ I've been reading this handwriting on Hana's reports all day.
+label letter_done
+jump gurney
+
+label leave_it
+~ I can't. Not yet.
+~ I leave it on the desk with her.
+
+# ---- The gurney ----
+label gurney
+fx redscale_off
+wait 1.2
+prop clear
+fx clear
+sfx footsteps_many
+sfx wheels_squeak
+bg ceiling
+~ They found me. I'm on my back. The ceiling slides past, the lights, one, two, three.
+~ Like the first time.
+bg ward_c_up
+sfx clock_chime
+~ Every bed sits up at once.
+~ Every face turns to watch me go by.
+bg procedure_room
+Dr. Barrow: Good evening, Four. You've been a wonderful employee.
+Dr. Barrow: S-317 isn't something we found. It's something we made. And we needed people nobody would check on.
+Dr. Barrow: Who checks on a sleepy fisherman?
+Dr. Barrow: And the nurses' little white drink? Ours too. We sell the cure to the problem. That's just good business.
+Dr. Barrow: The dream is the cure. As long as you never leave it. Tonight we make your rest permanent.
+~ Someone takes my hand.
+if route_mayu jump g_mayu
+if route_hana jump g_hana
+Mayu (cold): Don't look at me like that. I'm just doing my job.
+jump g_end
+label g_mayu
+Mayu (soft): It's okay. I'll be right there with you. We'll have so many first days.
+jump g_end
+label g_hana
+Mayu (calm): Shh. It's just us now.
+~ Her hand is very calm. That's the scariest thing about it.
+label g_end
+Dr. Barrow: Count back from ten for me.
+
+# Choice 5. On Hana's route it does not matter: Mayu takes it away from you.
+choice
+option Close your eyes | set closed_eyes | jump the_end
+option Keep them open | jump the_end
+
+label the_end
+end ending

@@ -1,0 +1,20 @@
+# Wake ending (docs: Night 3 -> Wake ending).
+~ Ten...
+~ No.
+fx shake
+sfx rail_clang
+~ I grab the rail. I pull the line out of my arm. It hurts. It's the first thing that's hurt in days.
+Dr. Barrow: Hold them- hold them down-
+ifnot route_mayu jump w_letter
+Mayu (crying): No, no, no, you're supposed to stay, you promised-
+~ They take her instead. Gently. They put her to sleep, and this time someone will be watching.
+label w_letter
+ifnot read_letter jump w_end
+~ In my pocket, Hana's letter. "Please don't close your eyes."
+~ I didn't.
+label w_end
+hide
+bg grey
+fx fade_in
+wait 2.5
+end card

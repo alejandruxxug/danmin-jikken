@@ -64,11 +64,21 @@ var expressions = map[string]map[string]Pose{
 		"soft":   {Eyes: "half", Brows: "worried", Mouth: "smile", ArmL: "chest", ArmR: "down"},
 		"blank":  {Eyes: "away", Brows: "flat", Mouth: "flat", FX: "shadow", ArmL: "hug", ArmR: "hug"},
 		"pout":   {Eyes: "open", Brows: "worried", Mouth: "pout", ArmL: "clasp", ArmR: "clasp"},
+		// Nights 2 and 3.
+		"sad":     {Eyes: "half", Brows: "worried", Mouth: "frown", ArmL: "clasp", ArmR: "clasp"},
+		"cold":    {Eyes: "open", Brows: "flat", Mouth: "flat", FX: "shadow", ArmL: "down", ArmR: "down"},
+		"shy":     {Eyes: "away", Brows: "worried", Mouth: "smile", FX: "blush", ArmL: "chest", ArmR: "down"},
+		"whisper": {Eyes: "wide", Brows: "flat", Mouth: "smile", FX: "shadow", ArmL: "mouth", ArmR: "down"},
+		"crying":  {Eyes: "cry", Brows: "worried", Mouth: "wobble", FX: "tears", ArmL: "down", ArmR: "down"},
+		"calm":    {Eyes: "open", Brows: "neutral", Mouth: "neutral", ArmL: "clasp", ArmR: "clasp"},
 	},
 	"hana": {
 		"tired": {Eyes: "half", Brows: "flat", Mouth: "neutral", ArmL: "board", ArmR: "down"},
 		"flat":  {Eyes: "open", Brows: "angry", Mouth: "flat", ArmL: "board", ArmR: "point"},
 		"soft":  {Eyes: "half", Brows: "worried", Mouth: "neutral", FX: "blush", ArmL: "down", ArmR: "elbow"},
+		// Nights 2 and 3.
+		"blush":  {Eyes: "away", Brows: "worried", Mouth: "neutral", FX: "blush", ArmL: "down", ArmR: "chest"},
+		"crying": {Eyes: "cry", Brows: "worried", Mouth: "wobble", FX: "tears", ArmL: "down", ArmR: "down"},
 	},
 }
 

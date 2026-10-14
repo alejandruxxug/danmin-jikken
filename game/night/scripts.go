@@ -15,7 +15,12 @@ var scriptFiles embed.FS
 const (
 	Prologue = "prologue"
 	Night1   = "night1"
+	Night2   = "night2"
+	Night3   = "night3"
 )
+
+// EndingScript is the name of an ending's script (ending_sleep, ...).
+func EndingScript(ending string) string { return "ending_" + ending }
 
 // LoadScript parses one of the embedded scripts by name.
 func LoadScript(name string) (*Script, error) {

@@ -1,0 +1,16 @@
+# 3:17, the secret ending (docs: Night 3 -> Secret ending).
+~ Ten...
+~ No.
+fx shake
+~ I sit up. I'm awake. I'm really awake.
+# The game falls asleep: the screen dims and clicks stop working for 5 seconds.
+fx dim
+lock 5
+speed 10
+auto
+Voice: ...
+fx clear
+bg black
+hide
+wait 1
+end card

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // TicksPerSecond is how often the game calls Tick.
@@ -16,6 +17,10 @@ const DefaultSpeed = 45
 // the player (a mistake in a script file) from freezing the game.
 const maxSteps = 10000
 
+// autoBeat is how long (in ticks) a line that types itself stays on screen
+// once it is complete.
+const autoBeat = 60
+
 // fxLength is how many ticks each timed effect lasts. The painter divides
 // the ticks since the effect began by this to get a progress from 0 to 1.
 var fxLength = map[string]int{
@@ -23,6 +28,12 @@ var fxLength = map[string]int{
 	"eyes_close": 72,
 	"faces":      40,
 	"red_pixel":  30,
+	"shake":      45,
+	// The redscale comes in from the floor in 1 s and drains out in 1 s.
+	"redscale":     60,
+	"redscale_off": 60,
+	"dim":          120,
+	"eyes_slit":    150,
 }
 
 // hopTable is the talk hop: how many pixels up (negative) the speaking girl
@@ -59,6 +70,14 @@ type Engine struct {
 
 	waitLeft int // ticks left of a wait command
 	waiting  bool
+	locked   bool // the wait ignores clicks (the game "falls asleep")
+
+	autoNext bool // the next line goes on by itself
+	autoLine bool // ... this one does
+	doneFor  int  // ticks the auto line has been fully typed
+
+	// Player is the name {player} stands for in the words (the OS username).
+	Player string
 
 	ended  bool
 	endsTo string
@@ -75,7 +94,13 @@ type Engine struct {
 // it and "if" reads from it. The engine runs up to the first line the
 // player has to read.
 func NewEngine(s *Script, flags Flags) (*Engine, error) {
-	e := &Engine{
+	return NewEngineFor(s, flags, "")
+}
+
+// NewEngineFor is NewEngine for a named player: {player} in the words
+// becomes that name (the OS username, see the meta-horror in Script).
+func NewEngineFor(s *Script, flags Flags, player string) (*Engine, error) {
+	e := &Engine{Player: player,
 		script: s, flags: flags,
 		bg: "black", props: map[string]bool{},
 		poses: map[string]Pose{"mayu": startPose("mayu"), "hana": startPose("hana")},
@@ -103,8 +128,9 @@ func (e *Engine) run() error {
 		case OpChoice:
 			e.options, e.hover = n.Options, 0
 			return nil
-		case OpWait:
+		case OpWait, OpLock:
 			e.waiting, e.waitLeft = true, int(n.Number*TicksPerSecond)
+			e.locked = n.Op == OpLock
 			return nil
 		case OpEnd:
 			e.ended, e.endsTo = true, n.Name
@@ -128,6 +154,10 @@ func (e *Engine) exec(n Node) {
 		}
 	case OpSet:
 		e.flags.Set(n.Name)
+	case OpRoute:
+		e.flags.Set("route_" + RouteFor(e.flags))
+	case OpAuto:
+		e.autoNext = true
 	case OpBG:
 		e.hopFor = ""
 		e.bg = n.Name
@@ -151,6 +181,18 @@ func (e *Engine) exec(n Node) {
 		e.setPose(n)
 	case OpFx:
 		switch n.Name {
+		case "clear":
+			e.fx = map[string]int{}
+			return
+		case "figure_gone":
+			delete(e.fx, "figure")
+			return
+		case "redscale":
+			delete(e.fx, "redscale_off")
+		case "redscale_off":
+			if _, on := e.fx["redscale"]; !on {
+				return // nothing red to drain
+			}
 		case "flat_line":
 			delete(e.fx, "line_back")
 		case "line_back":
@@ -183,7 +225,8 @@ func (e *Engine) setPose(n Node) {
 // faces are on screen) and takes her expression.
 func (e *Engine) startLine(n Node) {
 	e.speaker, e.thinking = "", n.Op == OpThink
-	e.text, e.shown = []rune(n.Text), 0
+	e.text, e.shown = []rune(strings.ReplaceAll(n.Text, "{player}", e.Player)), 0
+	e.autoLine, e.autoNext, e.doneFor = e.autoNext, false, 0
 	if n.Op == OpThink {
 		e.hopFor = "" // never a hop on a thought; the next spoken line hops again
 		return
@@ -207,6 +250,13 @@ func (e *Engine) Tick() error {
 	for name := range e.fx {
 		e.fx[name]++
 	}
+	if e.autoLine && e.LineDone() && len(e.options) == 0 {
+		// A line that types itself, then goes on after a short beat.
+		if e.doneFor++; e.doneFor > autoBeat {
+			return e.Advance()
+		}
+		return nil
+	}
 	if e.waiting {
 		e.waitLeft--
 		if e.waitLeft <= 0 {
@@ -221,7 +271,7 @@ func (e *Engine) Tick() error {
 }
 
 func (e *Engine) leaveWait() error {
-	e.waiting = false
+	e.waiting, e.locked = false, false
 	e.pc++
 	return e.run()
 }
@@ -233,6 +283,8 @@ func (e *Engine) Advance() error {
 	switch {
 	case e.ended || len(e.options) > 0:
 		return nil
+	case e.locked:
+		return nil // the game is "asleep": clicks do nothing
 	case e.waiting:
 		return e.leaveWait()
 	case !e.LineDone():
@@ -376,6 +428,16 @@ func (e *Engine) PoseOf(character string) Pose { return e.poses[character] }
 func (e *Engine) FxTicks(name string) (ticks int, ok bool) {
 	ticks, ok = e.fx[name]
 	return ticks, ok
+}
+
+// RedscaleAmounts are the numbers redscale.kage takes: how far the red has
+// risen from the floor and how far it has drained from the top. Both are 0
+// when the effect is off.
+func (e *Engine) RedscaleAmounts() (rise, drain float64) {
+	if _, on := e.fx["redscale"]; !on {
+		return 0, 0
+	}
+	return e.FxProgress("redscale"), e.FxProgress("redscale_off")
 }
 
 // FxProgress is a timed effect's progress from 0 to 1 (1 once finished,

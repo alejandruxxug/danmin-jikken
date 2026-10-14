@@ -1,6 +1,7 @@
 package night
 
 import (
+	_ "embed"
 	"fmt"
 	"image"
 	"image/color"
@@ -66,18 +67,83 @@ type TextDrawer interface {
 	Width(s string) int
 }
 
+//go:embed redscale.kage
+var redscaleSource []byte
+
+// shakeTable is how far the picture is moved (x, y) on each tick of a
+// "shake": a fixed pattern that settles, so the result is the same on every run.
+var shakeTable = [...][2]int{{3, 1}, {-3, -2}, {2, 2}, {-2, -1}, {3, -2}, {-3, 1}, {2, -1}, {-2, 2}, {1, 1}, {-1, -1}, {1, -1}, {0, 1}}
+
+// ShakeOffset is the shake at a tick since it started: a new offset every
+// 4 ticks, and none once the pattern is used up.
+func ShakeOffset(ticks int) (dx, dy int) {
+	i := ticks / 4
+	if i < 0 || i >= len(shakeTable) {
+		return 0, 0
+	}
+	return shakeTable[i][0], shakeTable[i][1]
+}
+
 // Art is every sheet the night scenes draw with.
 type Art struct {
+	scratch            *ebiten.Image  // the finished scene, when a shake or the redscale must reshape it
+	red                *ebiten.Shader // redscale.kage
 	mayu, hana         *sprites.Sheet
 	station, ceiling   *sprites.Sheet
 	ui, choice         *sprites.Sheet
 	handMayu, handHana *sprites.Sheet
 	font               TextDrawer
+	bgs                map[string]*sprites.Sheet // the batch 2 backgrounds that have a sheet, by sheet name
+}
+
+// A background name in a script is drawn from the layers of one sheet. A
+// name that is not here (and not one of the built-in fills) is a placeholder
+// until its sheet exists in game/assets/sprites.
+type bgDef struct {
+	sheet  string
+	layers []string
+}
+
+var bgTable = map[string]bgDef{
+	"ward_c":      {"ward_c", []string{"room", "sleepers", "blanket"}},
+	"ward_c_dark": {"ward_c", []string{"room", "sleepers", "blanket", "dark"}},
+	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}},
+}
+
+// fills are the backgrounds the painter makes itself.
+var fills = map[string]bool{"black": true, "white": true, "grey": true, "station": true, "ceiling": true}
+
+// IsPlaceholder says whether a background name has no art yet.
+func (a *Art) IsPlaceholder(bg string) bool {
+	if fills[bg] {
+		return false
+	}
+	def, ok := bgTable[bg]
+	return !ok || a.bgs[def.sheet] == nil
 }
 
 // LoadArt reads the night sheets from the embedded sprites folder.
 func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	a := &Art{font: font}
+	shader, err := ebiten.NewShader(redscaleSource)
+	if err != nil {
+		return nil, fmt.Errorf("night art: compiling the redscale shader: %w", err)
+	}
+	a.red = shader
+	a.bgs = map[string]*sprites.Sheet{}
+	for _, def := range bgTable {
+		if _, loaded := a.bgs[def.sheet]; loaded {
+			continue
+		}
+		if _, err := fs.Stat(fsys, def.sheet+".json"); err != nil {
+			continue // not drawn yet: its backgrounds stay placeholders
+		}
+		sheet, err := sprites.Load(fsys, def.sheet)
+		if err != nil {
+			return nil, fmt.Errorf("night art: %w", err)
+		}
+		a.bgs[def.sheet] = sheet
+	}
 	for name, dst := range map[string]**sprites.Sheet{
 		"mayu": &a.mayu, "hana": &a.hana, "bg_station": &a.station, "bg_ceiling": &a.ceiling,
 		"vn_ui": &a.ui, "vn_choice": &a.choice, "hand_mayu": &a.handMayu, "hand_hana": &a.handHana,
@@ -108,6 +174,34 @@ func ChoiceRects(n int) []image.Rectangle {
 // (Art log): wall + monitor, traces, the girl, the counter and props, then
 // the effects and the UI on top.
 func (a *Art) Draw(dst *ebiten.Image, e *Engine) {
+	_, shaking := e.FxTicks("shake")
+	shaking = shaking && e.FxProgress("shake") < 1
+	rise, drain := e.RedscaleAmounts()
+	if !shaking && rise == 0 {
+		a.drawScene(dst, e)
+		return
+	}
+	// The shake and the redscale work on the finished picture: draw it
+	// aside, then put it through the shader.
+	if a.scratch == nil {
+		a.scratch = ebiten.NewImage(screenW, screenH)
+	}
+	a.drawScene(a.scratch, e)
+	dx, dy := 0, 0
+	if shaking {
+		ticks, _ := e.FxTicks("shake")
+		dx, dy = ShakeOffset(ticks)
+	}
+	dst.Fill(colInk)
+	op := &ebiten.DrawRectShaderOptions{}
+	op.Images[0] = a.scratch
+	op.GeoM.Translate(float64(dx), float64(dy))
+	op.Uniforms = map[string]any{"Rise": float32(rise), "Drain": float32(drain)}
+	dst.DrawRectShader(screenW, screenH, a.red, op)
+}
+
+// drawScene paints the night screen without the shake or the redscale.
+func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 	tick := e.Ticks()
 	a.drawBackground(dst, e, tick)
 	switch {
@@ -157,7 +251,13 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 		dst.Fill(colInk)
 	case "white":
 		dst.Fill(colPaper)
+	case "grey":
+		dst.Fill(colMid)
 	default:
+		if def, ok := bgTable[bg]; ok && a.bgs[def.sheet] != nil {
+			_ = a.bgs[def.sheet].Draw(dst, def.layers, 0, 0, 0)
+			return
+		}
 		// Batch 2 art is not drawn yet: a black screen with the name.
 		dst.Fill(colInk)
 		label := "PLACEHOLDER: " + strings.ToUpper(strings.ReplaceAll(bg, "_", " "))
@@ -263,6 +363,21 @@ func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 		if alpha := 1 - e.FxProgress("fade_in"); alpha > 0 {
 			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(alpha * 255)}, false)
 		}
+	}
+	if _, ok := e.FxTicks("dim"); ok {
+		vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(e.FxProgress("dim") * 0.75 * 255)}, false)
+	}
+	if _, ok := e.FxTicks("figure"); ok {
+		// The faceless figure in the doorway.
+		if sheet := a.bgs["ward_c"]; sheet != nil {
+			_ = sheet.Draw(dst, []string{"doorway_figure"}, 0, 0, 0)
+		}
+	}
+	if _, ok := e.FxTicks("eyes_slit"); ok {
+		// Almost closed: a thin gap is left in the middle.
+		h := float32(e.FxProgress("eyes_slit") * screenH * 0.46)
+		vector.FillRect(dst, 0, 0, screenW, h, colInk, false)
+		vector.FillRect(dst, 0, screenH-h, screenW, h, colInk, false)
 	}
 	if _, ok := e.FxTicks("eyes_close"); ok {
 		// The eyelids come in from the top and the bottom and meet in the middle.

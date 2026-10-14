@@ -1,0 +1,165 @@
+# Night 2: the confession night (docs: Danmin Jikken - Night 2).
+# The strobe into this night is the transition scene (longer than night 1's).
+# Flags in: liked_mayu, liked_hana. Out: stay_mayu / find_hana / confront_mayu
+# and route_mayu / route_hana / route_nobody (set by `route`).
+bg ward_c_dark
+sfx monitor_far
+~ I fell asleep at the desk again.
+~ I have to stop doing that.
+
+bg station
+show mayu
+Mayu (bright): There they are!
+ifnot liked_mayu jump after_mayu_hello
+Mayu (happy): You stayed with me last night. Nobody ever stays.
+label after_mayu_hello
+ifnot liked_hana jump after_hana_hello
+Hana (flat): You read it.
+~ It isn't a question.
+label after_hana_hello
+Mayu (sad): Did you hear about Cecily? She laughed so hard she just... fell. Right at your desk.
+Hana (flat): She didn't fall at a desk. She fell in bed 2.
+Mayu (laugh): Hana! Don't be weird.
+~ Hana looks at me for a long time. Then she picks up a clipboard.
+Hana (flat): Rounds.
+sfx footsteps
+Mayu (smile): She looks at you a lot, you know.
+Mayu (blank): I could make her stop.
+~ A beat.
+Mayu (laugh): Looking! I mean, I could ask her. Kidding. Your face!
+
+# Choice 2
+choice
+option Stay with Mayu | set stay_mayu | jump pick_route
+option Go find Hana | set find_hana | jump pick_route
+option Call Mayu out | set confront_mayu | jump call_out
+
+label call_out
+~ "What did you mean, make her stop?"
+Mayu (blank): ...
+Mayu (smile): Wow. Okay. It was a joke.
+Mayu (cold): I'll go do something useful, then.
+hide
+~ She leaves. The station is very quiet.
+jump pick_route
+
+# The route is decided in Go (night.RouteFor); the script only follows it.
+label pick_route
+route
+if route_mayu jump mayu_route
+if route_hana jump hana_route
+jump nobody_route
+
+# ---- Mayu route ----
+label mayu_route
+bg station
+show mayu
+Mayu (happy): You're staying? Again?
+~ She sits on the counter, legs swinging. For a minute she's just a girl on a long shift.
+Mayu (soft): Can I tell you something? Promise not to laugh.
+Mayu (shy): I like you. A lot. Since the first night.
+Mayu (shy): Everyone here is so tired. And then you came, and you're... you keep waking up. Every night. For me.
+Mayu (smile): So I'm going to keep you.
+~ She takes my hand. Her grip is too tight.
+Mayu (blank): Nobody else gets you. Not Driftwell. Not Hana. If anyone tried, I'd-
+~ She stops.
+Mayu (laugh): I'd be sad. I'd be so sad. That's all.
+~ There's no "kidding" this time.
+sfx footsteps_stop
+~ At the end of the corridor, Hana is standing very still, holding her clipboard.
+~ Then she turns around and walks away.
+jump kanashibari
+
+# ---- Hana route ----
+label hana_route
+hide
+bg supply_room
+ifnot find_hana jump hana_heard
+Hana (flat): You're not supposed to be out of bed, Four.
+jump hana_sit
+label hana_heard
+sfx footsteps
+Hana (flat): You asked her. Nobody asks her.
+label hana_sit
+Hana (tired): Sit.
+~ She doesn't look up from the syringe. She finds a vein without looking. She's done this a lot.
+Hana (flat): Pale MSTR. Driftwell's. It keeps the white place away. For a while.
+Hana (tired): I've been awake fourteen days. Do you know why?
+Hana (tired): Because when I sleep, I go where you are. The white place. And it's lovely there. And something in it wants to keep me.
+Hana (soft): You've been there since the gurney. Every night you come up for air a little less.
+~ She finally looks at me.
+Hana (soft): I don't want you to go back under.
+Hana (blush): Because I'd miss you.
+~ That's all. Hana doesn't say things twice.
+sfx floorboard
+~ Behind her, the door is open a crack.
+hide
+~ Mayu's face is in the gap. She's smiling.
+sfx door_close_soft
+jump kanashibari
+
+# ---- Nobody route ----
+label nobody_route
+bg station
+hide
+~ I wait for Hana to come back from rounds.
+sfx footsteps
+Hana (flat): You didn't read my note.
+Hana (flat): It's fine. Most people don't.
+~ She goes past me. Mayu doesn't come back.
+hide
+prop monitor
+sfx beep
+~ The monitor beeps. Seven lines. Nobody to tell.
+jump kanashibari
+
+# ---- Kanashibari ----
+label kanashibari
+prop clear
+hide
+bg ward_c_dark
+music off
+~ Later. I'm in bed. I don't remember lying down.
+~ I can't move.
+~ Not my hands. Not my eyes. I can breathe, barely.
+fx figure
+~ Someone is standing in the doorway.
+~ Watching me.
+speed 14
+auto
+Voice: don't wake up don't wake up don't wake up
+speed 45
+if route_mayu jump k_mayu
+if route_hana jump k_hana
+~ It stands there until I stop being able to tell if it's there at all.
+jump k_end
+label k_mayu
+~ Whoever it is, they're holding a clipboard.
+jump k_end
+label k_hana
+~ The figure tilts its head. I know that smile, even in the dark.
+Mayu (whisper): I saw.
+label k_end
+fx figure_gone
+sfx breathe_again
+
+# ---- Back to sleep ----
+if route_mayu jump s_mayu
+if route_hana jump s_hana
+~ Nobody comes. The drip clicks by itself.
+jump s_end
+label s_mayu
+Mayu (soft): Shh. You're all mine now. Sleep tight.
+jump s_end
+label s_hana
+Hana (crying): I have to. If I don't, they send someone who won't come back for you.
+Hana (crying): Count back from ten.
+label s_end
+sfx click
+fx eyes_close
+wait 1.2
+fx clear
+bg white
+hide
+wait 0.7
+end day3

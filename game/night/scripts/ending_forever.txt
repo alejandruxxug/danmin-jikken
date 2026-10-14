@@ -1,0 +1,25 @@
+# Forever ending (docs: Night 3 -> Forever ending). Hana's route, whatever you chose.
+ifnot closed_eyes jump f_open
+~ Ten... nine...
+jump f_mayu
+label f_open
+~ I won't. I won't close them.
+Mayu (soft): I know. That's why I'm doing it for you.
+~ Her hand on my eyes.
+label f_mayu
+Mayu (soft): Shh. I'm sorry. I'm sorry. Now nobody can take you.
+sfx drip_fast
+fx eyes_slit
+wait 1.5
+hide
+~ Through the gap, I can still see her.
+~ She's standing on the chair.
+~ She's smiling at me.
+bg mayu_chair
+wait 2
+# The drop: a hard cut to black, no body, no aftermath.
+fx clear
+bg black
+music off
+sfx off
+end card

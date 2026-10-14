@@ -1,0 +1,24 @@
+# Sleep ending (docs: Night 3 -> Sleep ending).
+~ Ten... nine...
+~ It's easier. It's so much easier.
+fx eyes_close
+wait 1.2
+fx clear
+hide
+bg white
+music jingle
+wait 0.8
+Reel: Welcome to your first day at Halcyon Rest!
+bg desk_day
+if route_mayu jump s_mayu
+ifnot route_nobody jump s_boil
+~ The next desk is empty. It's always been empty.
+jump s_boil
+label s_mayu
+~ There's a new clerk at the next desk.
+Mayu (happy): Hi! I'm new too. Isn't this place perfect?
+label s_boil
+hide
+~ The lines boil. And boil. And boil.
+wait 3
+end card

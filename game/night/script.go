@@ -32,7 +32,10 @@ import (
 //	fx eyes_close                 a screen effect (see knownFX)
 //	sfx name / music name         sound cues (the sound comes in M7: only logged)
 //	speed 12                      typewriter speed in letters per second
-//	wait 1.5                      pause, in seconds
+//	wait 1.5                      pause, in seconds (a click cuts it short)
+//	lock 5                        pause that clicks cannot cut short
+//	auto                          the next line goes on by itself when typed
+//	route                         set route_mayu / route_hana / route_nobody from the flags
 //	end day                       the night is over; the game decides what follows
 //
 // Every error names the file and the line.
@@ -59,6 +62,9 @@ const (
 	OpSpeed
 	OpWait
 	OpEnd
+	OpLock
+	OpAuto
+	OpRoute
 )
 
 // Part is one "key=value" change to a pose.
@@ -99,10 +105,19 @@ var knownFX = map[string]bool{
 	"flat_line":  true, // Matty's monitor line goes flat
 	"line_back":  true, // ... and comes back
 	"seventh":    true, // the 7th (nameless) line appears on the monitor
+	// Nights 2 and 3.
+	"shake":        true, // the picture shakes for 0.75 s
+	"redscale":     true, // Hana's room: grey turns red from the floor up
+	"redscale_off": true, // ... and drains back to grey from the top down
+	"eyes_slit":    true, // the eyelids close almost all the way (Forever)
+	"dim":          true, // the screen dims (the game falls asleep, 3:17)
+	"figure":       true, // kanashibari: a faceless figure in the doorway
+	"figure_gone":  true, // ... gone
+	"clear":        true, // takes every running effect away (a cut)
 }
 
 // knownProps are the things on the counter and the monitor.
-var knownProps = map[string]bool{"coffee": true, "can": true, "syringe": true, "note": true, "monitor": true, "clear": true}
+var knownProps = map[string]bool{"coffee": true, "can": true, "syringe": true, "note": true, "monitor": true, "clear": true, "envelope": true}
 
 // Parse reads a script. name is only used in error messages.
 func Parse(name string, r io.Reader) (*Script, error) {
@@ -360,10 +375,23 @@ func parseCommand(n *Node, word, rest string) error {
 	case "music":
 		n.Op = OpMusic
 		n.Name, err = one()
-	case "speed", "wait":
+	case "route":
+		n.Op = OpRoute
+		if len(args) != 0 {
+			err = fmt.Errorf("route takes no argument")
+		}
+	case "auto":
+		n.Op = OpAuto
+		if len(args) != 0 {
+			err = fmt.Errorf("auto takes no argument")
+		}
+	case "speed", "wait", "lock":
 		n.Op = OpSpeed
 		if word == "wait" {
 			n.Op = OpWait
+		}
+		if word == "lock" {
+			n.Op = OpLock
 		}
 		var v string
 		if v, err = one(); err == nil {
@@ -378,4 +406,17 @@ func parseCommand(n *Node, word, rest string) error {
 		err = fmt.Errorf("unknown command %q", word)
 	}
 	return err
+}
+
+// BGNames lists the backgrounds the script uses, once each, in order.
+func (s *Script) BGNames() []string {
+	var names []string
+	seen := map[string]bool{}
+	for _, n := range s.Nodes {
+		if n.Op == OpBG && !seen[n.Name] {
+			seen[n.Name] = true
+			names = append(names, n.Name)
+		}
+	}
+	return names
 }
