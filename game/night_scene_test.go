@@ -113,3 +113,31 @@ func TestEndingPhasesInOrder(t *testing.T) {
 		t.Errorf("music cue = %q: the rock starts with the card", g.env.MusicCue)
 	}
 }
+
+// Lists the backgrounds the scripts use that still have no art. It only
+// reports (run it with -v): the count is how far the art is.
+func TestPlaceholdersInUse(t *testing.T) {
+	g, err := New(Options{Enabled: true, Scene: SceneNight1, Line: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	art, err := g.env.NightArt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	names, _ := night.ScriptNames()
+	count := 0
+	for _, name := range names {
+		s, err := night.LoadScript(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, bg := range s.BGNames() {
+			if art.IsPlaceholder(bg) {
+				count++
+				t.Logf("PLACEHOLDER %-16s used in %s", bg, name)
+			}
+		}
+	}
+	t.Logf("%d placeholder backgrounds in use", count)
+}

@@ -95,7 +95,10 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
 | `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11, Alt+Enter and Cmd+F toggle it too; the window opens at the biggest whole-number scale that fits 90% of the screen and can be resized, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
 | `-dark N` | Draws **every** guest N palette steps darker (0-3), to judge the Severe darkening without waiting for a Severe patient to wake up (`dark N` does the same inside a script). In the dump: `forceDark` | The darkening is otherwise hidden: a Severe patient in a bed is not drawn |
+| `-auto` | Night scenes: the VN's AUTO play starts on (the A key or a click on the toggle flips it; the script command `auto [on\|off]` does the same) | See the AUTO wait (`1.2 s + 0.05 s per letter`, at most 6 s) |
 | `-quit` | Exits after the input script ends (or after `-frames N`) | Runs inside a test command |
+
+**Dump fields for M6:** `route` (from the flags), `ending`, `endingPhase` (`script`, `silence`, `card`, `credits`), `musicCue`, `sleepLogPath` / `sleepLogError`, and `placeholders` (the backgrounds of the playing night script that still have no sheet). `go test -run TestPlaceholdersInUse -v ./game` lists every placeholder of every script. `-line N` jumps let every timed effect finish first (open eyes, risen red), so a jump lands on the settled picture. **`advance N` is not a faithful shift:** it runs the clock past the strobe (a guest can still be at the desk with 0 served), so test the strobe with real stamps, not `advance`.
 
 **Input script** (one command per line, `#` = comment):
 
@@ -137,8 +140,11 @@ dump after_admit.json
 | `day.computer.records`, `day.computer.sleeplogs`, `day.computer.wardfeed` | The patient computer on RECORDS (type a name), SLEEP LOGS or WARD FEED. Use `advance N` first so people have arrived | **built** (M4) |
 | `day.computer` | Patient computer open, BEDS tab | **built**. Rooms, hallway sleepers + CALL STAFF, staff busy/free. Shares the reception's running shift; `-clock`, `-day`, `-sleepy` apply |
 | `day.top10` | Top-10 clerks (end of every shift) | **built**. Stops the shift, saves today's score to the scores file, shows ranks + the ghost row. `-score N -scores f.txt` reaches it directly |
-| `night` | Night VN, first beat (`night.<beat>` for a specific one) | planned |
-| `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) | planned |
+| `night.prologue`, `night.1`, `night.2`, `night.3` | The night VN scripts (`-line N` starts at that line of the script file, `-flags` pre-sets choices) | **built** |
+| `transition.night1` / `2` / `3` | The day → night strobe into that night (longer each night) | **built**. Every day ends in its strobe, which starts while the last patient is at the desk |
+| `ending.sleep`, `ending.wake`, `ending.forever`, `ending.317` | An ending: its script, black + silence, the ending card (rock cue), the credits, then the top-10 (once per run), then the title. `ending.317` also writes `sleep_log_317.txt` and the game closes after the top-10. Pre-set the route with `-flags route_mayu` / `route_hana` / `route_nobody`, `read_letter`, `closed_eyes`, `stamped_discharge` | **built** |
+
+The run in order: title → `night.prologue` → day 1 → `transition.night1` → `night.1` → day 2 → `transition.night2` → `night.2` → day 3 → `transition.night3` → `night.3` → `ending.<name>` (picked by `night.EndingFor(flags)`) → `day.top10` → title.
 
 An id that is not registered stops the game with `unknown scene "<id>"` and exit code 1.
 
@@ -189,13 +195,18 @@ One plain text file per night in `game/night/scripts/` (embedded with `go:embed`
 | `~ words` | Your thought: light grey, no name plate |
 | `choice` + `option Text \| set flag \| jump label` | A menu of 2 to 3 options. Hover with the mouse or Up/Down; click or Enter/Space picks |
 | `label x`, `jump x`, `if flag jump x`, `ifnot flag jump x`, `set flag` | Branches and flags |
-| `bg station / ceiling / black / white / <other>` | Backdoor-reachable backgrounds. Any other name draws a black screen with `PLACEHOLDER: <NAME>` (the batch 2 art that does not exist yet) |
+| `bg station / ceiling / black / white / grey / <name>` | Backgrounds. A name in `bgTable` (`night/draw.go`) is drawn from its sheet's layers (`ward_c`, `ward_c_dark`, `ward_c_up`, `corridor`, `hana_far`, `hana_door`, `note`, `letter`); any other name draws black with `PLACEHOLDER: <NAME>` until its sheet exists |
 | `prop can` (`coffee can syringe note monitor`, `prop clear`) | Things on the counter; `monitor` draws the ward traces in the monitor rect |
 | `show mayu`, `hide`, `faces` | One girl at (112, 2), or the Prologue's two upside-down faces |
 | `fx fade_in / eyes_close / red_pixel / flat_line / line_back / seventh` | Screen effects |
+| `lock S` | A pause that clicks cannot cut short (the game "falls asleep", 3:17) |
+| `auto` | The next line goes on by itself once typed (the voice that types by itself); not the AUTO toggle |
+| `route` | Sets `route_mayu` / `route_hana` / `route_nobody` from the choices (`night.RouteFor`) |
+| `fx shake / redscale / redscale_off / dim / figure / figure_gone / eyes_open / eyes_slit / splash / clear` | Night 2 and 3 effects. `redscale` is a Kage shader (`night/redscale.kage`): the five greys become their red twins, rising from the floor in 1 s and draining from the top in 1 s. `splash` is the Forever blood (`night/blood.go`, sheet `fx_blood_splash`): three splash frames, the stain stays over black, the card and the credits, and five drips slide down |
+| `end card` / `end ending` | The end of an ending script (to the card) / of night 3 (the flags pick the ending) |
 | `speed N`, `wait S`, `sfx x`, `music x`, `end day2` | Typewriter letters per second; a pause (a click skips it); sound cues (logged only, sound is M7); the end: `dayN` is the day that follows |
 
-**Flags** (`night.Flags`, one map on `Env.Flags`): choices write into it, the day will read it (M4's day 2 and 3 memo rules still need that wiring). The dump lists them. The name plate is written in the speaker's handwriting (`night/handwriting.go`: Hana joins, Mayu's seeded joins and ±1 px jitter; reusable for the notes), other speakers use Silkscreen.
+**Flags** (`night.Flags`, one map on `Env.Flags`): choices write into it, the day reads and writes it (`Shift.Flags`: stamping your own file on day 3 sets `stamped_self`, and `stamped_discharge` for DISCHARGE). Flag names: `liked_mayu liked_hana stay_mayu find_hana confront_mayu route_mayu route_hana route_nobody stamped_self stamped_discharge read_letter closed_eyes`. Day 2's memo (Shoal patients go to Ward C: +50 when one is attended, no "no room") and day 3's ("Do not wake them": attending costs 50, each sleeper still asleep at the end pays 50) live in `shift.go`. The dump lists them. The name plate is written in the speaker's handwriting (`night/handwriting.go`: Hana joins, Mayu's seeded joins and ±1 px jitter; reusable for the notes), other speakers use Silkscreen.
 
 **The CRT** (`game/crt.kage`, `crt.go`): one Kage shader on the finished picture, day scenes only (`usesCRT`), seven uniforms (`Scanline Vignette Curve Day Invert Time Filmed`). The strobe scene sets `Env.Invert` and the shader swaps black and white.
 

@@ -7,6 +7,8 @@ Back to [[Danmin Jikken – Script]] · Before: [[Danmin Jikken – Prologue]] +
 
 ---
 
+> **Stage direction change (2026-10-14, Alejo):** the three opening thoughts play on black, then the eyes open on Ward C. Nights 2 and 3 open the same way.
+
 ## Waking up
 
 [FX: **STROBE IN**, gentle. See [[Danmin Jikken – Art Direction#⚡ Day to night strobe]]. Fall into the grey]
