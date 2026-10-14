@@ -253,7 +253,7 @@ func TestDeskSceneClicks(t *testing.T) {
 		t.Fatal("a click elsewhere should put the stamp back")
 	}
 	click(372, 120)
-	click(210, 200) // the FOR DESK USE box
+	click(250, 60) // anywhere on the open page: the ink snaps into the box
 	if sh.Served() != 1 || sh.Score() != pointsRightStamp {
 		t.Errorf("served %d score %d, want 1 and %d", sh.Served(), sh.Score(), pointsRightStamp)
 	}
@@ -378,5 +378,62 @@ func TestFlipAnimationIsQuick(t *testing.T) {
 		if ticks > 24 { // 0.4 s at most from the middle
 			t.Errorf("target %v took %d ticks", target, ticks)
 		}
+	}
+}
+
+// The hit areas are big: the whole cubby lifts a stamp, the whole open page
+// takes it, and the right-edge strip grabs the page. Just inside works, just
+// outside does not.
+func TestDeskHitAreas(t *testing.T) {
+	for _, d := range deskStamps {
+		if !d.cubby.has(d.at.x, d.at.y) || !d.cubby.has(d.at.x+d.at.w-1, d.at.y+d.at.h-1) {
+			t.Errorf("the cubby of %v must hold its stamp", d.stamp)
+		}
+	}
+	admit := deskStamps[0].cubby
+	for _, c := range []struct {
+		area rect
+		x, y int
+		in   bool
+	}{
+		{admit, admit.x, admit.y, true}, {admit, admit.x - 1, admit.y, false},
+		{admit, admit.x + admit.w - 1, admit.y + admit.h - 1, true}, {admit, admit.x + admit.w, admit.y, false},
+		{grabRect, grabRect.x, grabRect.y, true}, {grabRect, grabRect.x - 1, grabRect.y + 50, false},
+		{grabRect, grabRect.x + grabRect.w - 1, grabRect.y + grabRect.h - 1, true}, {grabRect, grabRect.x, grabRect.y + grabRect.h, false},
+	} {
+		if got := c.area.has(c.x, c.y); got != c.in {
+			t.Errorf("%v at (%d, %d): inside = %v, want %v", c.area, c.x, c.y, got, c.in)
+		}
+	}
+	if grabRect.x+grabRect.w != pageRect.x+pageRect.w || grabRect.h != pageRect.h {
+		t.Error("the grab strip is the right edge of the page, full height")
+	}
+}
+
+// Press anywhere on the strip, drag: the page turns; just outside it does not.
+func TestDeskSceneGrabAnywhereOnTheEdge(t *testing.T) {
+	env := testEnv(t)
+	env.Day = 2
+	s := &deskScene{setup: deskSetup(true, PageReferral)}
+	if err := s.Enter(env); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { env.StopShift() })
+	sh := env.Shift()
+	runTicks(sh, openTicks)
+	press := func(x, y int) {
+		env.Input.InjectClick(x, y)
+		if err := s.Update(); err != nil {
+			t.Fatal(err)
+		}
+		env.Input.endFrame()
+	}
+	press(grabRect.x-1, 100)
+	if sh.Dragging() {
+		t.Error("a press just left of the strip must not take the page")
+	}
+	press(grabRect.x, 100) // mid-height on the edge, not the corner
+	if !sh.Dragging() {
+		t.Error("a press just inside the strip should take the page")
 	}
 }

@@ -23,29 +23,33 @@ const (
 )
 
 var (
-	folderPos  = image.Pt(12, 24) // where the folder sheet is drawn
-	hingeX     = 174              // the spine: the closed cover is x 174 to 333
-	idPos      = image.Pt(29, 58) // the Settler ID
-	photoBox   = rect{34, 88, 44, 46}
-	pagePos    = image.Pt(186, 41) // the top page of the stack
-	cornerRect = rect{310, 205, 16, 16}
-	inkTarget  = rect{194, 192, 53, 18} // FOR DESK USE, in screen pixels
-	inkAt      = image.Pt(198, 194)
+	folderPos = image.Pt(12, 24) // where the folder sheet is drawn
+	hingeX    = 174              // the spine: the closed cover is x 174 to 333
+	idPos     = image.Pt(29, 58) // the Settler ID
+	photoBox  = rect{34, 88, 44, 46}
+	pagePos   = image.Pt(186, 41) // the top page of the stack
+	// The top page is grabbed anywhere along its right edge: a strip 40 px
+	// wide and as tall as the page (the dog-eared corner is part of it).
+	grabRect   = rect{286, 41, 40, 180}
+	pageRect   = rect{186, 41, 140, 180} // the whole top page
+	inkAt      = image.Pt(198, 194)      // the ink always lands in the FOR DESK USE box
 	slipPos    = image.Pt(369, 199)
 	filesRect  = rect{64, 253, 88, 17}
 	closedRect = rect{174, 26, 160, 210} // where a click opens the folder
 )
 
-// deskStamps are the stamps lying on the desk: where each can be picked up
-// and which layer of desk_top draws it.
+// deskStamps are the stamps lying on the desk: where each is drawn (at, 30
+// by 30), the whole cubby it sits in, which picks it up (cubby), and which
+// layer of desk_top draws it.
 var deskStamps = []struct {
 	stamp Stamp
 	at    rect
+	cubby rect
 	layer string
 }{
-	{StampAdmit, rect{357, 106, 30, 30}, "stamp_admit"},
-	{StampDischarge, rect{397, 106, 30, 30}, "stamp_discharge"},
-	{StampRefer, rect{437, 106, 30, 30}, "stamp_refer"},
+	{StampAdmit, rect{357, 106, 30, 30}, rect{352, 100, 40, 72}, "stamp_admit"},
+	{StampDischarge, rect{397, 106, 30, 30}, rect{392, 100, 40, 72}, "stamp_discharge"},
+	{StampRefer, rect{437, 106, 30, 30}, rect{432, 100, 39, 72}, "stamp_refer"},
 }
 
 func stampLayer(st Stamp) string {

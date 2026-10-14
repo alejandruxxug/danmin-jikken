@@ -94,9 +94,9 @@ func (s *deskScene) click(x, y int) {
 		return
 	}
 	if _, holding := sh.Desk().Holding(); holding {
-		// A click on the FOR DESK USE box presses the stamp on the page; a
-		// click anywhere else puts it back on the desk.
-		if (rect{inkTarget.x - 8, inkTarget.y - 2, inkTarget.w + 16, inkTarget.h + 10}).has(x, y) {
+		// A click anywhere on the open page presses the stamp (the ink
+		// snaps into the FOR DESK USE box); a click elsewhere puts it back.
+		if pageRect.has(x, y) {
 			if err := sh.ApplyStamp(); err == nil {
 				return
 			}
@@ -105,7 +105,7 @@ func (s *deskScene) click(x, y int) {
 		return
 	}
 	for _, d := range deskStamps {
-		if d.at.has(x, y) {
+		if d.cubby.has(x, y) {
 			sh.LiftStamp(d.stamp)
 			return
 		}
@@ -117,8 +117,8 @@ func (s *deskScene) click(x, y int) {
 		if closedRect.has(x, y) {
 			_ = sh.OpenFolder() // still sliding in: nothing happens yet
 		}
-	case cornerRect.has(x, y):
-		_ = sh.BeginFlipDrag(x, y) // the corner is taken; drag() follows the mouse
+	case grabRect.has(x, y):
+		_ = sh.BeginFlipDrag(x, y) // the page is taken; drag() follows the mouse
 	}
 }
 
