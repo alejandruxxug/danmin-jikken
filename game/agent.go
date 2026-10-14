@@ -41,21 +41,24 @@ type Options struct {
 	Shot4   string // x4 PNG, written when the run ends
 	Dump    string // json state, written when the run ends
 	NoCRT   bool
-	Quit    bool
-	Frames  int
-	Pan     int    // camera x at the start (used only when PanSet)
-	PanSet  bool   // -pan was given; without it the camera starts at 120
-	Scores  string // the scores file (without it scores stay in memory)
-	Score   int    // today's score at the start (day.top10 saves it)
-	Sleepy  bool   // patients fall asleep within a second and sleep long
-	Dark    int    // -dark N: draw every guest N palette steps darker (0-3), -1 = as the game decides
+	// ReduceFlashing is a player option (Settings -> Reduce flashing), so it
+	// works without -agent.
+	ReduceFlashing bool
+	Quit           bool
+	Frames         int
+	Pan            int    // camera x at the start (used only when PanSet)
+	PanSet         bool   // -pan was given; without it the camera starts at 120
+	Scores         string // the scores file (without it scores stay in memory)
+	Score          int    // today's score at the start (day.top10 saves it)
+	Sleepy         bool   // patients fall asleep within a second and sleep long
+	Dark           int    // -dark N: draw every guest N palette steps darker (0-3), -1 = as the game decides
 
 	// Fullscreen is an ordinary option for players, so it also works
 	// without -agent.
 	Fullscreen bool
 }
 
-// ParseOptions reads the flags. Every flag except -agent, -fullscreen and -nocrt is
+// ParseOptions reads the flags. Every flag except -agent, -fullscreen, -nocrt and -reduce-flashing is
 // ignored (and reset) when -agent is missing, so a player can't trip the backdoor.
 func ParseOptions(args []string) (Options, error) {
 	var o Options
@@ -73,6 +76,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Shot4, "shot4", "", "save a x4 PNG screenshot when the run ends")
 	fs.StringVar(&o.Dump, "dump", "", "save the game state as json when the run ends")
 	fs.BoolVar(&o.NoCRT, "nocrt", false, "turn the day CRT filter off")
+	fs.BoolVar(&o.ReduceFlashing, "reduce-flashing", false, "replace the day-to-night strobe by one slow invert-and-fade")
 	fs.BoolVar(&o.Quit, "quit", false, "exit when the script (or -frames) ends")
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
 	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
@@ -90,7 +94,7 @@ func ParseOptions(args []string) (Options, error) {
 		}
 	})
 	if !o.Enabled {
-		return Options{Fullscreen: o.Fullscreen, NoCRT: o.NoCRT}, nil
+		return Options{Fullscreen: o.Fullscreen, NoCRT: o.NoCRT, ReduceFlashing: o.ReduceFlashing}, nil
 	}
 	return o, nil
 }
@@ -119,6 +123,7 @@ type Command struct {
 //	up              let the button go
 //	drag 318 213 200 213   down, move, up: drag the page corner left
 //	next            advance the night text (the Space key: first shows the whole line, then goes on)
+//	skipstrobe      end the day-to-night strobe at once
 //	choose 2        pick option 2 of the open night menu
 //	pan 0           put the camera at x = 0 (0 to 240)
 //	desk            look down to the desk (reception: look back up)
@@ -301,9 +306,9 @@ func parseCommand(words []string) (Command, error) {
 		default:
 			return cmd, fmt.Errorf("page %q: want referral, sleeplog or wristband", args[0])
 		}
-	case "next":
+	case "next", "skipstrobe":
 		if len(args) != 0 {
-			return cmd, fmt.Errorf("next takes no argument")
+			return cmd, fmt.Errorf("%s takes no argument", cmd.Op)
 		}
 	case "choose":
 		if len(args) != 1 {
@@ -389,6 +394,7 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 	}
 	env.NightLine = opts.Line
 	env.CRT = !opts.NoCRT
+	env.ReduceFlashing = opts.ReduceFlashing
 	env.Input.IgnoreReal = true
 	if opts.PanSet {
 		if opts.Pan > MaxCameraX {
@@ -474,6 +480,8 @@ func (a *Agent) runCommands(env *Env) {
 		case "next": // the same Space press a player would make
 			env.Input.InjectKey(ebiten.KeySpace)
 			return
+		case "skipstrobe": // the strobe scene ends on its next frame
+			env.SkipStrobe = true
 		case "choose":
 			if env.Night != nil {
 				_ = env.Night.Choose(cmd.N - 1) // no menu open: nothing happens, as for a click
@@ -683,6 +691,18 @@ type Dump struct {
 
 	// The night script that is playing (nil in the day).
 	Night *night.State `json:"night,omitempty"`
+
+	// The day-to-night strobe (nil unless a transition scene is playing).
+	Strobe *DumpStrobe `json:"strobe,omitempty"`
+}
+
+// DumpStrobe is where the strobe is: its tick, what it shows, and how inverted.
+type DumpStrobe struct {
+	Night  int     `json:"night"`
+	Tick   int     `json:"tick"`
+	Layer  string  `json:"layer"` // day, night, white or fall
+	Invert float64 `json:"invert"`
+	Length int     `json:"length"` // the whole strobe, in ticks
 }
 
 // DumpDesk is the look-down desk: the folder, the page, the stamp in the hand.
@@ -832,6 +852,10 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	if env.Night != nil {
 		st := env.Night.Snapshot()
 		d.Night = &st
+	}
+	if env.StrobeNight > 0 {
+		st := StrobeAt(env.StrobeNight, env.StrobeTick, env.ReduceFlashing)
+		d.Strobe = &DumpStrobe{Night: env.StrobeNight, Tick: env.StrobeTick, Layer: st.Layer.String(), Invert: st.Invert, Length: StrobeLength(env.StrobeNight)}
 	}
 	sort.Strings(d.Flags) // map order is random; sorted keeps dumps comparable
 	return d

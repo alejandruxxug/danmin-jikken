@@ -30,23 +30,28 @@ const (
 	SceneSleepLogs     = "day.computer.sleeplogs"
 	SceneWardFeed      = "day.computer.wardfeed"
 	SceneDayTop10      = "day.top10"
-	SceneNightPrologue = "night.prologue" // the gurney, before day 1
-	SceneNight1        = "night.1"        // after day 1
+	SceneNightPrologue = "night.prologue"    // the gurney, before day 1
+	SceneNight1        = "night.1"           // after day 1
+	SceneStrobe1       = "transition.night1" // the day-to-night strobe into night 1
 )
 
 // Env is what every scene shares: the clock, the shift, the input, the
 // day and the story flags. The scene manager owns one.
 type Env struct {
-	Seed    int64
-	Day     int
-	Speed   float64
-	CRT     bool    // the day CRT filter (Settings -> CRT effect); the night never has it
-	Invert  float64 // 1 while the strobe shows its inverted frames (the CRT shader swaps black and white)
-	Clock   *Clock
-	Flags   night.Flags    // story flags the nights set and the day will read
-	Scores  map[string]int // points of each shift, keyed "day1", "day2", ...
-	Input   *Input
-	Sprites fs.FS // the embedded assets/sprites folder
+	Seed           int64
+	Day            int
+	Speed          float64
+	CRT            bool    // the day CRT filter (Settings -> CRT effect); the night never has it
+	ReduceFlashing bool    // Settings -> Reduce flashing: the strobe becomes one slow invert-and-fade
+	SkipStrobe     bool    // test mode: the strobe scene ends at once
+	StrobeNight    int     // the night the strobe is leading into (0 when none plays), for the dump
+	StrobeTick     int     // ticks into it
+	Invert         float64 // 1 while the strobe shows its inverted frames (the CRT shader swaps black and white)
+	Clock          *Clock
+	Flags          night.Flags    // story flags the nights set and the day will read
+	Scores         map[string]int // points of each shift, keyed "day1", "day2", ...
+	Input          *Input
+	Sprites        fs.FS // the embedded assets/sprites folder
 
 	// CameraX is the left edge of the 480-wide view over the 720-wide
 	// reception room (0 to 240). It lives here so the backdoor can set it
@@ -84,6 +89,20 @@ func (e *Env) Art() (*DeskArt, error) {
 		e.art = art
 	}
 	return e.art, nil
+}
+
+// NightArt loads the night sheets and the font the first time it is asked.
+func (e *Env) NightArt() (*night.Art, error) {
+	if e.nightArt == nil {
+		font, err := LoadFont()
+		if err != nil {
+			return nil, err
+		}
+		if e.nightArt, err = night.LoadArt(e.Sprites, font); err != nil {
+			return nil, err
+		}
+	}
+	return e.nightArt, nil
 }
 
 // Shift returns the running shift, or nil when no day scene has started one.

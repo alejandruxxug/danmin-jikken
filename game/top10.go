@@ -84,9 +84,14 @@ func (s *top10Scene) Update() error {
 	return nil
 }
 
-// next goes on to the next day. Night scenes do not exist yet, so the day
-// after the top-10 is simply the next day; after the last one, the title.
+// next goes on after the top-10. Day 1 ends in the strobe into night 1; the
+// other nights are not built yet (M6), so the next day follows at once, and
+// after the last day comes the title.
 func (s *top10Scene) next() {
+	if s.env.Day == 1 {
+		s.env.SwitchTo(SceneStrobe1)
+		return
+	}
 	if s.env.Day >= LastDay() {
 		s.env.Day = 1
 		s.env.SwitchTo(SceneTitle)

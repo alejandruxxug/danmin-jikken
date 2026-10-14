@@ -25,16 +25,9 @@ type nightScene struct {
 func (s *nightScene) Enter(env *Env) error {
 	s.env = env
 	var err error
-	if env.nightArt == nil {
-		font, err := LoadFont()
-		if err != nil {
-			return err
-		}
-		if env.nightArt, err = night.LoadArt(env.Sprites, font); err != nil {
-			return err
-		}
+	if s.art, err = env.NightArt(); err != nil {
+		return err
 	}
-	s.art = env.nightArt
 	script, err := night.LoadScript(s.script)
 	if err != nil {
 		return err

@@ -70,6 +70,7 @@ func New(opts Options) (*Game, error) {
 	}
 	g.scenes.Register(SceneDayTop10, func() Scene { return &top10Scene{} })
 	g.scenes.Register(SceneNightPrologue, func() Scene { return &nightScene{script: night.Prologue} })
+	g.scenes.Register(SceneStrobe1, func() Scene { return &strobeScene{night: 1, next: SceneNight1} })
 	g.scenes.Register(SceneNight1, func() Scene { return &nightScene{script: night.Night1} })
 
 	first := SceneTitle
@@ -81,7 +82,8 @@ func New(opts Options) (*Game, error) {
 		g.agent = agent
 		first = opts.Scene
 	} else {
-		env.CRT = !opts.NoCRT // a player option, like -fullscreen
+		env.CRT = !opts.NoCRT // player options, like -fullscreen
+		env.ReduceFlashing = opts.ReduceFlashing
 		// A real player: the scores live next to the executable, and the
 		// ghost row may appear between runs. Test mode keeps its hands off
 		// that file unless -scores names another one.

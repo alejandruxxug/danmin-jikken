@@ -261,7 +261,7 @@ func absInt(n int) int {
 func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 	if _, ok := e.FxTicks("fade_in"); ok {
 		if alpha := 1 - e.FxProgress("fade_in"); alpha > 0 {
-			vector.FillRect(dst, 0, 0, screenW, screenH, color.RGBA{0x0b, 0x0b, 0x0c, uint8(alpha * 255)}, false)
+			vector.FillRect(dst, 0, 0, screenW, screenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(alpha * 255)}, false)
 		}
 	}
 	if _, ok := e.FxTicks("eyes_close"); ok {
@@ -377,4 +377,11 @@ func WrapText(text string, width int, measure func(string) int) []string {
 		lines = append(lines, line)
 	}
 	return lines
+}
+
+// DrawStationFrame draws the nurses' station with no girl, no props and no
+// text box, y pixels down from its place. The day-to-night strobe uses it
+// as the frame of the night that flashes through.
+func (a *Art) DrawStationFrame(dst *ebiten.Image, y int) {
+	_ = a.station.Draw(dst, []string{"wall", "monitor_screen", "counter", "prop_coffee"}, 0, 0, y)
 }

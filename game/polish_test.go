@@ -213,8 +213,9 @@ func TestTitleStartsDayOne(t *testing.T) {
 	}
 	env.Input.InjectKey(ebiten.KeySpace)
 	s.Update()
-	if env.nextScene != SceneDayReception || env.Day != 1 {
-		t.Errorf("next %q day %d, want day.reception day 1", env.nextScene, env.Day)
+	// The game now opens with the Prologue (the gurney); day 1 follows it.
+	if env.nextScene != SceneNightPrologue || env.Day != 1 {
+		t.Errorf("next %q day %d, want night.prologue day 1", env.nextScene, env.Day)
 	}
 }
 

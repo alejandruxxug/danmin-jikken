@@ -14,14 +14,14 @@ var (
 )
 
 // titleScene is the empty title screen. Until the real title exists (M7),
-// any key or click starts day 1 so the game can be played.
+// any key or click starts the game: the Prologue, then day 1.
 type titleScene struct{ env *Env }
 
 func (s *titleScene) Enter(env *Env) error { s.env = env; return nil }
 func (s *titleScene) Update() error {
 	if _, _, clicked := s.env.Input.Click(); clicked || s.env.Input.AnyKeyPressed() {
 		s.env.Day = 1
-		s.env.SwitchTo(SceneDayReception)
+		s.env.SwitchTo(SceneNightPrologue) // the gurney comes first
 	}
 	return nil
 }
