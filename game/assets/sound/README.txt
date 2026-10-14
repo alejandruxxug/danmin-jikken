@@ -19,9 +19,12 @@ time of each is the "cut" column of the Sound note. The cut file starts on the s
 SOUND EFFECTS (short, 16-bit mono wav, volume-normalised and trimmed; every one CC0)
 bell.wav          Pleasing Bell Sound Effect, Julie Damsgaard / Spring Spring (opengameart.org/content/pleasing-bell-sound-effect)
 snore.wav         "snore", 80 CC0 creature SFX, rubberduck (opengameart.org/content/80-cc0-creature-sfx)
-snore_2.wav       snore_02, 80 CC0 creature SFX 2, rubberduck (opengameart.org/content/80-cc0-creture-sfx-2), mono, peak 0.5
-snore_3.wav       Breathing tired, CC0 (opengameart.org/content/breathing-tired), mono, peak 0.5
-snore_4.wav       littlegrunts, crueltyinc, CC0 (opengameart.org/content/little-grunts), mono, peak 0.5
+snore_2.wav       snore_02, 80 CC0 creature SFX 2, rubberduck (opengameart.org/content/80-cc0-creture-sfx-2)
+snore_3.wav       Breathing tired, CC0 (opengameart.org/content/breathing-tired)
+snore_4.wav       littlegrunts, crueltyinc, CC0 (opengameart.org/content/little-grunts)
+                  All four snores (2026-10-14): 50 Hz high-pass, spectral noise gate, then
+                  levelled to the same loudness (about -20 dBFS RMS of the loud part, soft
+                  limit at -1 dBFS), mono 16-bit. Done outside the game with a Python script.
 folder_open.wav   Paper Sound - 3, Various paper sound effects, Luckius, CC0 (opengameart.org/content/various-paper-sound-effects), mono, peak 0.6
 folder_close.wav  Paper Sound - 1, same pack
 folder_slide.wav  Paper Sound - 2, same pack
