@@ -112,7 +112,8 @@ turn               # turn the top page by itself (the same flip a drag finishes)
 page sleeplog      # show a page at once: referral, sleeplog, wristband (returning patients only)
 drag 318 213 200 213   # press the dog-eared corner, drag the page left, let go (also: down X Y / mouse X Y / up)
 lift admit         # lift a stamp off the desk into the hand (admit, refer, discharge)
-apply              # press the stamp in the hand on the open referral (the same stamping as `stamp`)
+apply              # press the stamp in the hand on the open referral at once (no landing animation; the same stamping as `stamp`)
+click 250 60       # ...with a stamp in the hand, a click on the open referral plays the whole juicy landing (wind-up, slam, 3-frame hit-stop, shake, ink pop, specks, +100); take consecutive `shot4` lines to catch each frame
 putback            # put the stamp back on the desk
 shot after_admit.png
 shot4 after_admit_x4.png

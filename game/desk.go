@@ -107,10 +107,10 @@ func deskLayers(day int) []string {
 
 // DeskArt is every sheet the day scenes draw, plus the font.
 type DeskArt struct {
-	room, desk, glass, waiting, hallway, computer, icons, iconsM4                          *sprites.Sheet
-	deskTop, folder, docID, docReferral, docSleepLog, docWristband, docStamps, docCitation *sprites.Sheet
-	window                                                                                 map[string]*sprites.Sheet // by Visitor.Sprite
-	font                                                                                   *Font
+	room, desk, glass, waiting, hallway, computer, icons, iconsM4                                     *sprites.Sheet
+	deskTop, folder, docID, docReferral, docSleepLog, docWristband, docStamps, docCitation, inkSpecks *sprites.Sheet
+	window                                                                                            map[string]*sprites.Sheet // by Visitor.Sprite
+	font                                                                                              *Font
 
 	// Scratch pictures the look-down desk draws into before bending them.
 	back, top, closed, open, page *ebiten.Image
@@ -129,7 +129,7 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		{&a.computer, "computer"}, {&a.icons, "ui_icons"}, {&a.iconsM4, "ui_icons_m4"},
 		{&a.deskTop, "desk_top"}, {&a.folder, "folder"}, {&a.docID, "doc_settler_id"},
 		{&a.docReferral, "doc_referral"}, {&a.docSleepLog, "doc_sleep_log"}, {&a.docWristband, "doc_wristband"},
-		{&a.docStamps, "doc_stamps"}, {&a.docCitation, "doc_citation"},
+		{&a.docStamps, "doc_stamps"}, {&a.inkSpecks, "ink_specks"}, {&a.docCitation, "doc_citation"},
 	} {
 		var err error
 		if *l.sheet, err = LoadSheet(fsys, l.name); err != nil {

@@ -23,7 +23,20 @@ type deskScene struct {
 	t       float64 // how far down the look is, 0 = reception, 1 = desk
 	dir     int     // +1 tilting down, -1 tilting back, 0 settled
 	drawErr error
+	slam    *slamAnim // the stamp landing, while it plays
 }
+
+// slamAnim is a stamp landing on the open referral: frame counts from the
+// press (landingPose), from is where the stamp's top-left was when pressed.
+type slamAnim struct {
+	stamp Stamp
+	frame int
+	from  image.Point
+}
+
+// landedAt is where the stamp's top-left lands: centred on the ink mark, just
+// under the SIGNATURE label.
+var landedAt = image.Pt(inkAt.X+22-15, inkAt.Y+7-15+1)
 
 func (s *deskScene) Enter(env *Env) error {
 	s.env = env
@@ -55,6 +68,10 @@ func (s *deskScene) Update() error {
 		return s.drawErr
 	}
 	s.ticks++
+	if s.slam != nil {
+		s.stepSlam()
+		return nil
+	}
 	switch {
 	case s.dir > 0:
 		if s.t += 1.0 / lookDownTicks; s.t >= 1 {
@@ -85,6 +102,38 @@ func (s *deskScene) drag() {
 	}
 }
 
+// stepSlam plays one frame of the stamp landing. The stamp logic runs on the
+// contact frame (the same ApplyStamp as ever); the hit-stop is that the ink,
+// the folder and the shake wait three frames for it.
+func (s *deskScene) stepSlam() {
+	f := s.slam.frame
+	if f == impactFrame-1 {
+		if err := s.shift.ApplyStamp(); err != nil { // it cannot land after all
+			s.shift.PutBackStamp()
+			s.slam = nil
+			return
+		}
+		playSFX("stamp_thunk")
+	}
+	s.slam.frame++
+	if landingPose(s.slam.frame).done {
+		s.slam = nil
+	}
+}
+
+// landing is the stamp in its landing, for the painter, or nil. Before the
+// contact it glides from where it was pressed to where it lands.
+func (s *deskScene) landing() *slamDraw {
+	if s.slam == nil {
+		return nil
+	}
+	f := min(s.slam.frame, impactFrame-1)
+	glide := ease(float64(f) / float64(impactFrame-1))
+	x := s.slam.from.X + int(float64(landedAt.X-s.slam.from.X)*glide)
+	y := s.slam.from.Y + int(float64(landedAt.Y-s.slam.from.Y)*glide)
+	return &slamDraw{stamp: s.slam.stamp, x: x, y: y, pose: landingPose(s.slam.frame)}
+}
+
 // click handles a click on the settled desk.
 func (s *deskScene) click(x, y int) {
 	sh := s.shift
@@ -97,7 +146,10 @@ func (s *deskScene) click(x, y int) {
 		// A click anywhere on the open page presses the stamp (the ink
 		// snaps into the FOR DESK USE box); a click elsewhere puts it back.
 		if pageRect.has(x, y) {
-			if err := sh.ApplyStamp(); err == nil {
+			if err := sh.CheckApply(); err == nil {
+				st, _ := sh.Desk().Holding()
+				s.slam = &slamAnim{stamp: st, from: image.Pt(x-4, y-4)}
+				playSFX("stamp_lift")
 				return
 			}
 		}
@@ -134,9 +186,16 @@ func (s *deskScene) Draw(screen *ebiten.Image) {
 			q.toast(s.shift.Message())
 		})
 	}
-	p.into(s.art.top, func(q *painter) { q.deskObjects(s.shift, image.Pt(cx, cy)) })
+	p.into(s.art.top, func(q *painter) { q.deskObjects(s.shift, image.Pt(cx, cy), s.landing()) })
 	if s.t >= 1 {
-		screen.DrawImage(s.art.top, nil)
+		var op ebiten.DrawImageOptions // the screen shakes after a stamp lands
+		if since, ok := s.shift.SinceImpact(); ok {
+			if dx, dy := shakeOffset(since); dx != 0 || dy != 0 {
+				screen.Fill(colDim) // the strip the shake uncovers at the edge
+				op.GeoM.Translate(float64(dx), float64(dy))
+			}
+		}
+		screen.DrawImage(s.art.top, &op)
 	} else {
 		rtl, rtr, rbl, rbr, dtl, dtr, dbl, dbr := lookDownShapes(s.t)
 		screen.Clear()

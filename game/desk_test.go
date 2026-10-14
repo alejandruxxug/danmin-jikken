@@ -105,9 +105,13 @@ func TestApplyStampAdmitsAndFolderLeaves(t *testing.T) {
 	if _, ok := sh.Desk().Holding(); ok {
 		t.Error("the stamp should be out of the hand after it is used")
 	}
+	if pose, ok := sh.FolderPose(); !ok || pose.ink || pose.open != 1 {
+		t.Errorf("during the hit-stop: %+v, want the open folder with no ink yet", pose)
+	}
+	runTicks(sh, hitStopTicks)
 	pose, ok := sh.FolderPose()
 	if !ok || !pose.ink || pose.open != 1 || pose.stamp != StampAdmit {
-		t.Errorf("right after the stamp: %+v, want the open folder with the ink mark", pose)
+		t.Errorf("after the hit-stop: %+v, want the open folder with the ink mark", pose)
 	}
 	if _, _, slip := sh.Slip(); slip {
 		t.Error("a right stamp must not bring a citation")
@@ -253,7 +257,13 @@ func TestDeskSceneClicks(t *testing.T) {
 		t.Fatal("a click elsewhere should put the stamp back")
 	}
 	click(372, 120)
-	click(250, 60) // anywhere on the open page: the ink snaps into the box
+	click(250, 60)               // anywhere on the open page: the ink snaps into the box
+	for range landingTotal + 1 { // the landing plays; the stamp logic runs on contact
+		if err := s.Update(); err != nil {
+			t.Fatal(err)
+		}
+		env.Input.endFrame()
+	}
 	if sh.Served() != 1 || sh.Score() != pointsRightStamp {
 		t.Errorf("served %d score %d, want 1 and %d", sh.Served(), sh.Score(), pointsRightStamp)
 	}
@@ -435,5 +445,113 @@ func TestDeskSceneGrabAnywhereOnTheEdge(t *testing.T) {
 	press(grabRect.x, 100) // mid-height on the edge, not the corner
 	if !sh.Dragging() {
 		t.Error("a press just inside the strip should take the page")
+	}
+}
+
+// The landing's motion, frame by frame: lift and stretch, slam and squash,
+// hold, spring back with an overshoot, done. Pure functions of the frame.
+func TestLandingPose(t *testing.T) {
+	if p := landingPose(0); p.lift != windupLift || p.sy <= 1 || p.sx >= 1 {
+		t.Errorf("wind-up %+v: want lifted 3 px, taller and narrower", p)
+	}
+	prev := landingPose(windupTicks).lift
+	for f := windupTicks + 1; f < impactFrame; f++ {
+		p := landingPose(f)
+		if p.lift >= prev {
+			t.Errorf("frame %d: lift %v did not fall (was %v)", f, p.lift, prev)
+		}
+		prev = p.lift
+	}
+	contact := landingPose(impactFrame - 1)
+	if contact.lift != 0 || contact.sx <= 1 || contact.sy >= 1 {
+		t.Errorf("contact %+v: want on the page, wider and shorter", contact)
+	}
+	for f := impactFrame; f < impactFrame+hitStopTicks; f++ {
+		if p := landingPose(f); p != (stampPose{sx: 1.15, sy: 0.85}) {
+			t.Errorf("hit-stop frame %d moved: %+v", f, p)
+		}
+	}
+	peak := 0.0
+	for f := impactFrame + hitStopTicks; f < landingTotal; f++ {
+		peak = max(peak, landingPose(f).lift)
+	}
+	if peak <= springRise {
+		t.Errorf("the spring-back peaks at %v, want an overshoot past %v", peak, springRise)
+	}
+	if !landingPose(landingTotal).done || landingPose(landingTotal-1).done {
+		t.Error("the landing should be done exactly at landingTotal")
+	}
+}
+
+func TestShakeDecaysAndIsFixed(t *testing.T) {
+	maxFirst, last := 0, 0
+	for f := 0; f < shakeTicks+3; f++ {
+		dx, dy := shakeOffset(f)
+		if a := abs(dx); f == 0 {
+			maxFirst = a
+		} else if a > maxFirst {
+			t.Errorf("frame %d shakes %d px, more than the first (%d)", f, a, maxFirst)
+		}
+		if abs(dy) > 1 {
+			t.Errorf("frame %d: vertical shake %d", f, dy)
+		}
+		last = abs(dx) + abs(dy)
+	}
+	if maxFirst != 2 || last != 0 {
+		t.Errorf("first frame %d px (want 2), after the shake %d (want 0)", maxFirst, last)
+	}
+	a1, a2 := fmtShake(), fmtShake()
+	if a1 != a2 {
+		t.Error("the shake must be the same every run")
+	}
+}
+
+func fmtShake() [shakeTicks][2]int {
+	var out [shakeTicks][2]int
+	for f := range out {
+		out[f][0], out[f][1] = shakeOffset(f)
+	}
+	return out
+}
+
+func TestInkPopFolderDipAndPopup(t *testing.T) {
+	if inkScale(-1) != 0 || inkScale(0) != popScale || inkScale(popTicks) != 1 {
+		t.Errorf("ink scale: %v %v %v", inkScale(-1), inkScale(0), inkScale(popTicks))
+	}
+	if mid := inkScale(popTicks/2 + 1); mid <= 1 || mid >= popScale {
+		t.Errorf("the settle has a middle step, got %v", mid)
+	}
+	if folderDip(0) != 1 || folderDip(dipTicks) != 0 || folderDip(-1) != 0 {
+		t.Error("the folder dips 1 px for dipTicks frames")
+	}
+	r0, a0 := popup(0)
+	r1, a1 := popup(popupTicks - 5)
+	if r1 <= r0 || a1 >= a0 || a0 != 1 {
+		t.Errorf("the score should rise and fade: %v %v then %v %v", r0, a0, r1, a1)
+	}
+	if _, a := popup(popupTicks); a != 0 {
+		t.Error("the score is gone after popupTicks")
+	}
+	if s, a := speck(speckTicks); s != 0 || a != 0 {
+		t.Error("the specks are gone after speckTicks")
+	}
+}
+
+// The score popup shows what the stamp scored, after the impact.
+func TestScorePopupAfterTheStamp(t *testing.T) {
+	sh := folderOnDesk(t, 2)
+	_ = sh.GoToPage(PageReferral)
+	runTicks(sh, openTicks)
+	sh.LiftStamp(StampAdmit)
+	if err := sh.ApplyStamp(); err != nil {
+		t.Fatal(err)
+	}
+	runTicks(sh, hitStopTicks) // the score floats up when the ink appears
+	text, _, alpha, ok := sh.ScorePopup()
+	if !ok || text != "+100" || alpha != 1 {
+		t.Errorf("popup %q %v %v", text, alpha, ok)
+	}
+	if since, ok := sh.SinceImpact(); !ok || since != hitStopTicks {
+		t.Errorf("since impact %d %v", since, ok)
 	}
 }

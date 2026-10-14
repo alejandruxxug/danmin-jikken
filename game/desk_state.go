@@ -62,7 +62,11 @@ type sent struct {
 	stamp Stamp
 	page  Page // the page that showed; the ink mark is only on the referral
 	open  bool // the folder was open
-	at    int  // tick the stamp landed
+	at    int  // tick the ink appears: the impact plus the hit-stop
+	// impact is the tick the stamp hit the page (the stamp logic ran then),
+	// and points what it scored; both are for the landing effects.
+	impact int
+	points int
 }
 
 // citation is the slip handed out for a wrong stamp (flavour, no penalty).
@@ -347,6 +351,25 @@ func (s *Shift) PutBackStamp() { s.desk.holding = false }
 // guest is admitted, referred or discharged and a wrong stamp costs the
 // points and brings a citation. Then the folder closes and slides back.
 func (s *Shift) ApplyStamp() error {
+	if err := s.CheckApply(); err != nil {
+		return err
+	}
+	d := &s.desk
+	g, before := d.guest, s.Score()
+	if err := s.Stamp(d.held); err != nil {
+		return err
+	}
+	if o := d.out; o != nil && o.guest == g { // the desk freezes for the hit-stop
+		o.impact, o.points = s.ticks, s.Score()-before
+		o.at = o.impact + hitStopTicks
+	}
+	return nil
+}
+
+// CheckApply says whether the stamp in the hand can be pressed on the folder
+// now, with the same errors ApplyStamp gives. The desk scene asks before it
+// starts the landing, so a stamp that cannot land is not slammed.
+func (s *Shift) CheckApply() error {
 	d := &s.desk
 	switch {
 	case !d.holding:
@@ -357,13 +380,9 @@ func (s *Shift) ApplyStamp() error {
 		return ErrFolderClosed
 	case d.page != PageReferral:
 		return ErrWrongPage
-	}
-	g := d.guest
-	if err := s.Stamp(d.held); err != nil {
-		if errors.Is(err, ErrDozing) {
-			s.say("%s IS ASLEEP. WAKE THEM FIRST", g.Name)
-		}
-		return err
+	case d.guest == s.dozing:
+		s.say("%s IS ASLEEP. WAKE THEM FIRST", d.guest.Name)
+		return ErrDozing
 	}
 	return nil
 }
@@ -409,7 +428,9 @@ func (s *Shift) FolderPose() (pose folderPose, ok bool) {
 		pose = folderPose{guest: o.guest, page: o.page, open: 0}
 		switch {
 		case dt < inkTicks && o.open: // the stamp has landed, the folder is still open
-			pose.open, pose.ink, pose.stamp = 1, o.page == PageReferral, o.stamp
+			// (dt is negative during the hit-stop: no ink yet; the folder dips 1 px)
+			pose.open, pose.ink, pose.stamp = 1, o.page == PageReferral && dt >= 0, o.stamp
+			pose.y = folderDip(s.ticks - o.impact)
 		case dt < inkTicks+closeTicks && o.open:
 			pose.open = 1 - float64(dt-inkTicks)/closeTicks
 			pose.ink, pose.stamp = o.page == PageReferral && pose.open > 0.5, o.stamp
@@ -437,4 +458,33 @@ func (s *Shift) Slip() (stamped, right Stamp, ok bool) {
 // citationLines are the two lines written on the slip; the rest is printed.
 func citationLines(stamped, right Stamp) (string, string) {
 	return "STAMPED: " + strings.ToUpper(stamped.String()), "RIGHT CALL: " + strings.ToUpper(right.String())
+}
+
+// SinceImpact is how many ticks ago a stamp hit the page, while the effects
+// that follow it (shake, dip, ink pop, score) are still running.
+func (s *Shift) SinceImpact() (int, bool) {
+	if o := s.desk.out; o != nil && o.impact > 0 {
+		return s.ticks - o.impact, true
+	}
+	return 0, false
+}
+
+// InkAge is how many ticks the ink mark has been showing (negative during
+// the hit-stop), for its pop-in.
+func (s *Shift) InkAge() int {
+	if o := s.desk.out; o != nil {
+		return s.ticks - o.at
+	}
+	return 0
+}
+
+// ScorePopup is the floating "+100" next to the mark, with how far it has
+// risen and how opaque it is; ok is false when nothing floats.
+func (s *Shift) ScorePopup() (text string, rise, alpha float64, ok bool) {
+	o := s.desk.out
+	if o == nil || o.points <= 0 {
+		return "", 0, 0, false
+	}
+	rise, alpha = popup(s.ticks - o.at) // it starts when the ink appears
+	return fmt.Sprintf("+%d", o.points), rise, alpha, alpha > 0
 }

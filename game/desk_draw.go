@@ -62,14 +62,19 @@ func stampLayer(st Stamp) string {
 }
 
 // inkLayer is the ink mark of a stamp in doc_stamps.
-func inkLayer(st Stamp) string {
+// Red has leaked into day 3, so the ink there is the red version.
+func inkLayer(st Stamp, day int) string {
+	name := "ink_refer"
 	switch st {
 	case StampAdmit:
-		return "ink_admit"
+		name = "ink_admit"
 	case StampDischarge:
-		return "ink_discharge"
+		name = "ink_discharge"
 	}
-	return "ink_refer"
+	if day == 3 {
+		name += "_red"
+	}
+	return name
 }
 
 // The FILES tab pulses through the day palette (no red in the day).
@@ -141,8 +146,11 @@ func deskTopLayers(day int, held bool, heldStamp Stamp) []string {
 // deskObjects draws the look-down desk and everything on it onto p.screen
 // (a scratch picture the scene then bends): the counter and stamps, the
 // citation slip, the folder, and the stamp in the hand.
-func (p *painter) deskObjects(sh *Shift, cursor image.Point) {
+func (p *painter) deskObjects(sh *Shift, cursor image.Point, landing *slamDraw) {
 	st, holding := sh.Desk().Holding()
+	if landing != nil { // the stamp landing draws its own stamp; the tray's is hidden
+		st, holding = landing.stamp, true
+	}
 	p.sheet(p.art.deskTop, deskTopLayers(p.day, holding, st), 0, 0)
 	if stamped, right, ok := sh.Slip(); ok {
 		p.slip(stamped, right)
@@ -150,9 +158,24 @@ func (p *painter) deskObjects(sh *Shift, cursor image.Point) {
 	if pose, ok := sh.FolderPose(); ok {
 		p.folder(sh, pose)
 	}
-	if holding {
+	if text, rise, alpha, ok := sh.ScorePopup(); ok { // the score floats up from the mark
+		c := color.RGBA{uint8(float64(colInk.R) * alpha), uint8(float64(colInk.G) * alpha), uint8(float64(colInk.B) * alpha), uint8(255 * alpha)}
+		p.text(text, inkAt.X+48, inkAt.Y+13-int(rise), c) // starts under the mark, below SIGNATURE
+	}
+	switch {
+	case landing != nil:
+		p.stampArt(landing.stamp, landing.x, landing.y, landing.pose)
+	case holding:
 		p.heldStamp(st, cursor)
 	}
+}
+
+// slamDraw is the stamp in its landing: which stamp, where its top-left
+// corner is when it is on the page, and how it is lifted and squashed.
+type slamDraw struct {
+	stamp Stamp
+	x, y  int
+	pose  stampPose
 }
 
 // slip is the citation slip for a wrong stamp: flavour, no penalty.
@@ -169,6 +192,13 @@ func (p *painter) slip(stamped, right Stamp) {
 // and to the right of it: with the cursor on the FOR DESK USE box it never
 // covers the SIGNATURE label above it.
 func (p *painter) heldStamp(st Stamp, cursor image.Point) {
+	p.stampArt(st, cursor.X-4, cursor.Y-4, stampPose{lift: 3, sx: 1, sy: 1})
+}
+
+// stampArt draws a stamp with its 30 by 30 art's top-left at (x, y), lifted
+// pose.lift px and scaled about its centre (squash and stretch), with a drop
+// shadow that moves away as it lifts.
+func (p *painter) stampArt(st Stamp, x, y int, pose stampPose) {
 	layer := stampLayer(st)
 	frame := p.art.deskTop.FrameAt(sprites.BoilTag, p.elapse)
 	art, err := p.art.deskTop.Frame(layer, frame) // a piece of the sheet: its pixels start at where the layer sits
@@ -185,13 +215,17 @@ func (p *painter) heldStamp(st Stamp, cursor image.Point) {
 			box = image.Rect(d.at.x-2, d.at.y-2, d.at.x+d.at.w+2, d.at.y+d.at.h+2)
 		}
 	}
-	x, y := cursor.X-4-2, cursor.Y-4-2 // the crop starts 2 px before the art
-	var op ebiten.DrawImageOptions
-	op.GeoM.Translate(float64(x+3), float64(y+4))
-	p.screen.DrawImage(shade.SubImage(box).(*ebiten.Image), &op)
-	op.GeoM.Reset()
-	op.GeoM.Translate(float64(x), float64(y))
-	p.screen.DrawImage(art.SubImage(box.Add(where.Min)).(*ebiten.Image), &op)
+	cx, cy := float64(box.Dx())/2, float64(box.Dy())/2 // scale about the middle of the crop
+	place := func(img *ebiten.Image, dx, dy, lift float64) {
+		var op ebiten.DrawImageOptions
+		op.GeoM.Translate(-cx, -cy)
+		op.GeoM.Scale(pose.sx, pose.sy)
+		op.GeoM.Translate(float64(x-2)+cx+dx, float64(y-2)+cy-lift+dy)
+		op.Filter = ebiten.FilterNearest
+		p.screen.DrawImage(img, &op)
+	}
+	place(shade.SubImage(box).(*ebiten.Image), 2, 2, 0) // the shadow stays flat on the page
+	place(art.SubImage(box.Add(where.Min)).(*ebiten.Image), 0, 0, pose.lift)
 }
 
 // folder draws the folder in the pose the shift says: closed, swinging open
@@ -290,8 +324,7 @@ func (p *painter) pages(sh *Shift, g *Guest, pose folderPose, dy int) {
 	p.shadow(p.pageSheet(pose.page), "fill", x, y, 1, 1)
 	p.pageAt(g, pose.page, x, y)
 	if pose.ink {
-		p.keep(p.art.docStamps.Draw(p.screen, []string{inkLayer(pose.stamp)},
-			p.art.docStamps.FrameAt(sprites.BoilTag, p.elapse), inkAt.X, inkAt.Y+dy))
+		p.inkMark(pose.stamp, sh.InkAge(), dy)
 	}
 }
 
@@ -500,4 +533,46 @@ func (p *painter) poly(pts []point, origin point, src *ebiten.Image, c color.RGB
 		indices = append(indices, 0, uint16(i), uint16(i+1))
 	}
 	p.screen.DrawTriangles(vertices, indices, img, &ebiten.DrawTrianglesOptions{Filter: ebiten.FilterNearest})
+}
+
+// inkMark draws the ink of a stamp, age ticks after it appeared: it pops in
+// at 115% and settles to 100% (inkScale), and specks scatter from it and fade
+// (speck). The specks sheet is 64 by 34 with the mark at (10, 10) inside it.
+func (p *painter) inkMark(st Stamp, age, dy int) {
+	sheet := p.art.docStamps
+	frame := sheet.FrameAt(sprites.BoilTag, p.elapse)
+	img, err := sheet.Frame(inkLayer(st, p.day), frame)
+	p.keep(err)
+	if err != nil {
+		return
+	}
+	w, h := float64(img.Bounds().Dx()), float64(img.Bounds().Dy())
+	var op ebiten.DrawImageOptions
+	op.GeoM.Translate(-w/2, -h/2)
+	s := inkScale(age)
+	op.GeoM.Scale(s, s)
+	op.GeoM.Translate(float64(inkAt.X)+w/2, float64(inkAt.Y+dy)+h/2)
+	op.Filter = ebiten.FilterNearest
+	p.screen.DrawImage(img, &op)
+
+	if spread, alpha := speck(age); alpha > 0 {
+		layer := "ink_specks"
+		if p.day == 3 {
+			layer += "_red"
+		}
+		specks, err := p.art.inkSpecks.Frame(layer, 0)
+		p.keep(err)
+		if err != nil {
+			return
+		}
+		sw, sh := float64(specks.Bounds().Dx()), float64(specks.Bounds().Dy())
+		var sop ebiten.DrawImageOptions
+		sop.GeoM.Translate(-sw/2, -sh/2)
+		sop.GeoM.Scale(1+0.6*spread, 1+0.6*spread) // the specks fly outward from the middle
+		// The sheet's middle is the mark's middle: the mark sits at (10, 10) in it.
+		sop.GeoM.Translate(float64(inkAt.X-10)+sw/2, float64(inkAt.Y+dy-10)+sh/2)
+		sop.ColorScale.ScaleAlpha(float32(alpha))
+		sop.Filter = ebiten.FilterNearest
+		p.screen.DrawImage(specks, &sop)
+	}
 }
