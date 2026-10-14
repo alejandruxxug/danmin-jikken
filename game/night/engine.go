@@ -26,8 +26,9 @@ var fxLength = map[string]int{
 }
 
 // hopTable is the talk hop: how many pixels up (negative) the speaking girl
-// is, tick by tick after she starts talking. 12 ticks = 0.2 s, whole pixels.
-var hopTable = [12]int{-1, -3, -3, -2, -1, 0, -1, -1, 0, 0, 0, 0}
+// is, tick by tick after she starts talking. 20 ticks = 0.33 s, whole pixels:
+// a slow rise, a short hang at the top, the fall, then a small bounce.
+var hopTable = [20]int{-1, -1, -2, -2, -3, -3, -3, -3, -2, -2, -1, -1, 0, 0, -1, -1, 0, 0, 0, 0}
 
 // Engine runs one script. It knows nothing about drawing: the painter
 // (draw.go) reads what the engine exposes, and the scene feeds it ticks and
