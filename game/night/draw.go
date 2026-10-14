@@ -123,6 +123,9 @@ var bgTable = map[string]bgDef{
 	"procedure_room": {"procedure", []string{"room", "lamp_glow", "barrow", "barrow_smile", "rail"}},
 	// Forever: Mayu on the chair, seen through the gap of your eyelids.
 	"mayu_chair": {"forever", []string{"room", "mayu_chair", "mayu_smile"}},
+	// Sleep ending: the reception desk by day. drawDeskDay adds Mayu (or
+	// the empty desk) between "room" and the front of the next desk.
+	"desk_day": {"desk_day", []string{"room", "next_desk_front"}},
 }
 
 func bgTableDefs() []bgDef {
@@ -172,7 +175,7 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	}
 	a.red = shader
 	a.bgs = map[string]*sprites.Sheet{}
-	for _, def := range append([]bgDef{{sheet: BloodSheet}}, bgTableDefs()...) {
+	for _, def := range append([]bgDef{{sheet: BloodSheet}, {sheet: "mayu_day"}}, bgTableDefs()...) {
 		if _, loaded := a.bgs[def.sheet]; loaded {
 			continue
 		}
@@ -263,6 +266,8 @@ func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 	switch {
 	case e.Faces():
 		a.drawFaces(dst, e)
+	case e.BG() == "desk_day":
+		// A day scene: no night portrait, Mayu is part of the background.
 	case e.Visible() != "":
 		sheet := a.mayu
 		if e.Visible() == "hana" {
@@ -318,6 +323,10 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 			if bg == "hana_room" && e.Prop("clipboard") { // Hana's route: the clipboard is snapped
 				layers = append(append([]string(nil), layers...), "clipboard_snapped")
 			}
+			if bg == "desk_day" {
+				a.drawDeskDay(dst, e)
+				return
+			}
 			_ = a.bgs[def.sheet].Draw(dst, layers, 0, 0, 0)
 			return
 		}
@@ -326,6 +335,32 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 		label := "PLACEHOLDER: " + strings.ToUpper(strings.ReplaceAll(bg, "_", " "))
 		a.font.Draw(dst, label, 8, 8, colLight)
 	}
+}
+
+// Where Mayu's day sprite (96x128) sits at the next desk in desk_day.
+const (
+	deskMayuX = 318
+	deskMayuY = 92
+)
+
+// drawDeskDay paints the Sleep ending's desk: the room, then the next desk
+// empty, or Mayu sitting there on her route, then the front of that desk
+// (the room has a gap where the desk goes, so the front is always last).
+func (a *Art) drawDeskDay(dst *ebiten.Image, e *Engine) {
+	desk := a.bgs["desk_day"]
+	_ = desk.Draw(dst, []string{"room"}, 0, 0, 0)
+	mayu := a.bgs["mayu_day"]
+	if e.Flags().Has("route_mayu") && mayu != nil {
+		mouth := "mouth_smile"
+		if e.Speaker() == "mayu" && !e.LineDone() {
+			mouth = "mouth_open" // she is talking
+		}
+		layers := []string{"fill", "lineart", "detail", "eyes_happy", mouth}
+		_ = mayu.Draw(dst, layers, 0, deskMayuX, deskMayuY+e.HopOffset())
+	} else {
+		_ = desk.Draw(dst, []string{"next_desk_empty"}, 0, 0, 0)
+	}
+	_ = desk.Draw(dst, []string{"next_desk_front"}, 0, 0, 0)
 }
 
 // lid is the colour the screen goes to when it "goes black": ink in the

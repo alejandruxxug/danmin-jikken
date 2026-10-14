@@ -160,3 +160,27 @@ func TestNightCuesReachTheSoundPlayer(t *testing.T) {
 		t.Errorf("alias = %q", got)
 	}
 }
+
+// The Sleep ending has no placeholder background left (same script, both routes).
+func TestDeskDayHasArt(t *testing.T) {
+	g, err := New(Options{Enabled: true, Scene: SceneNight1, Line: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	art, err := g.env.NightArt()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if art.IsPlaceholder("desk_day") {
+		t.Error("desk_day is still a placeholder")
+	}
+	s, err := night.LoadScript("ending_sleep")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bg := range s.BGNames() {
+		if art.IsPlaceholder(bg) {
+			t.Errorf("ending_sleep uses placeholder %q", bg)
+		}
+	}
+}
