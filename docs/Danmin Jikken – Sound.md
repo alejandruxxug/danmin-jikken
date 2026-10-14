@@ -1,6 +1,6 @@
 # 🔊 Sound: music and effects shortlist
 
-Research done 2026-10-13. Everything here is royalty-free with terms that allow it inside a game. **Nothing is downloaded into the repo yet.** You pick, then we download the winners.
+Research done 2026-10-13. Everything here is royalty-free with terms that allow it inside a game. **Update 2026-10-14: the builder downloaded default picks and wired them (see [[#🔌 What is in the game now]]).** Every file is a *default pick, Alejo to confirm by ear*; changing a pick means replacing one file in `game/assets/sound/`.
 
 > **Read this first (honest limits).** I can't listen to audio. The "with the cut" timestamps below come from **measuring the loudness of the real files** (I downloaded them to a scratch folder and found where the volume jumps). The *sound* descriptions come from the track tags and the author's page, not from my ears. **Listen to the preview clips before you pick.** Where I couldn't download a file, I say so.
 
@@ -178,9 +178,71 @@ Swap the track name in the Kevin line for each Kevin track you end up using (Hot
 
 ---
 
+## 🔌 What is in the game now
+
+Built 2026-10-14 by the builder. I can't listen, so **every row below is a default pick, Alejo to confirm by ear.** Files, authors and licences are also in `game/assets/sound/README.txt`. Each download was opened on its OpenGameArt page (licence and author checked) before use; Pixabay was not used because its pages answer an automated download with a 403 challenge (not bypassed) and Sonniss was not used.
+
+### Music
+
+| Cue | When | File | Source and licence | Pick |
+|---|---|---|---|---|
+| `title` | Title (loops) | `title.mp3` | Vampire's Piano, TAD, CC0 | kept |
+| `night_ambience` | All nights (loops) | `night_ambience.mp3` | Paranoid Truth, Tsorthan Grove, CC0 | kept |
+| `day_hum` | The day desk (loops, stops under the strobe) | `day_hum.wav` | a 60 Hz hum with harmonics written for the game, 3 s, loops without a click | **default, confirm** |
+| `ending_rock_forever` | Forever ending | `ending_rock_forever.mp3` | Ironbound, Zander Noriega, **CC BY 3.0 (credit)**. Cut at 1:24.7, 80 s kept | **default, confirm** |
+| `ending_rock_sleep` | Sleep ending | `ending_rock_sleep.mp3` | Sad orchestral theme, Gichco, CC0. Cut at 2:22.5, 80 s kept | **default, confirm** |
+| `ending_rock_wake` | Wake ending | `ending_rock_wake.mp3` | Realm of Torment, Vitalezzz, CC0. From 0:00, 80 s kept | **default, confirm** |
+| `ending_rock_317` | 3:17 ending | `ending_rock_317.mp3` | Unholy Surge, Vitalezzz, CC0. From 0:00, 80 s kept | **default, confirm** |
+| `driftwell_jingle` (`music jingle` in the Sleep ending, `music driftwell_jingle` in the Prologue) | Plays once | `driftwell_jingle.mp3` | Hot Swing, Kevin MacLeod, **CC BY 4.0 (credit)**. 1.0 s to 25.0 s of the original. The "last note held too long" is NOT made: the track just ends. | **default, confirm** |
+
+The rock files are **cut at the slam** (frame-level mp3 cut, no re-encoding), so the game plays them from 0 (`rockStarts` in `cues.go` is all 0 and says why). Reasons: no decoding of minutes of music nobody hears, and the repo stays about 13 MB smaller. 80 s is enough: card 6 s (10 s for 3:17) + credits roll about 50 s; a test fails if the roll ever outgrows the track.
+
+### The ending, as built
+
+| Step | Code |
+|---|---|
+| Hard cut, 1.5 s silence | `phaseSilence`: `SetMusic("")`; the rock is **decoded now** (`Player.Preload`) so the slam is not late |
+| Slam, no fade-in | `phaseCard`: `PlayMusic("ending_rock_<name>", false, rockStarts[name])` |
+| Credits under the same track | the track just keeps playing |
+| Fade in the last seconds | when 4 s of credits are left, `Player.FadeOut(240)` (a tested linear ramp, `FadeGain`); skipping the credits hard-cuts at the top-10 |
+
+### Sound effects (all short, 16-bit mono wav)
+
+| Cue (script or code) | File | Source and licence | Pick |
+|---|---|---|---|
+| reception bell (`bell`, day) | `bell.wav` | Pleasing Bell Sound Effect, Julie Damsgaard / Spring Spring, CC0 | **default, confirm** |
+| `snore` (a patient falls asleep, then every 3.5 s while anyone sleeps, gain 0.5) | `snore.wav` | 80 CC0 creature SFX, rubberduck, CC0. A 0.4 s snort, not a long snore | **default, weak, confirm** |
+| `stamp_thunk`, also the SFX volume test in Settings | `stamp_thunk.wav` | thud3, Metal Impact Sounds, Brian MacIntosh, CC0 | **default, confirm** |
+| `stamp_lift` (gain 0.8) | `stamp_lift.wav` | wood_hit_01, 100 CC0 metal and wood SFX, rubberduck, CC0 | **default, confirm** |
+| stun part 1, `stun_hit` | `stun_hit.wav` | metal_slam_01, same pack | **default, confirm** |
+| stun part 2, `stun_ring` (gain 0.6) | `stun_ring.wav` | 3 s of three high sines, peak 0.22, written for the game | **default, confirm** |
+| stun part 3, `heartbeat` | `heartbeat.wav` | heartbeat_slow_0, Heartbeat sounds, estevinho, CC0 | **default, confirm** |
+| `monitor_beep` (aliases `beep`, `beep_slow`, `monitor_far`) | `monitor_beep.wav` | a 1000 Hz sine, 0.2 s, written for the game | **default, confirm** |
+| `flatline` (alias `long_tone`) | `flatline.wav` | a 1000 Hz sine, 4 s, written for the game | **default, confirm** |
+| `footsteps` (aliases `footsteps_many`, `footsteps_stop`) | `footsteps.wav` | steps_platform and steps_platform2 from yd's pack, six steps, CC0 | **default, confirm** |
+| `gurney` (aliases `wheels_slow`, `wheels_squeak`, `wheels_stop`) | `gurney.wav` | the two wood_squeak files of the 100 CC0 pack repeated three times, CC0. Not a real wheel | **default, weak, confirm** |
+| `drip` (alias `drip_fast`) | `drip.wav` | one drop cut from Dripping water loop, Independent.nu, CC0 | **default, confirm** |
+| `door_creak` (alias `door_close_soft`) | `door_creak.wav` | Creaky Door Hinge Spooky, w.forster.1, CC0 | **default, confirm** |
+| `creak` (alias `floorboard`) | `creak.wav` | tree_creak, Tree Creaking, AntumDeluge, CC0. A tree, not a floorboard | **default, weak, confirm** |
+| `click` (alias `rail_clang`) | `click.wav` | lock_open_01, 100 CC0 pack. A lock, not a bed rail | **default, weak, confirm** |
+| `clock_chime` | `clock_chime.wav` | bong1, Metal Impact Sounds, CC0 | **default, confirm** |
+| `breath` (alias `breathe_again`) | `breath.wav` | breath, 80 CC0 creature SFX, CC0. Short (0.7 s) | **default, weak, confirm** |
+
+All cues in the scripts and in the Go code have a file (two tests check it, every night script included). Nothing is silent. **Not done:** no real "fluorescent hum" or "hospital ambience" recording (the hum is a synthesized buzz), no real wheeled-gurney, floorboard or bed-rail sound. Those four are the likeliest to sound wrong; they are the first to swap if a better CC0 file turns up.
+
+### Rules the code follows
+
+- Music and SFX go through the Settings volumes; SFX also have a per-cue gain (`sfxGain` in `cues.go`): the snore (repeats under the whole shift, one cue for the whole ward) and the ringing are held down.
+- `-reduce-flashing` changes only the picture; the stun sound is the same and is quiet by design.
+- In `-agent` test mode the player is muted and plays nothing; every request is still in the dump (`soundLog`) and `soundFiles` shows the file each cue resolves to.
+
+---
+
 ## ✅ Your picks
 
 Fill in the "Your pick" columns above, or just write it here.
+
+*(The builder filled these with defaults on 2026-10-14: Forever Ironbound, Sleep Sad orchestral theme, Wake Realm of Torment, 3:17 Unholy Surge, jingle Hot Swing. Tick or change after listening.)*
 
 - [ ] Forever ending track:
 - [ ] Sleep ending track:
