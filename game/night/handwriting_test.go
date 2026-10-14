@@ -112,7 +112,7 @@ func TestRealHandSheets(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		m := sheetMetrics{meta}
+		m := SheetMetrics{meta}
 		for _, ch := range "MayuHan" {
 			if _, _, ok := m.Advance(string(ch)); !ok {
 				t.Errorf("%s has no glyph %q", name, ch)

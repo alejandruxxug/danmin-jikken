@@ -10,6 +10,10 @@ import (
 // TicksPerSecond is how often the game calls Tick.
 const TicksPerSecond = 60
 
+// paperSpeed is how fast the pen writes a Note: or Letter: line, in letters
+// per second (Art Direction -> Cinematic pass).
+const paperSpeed = 30
+
 // DefaultSpeed is the typewriter speed, in letters per second.
 const DefaultSpeed = 45
 
@@ -61,11 +65,15 @@ type Engine struct {
 	pc     int // index of the node being shown or waited on
 
 	// What the screen shows.
-	bg      string
-	props   map[string]bool
-	layers  map[string]bool // a CG background: the layers switched on by "layer"
-	visible string          // the character on screen ("" for none)
-	faces   bool            // the Prologue's two upside-down faces
+	bg     string
+	props  map[string]bool
+	layers map[string]bool // a CG background: the layers switched on by "layer"
+	// The paper (bg note / bg letter): whose hand writes on it, and every
+	// Note:/Letter: line so far. Earlier lines stay; a new bg empties it.
+	writer  string
+	paper   []string
+	visible string // the character on screen ("" for none)
+	faces   bool   // the Prologue's two upside-down faces
 	poses   map[string]Pose
 	fx      map[string]int // effect name -> ticks since it started
 
@@ -123,7 +131,7 @@ func NewEngine(s *Script, flags Flags) (*Engine, error) {
 func NewEngineFor(s *Script, flags Flags, player string) (*Engine, error) {
 	e := &Engine{Player: player,
 		script: s, flags: flags,
-		bg: "black", props: map[string]bool{}, layers: map[string]bool{},
+		bg: "black", props: map[string]bool{}, layers: map[string]bool{}, writer: "hana",
 		poses: map[string]Pose{"mayu": startPose("mayu"), "hana": startPose("hana")},
 		fx:    map[string]int{}, speed: DefaultSpeed, hopStart: -1,
 	}
@@ -186,6 +194,9 @@ func (e *Engine) exec(n Node) {
 		e.hopFor = ""
 		e.bg = n.Name
 		e.layers = map[string]bool{} // a new picture starts with its layers off
+		e.writer, e.paper = "hana", nil
+	case OpWriter:
+		e.writer = n.Name
 	case OpLayer:
 		for _, p := range n.Parts {
 			if p.Key == "+" {
@@ -267,6 +278,9 @@ func (e *Engine) startLine(n Node) {
 		return
 	}
 	e.speaker = n.Name
+	if n.Name == "note" || n.Name == "letter" {
+		e.paper = append(e.paper, string(e.text)) // written on the paper as it types
+	}
 	if IsCharacter(n.Name) {
 		if e.hopFor != n.Name {
 			e.hopStart = e.ticks
@@ -313,7 +327,11 @@ func (e *Engine) Tick() error {
 		return nil
 	}
 	if e.speaker != "" || e.thinking {
-		e.shown = min(e.shown+e.speed/TicksPerSecond, float64(len(e.text)))
+		speed := e.speed
+		if e.OnPaper() {
+			speed = paperSpeed
+		}
+		e.shown = min(e.shown+speed/TicksPerSecond, float64(len(e.text)))
 	}
 	return nil
 }
@@ -487,6 +505,22 @@ func (e *Engine) HasLine() bool {
 	return !e.ended && !e.waiting && len(e.text) > 0
 }
 
+// OnPaperBG says whether the picture is a sheet of paper held up to the
+// camera (the note or the letter).
+func (e *Engine) OnPaperBG() bool { return e.bg == "note" || e.bg == "letter" }
+
+// Writer is whose hand writes on the paper: "hana" or "mayu".
+func (e *Engine) Writer() string { return e.writer }
+
+// Paper is every line written on the paper so far, the one being typed last.
+func (e *Engine) Paper() []string { return e.paper }
+
+// OnPaper says whether the line on screen is written on the paper (a Note:
+// or Letter: line): the text box stays away and the pen writes it.
+func (e *Engine) OnPaper() bool {
+	return e.HasLine() && !e.thinking && (e.speaker == "note" || e.speaker == "letter")
+}
+
 // Options returns the open menu's options (nil when there is none).
 func (e *Engine) Options() []Option { return e.options }
 
@@ -519,8 +553,8 @@ func (e *Engine) FxTicks(name string) (ticks int, ok bool) {
 // risen from the floor and how far it has drained from the top. Both are 0
 // when the effect is off.
 func (e *Engine) RedscaleAmounts() (rise, drain float64) {
-	if _, on := e.fx["redscale"]; !on {
-		return 0, 0
+	if _, on := e.fx["redscale"]; !on || e.OnPaperBG() {
+		return 0, 0 // the paper in your hands is not part of the red room
 	}
 	return e.FxProgress("redscale"), e.FxProgress("redscale_off")
 }
@@ -580,6 +614,8 @@ type State struct {
 	EndsTo    string   `json:"endsTo"`
 	Auto      bool     `json:"auto"`
 	Holding   bool     `json:"holding"`
+	Writer    string   `json:"writer"` // whose hand is on the paper
+	Paper     []string `json:"paper"`  // the lines written on it so far
 	LastSFX   string   `json:"sfx"`
 	LastMusic string   `json:"music"`
 }
@@ -591,7 +627,7 @@ func (e *Engine) Snapshot() State {
 		Text: e.Shown(), Thinking: e.thinking, LineDone: e.LineDone(),
 		Options: []string{}, Hover: e.hover, BG: e.bg, Visible: e.visible,
 		Faces: e.faces, Layers: []string{}, Props: []string{}, CGLayers: []string{}, Effects: []string{},
-		Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, Holding: e.holding, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
+		Writer: e.writer, Paper: append([]string{}, e.paper...), Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, Holding: e.holding, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
 	}
 	for _, o := range e.options {
 		st.Options = append(st.Options, o.Text)

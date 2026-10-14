@@ -69,6 +69,7 @@ Letter: Please don't close your eyes. Not for her. Not for me.
 Letter: - H.
 jump letter_done
 label letter_hana
+writer mayu # Mayu forged it, so her hand writes it
 Letter: I'm so sorry!! I was just SO tired <3
 Letter: Don't be sad, okay? Be happy. Be happy with Mayu!
 Letter: - Hana

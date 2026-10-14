@@ -92,7 +92,8 @@ type Art struct {
 	mayu, hana         *sprites.Sheet
 	station, ceiling   *sprites.Sheet
 	ui, choice         *sprites.Sheet
-	handMayu, handHana *sprites.Sheet
+	handMayu, handHana *sprites.Sheet // the name plate's copies: off-white ink
+	inkMayu, inkHana   *sprites.Sheet // black ink for the paper
 	font               TextDrawer
 	// Dream is on while the Prologue plays: its "black" (the screen before
 	// the fade in, the eyelids, the black between lines) is white, as it is
@@ -120,7 +121,8 @@ var bgTable = map[string]bgDef{
 	"hana_door":   {"corridor", []string{"corridor", "sign_quarters", "door_crack"}, false},
 	"supply_room": {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}, false},
 	"hana_room":   {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}, false},
-	"note":        {"note", []string{"backdrop", "paper_note", "text_note", "hands_note"}, false},
+	// The paper's writing is drawn by the game (drawPaper), in the writer's hand.
+	"note":        {"note", []string{"backdrop", "paper_note", "hands_note"}, false},
 	"letter":      {"note", []string{"backdrop", "paper_letter", "hands_letter"}, false},
 	"ward_c_dark": {"ward_c", []string{"room", "sleepers", "blanket", "dark"}, false},
 	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}, false},
@@ -184,7 +186,8 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	}
 	a.red = shader
 	a.bgs = map[string]*sprites.Sheet{}
-	for _, def := range append([]bgDef{{sheet: BloodSheet}, {sheet: "mayu_day"}}, bgTableDefs()...) {
+	extra := []bgDef{{sheet: BloodSheet}, {sheet: "mayu_day"}}
+	for _, def := range append(extra, bgTableDefs()...) {
 		if _, loaded := a.bgs[def.sheet]; loaded {
 			continue
 		}
@@ -209,6 +212,7 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	}
 	// The handwriting is black ink for paper; the name plate is black, so the
 	// plate uses copies with the ink off-white and the joins mid grey.
+	a.inkMayu, a.inkHana = a.handMayu, a.handHana
 	onPlate := map[color.RGBA]color.RGBA{colInk: colPaper, colDark: colMid}
 	a.handMayu, a.handHana = a.handMayu.Remapped(onPlate), a.handHana.Remapped(onPlate)
 	return a, nil
@@ -299,7 +303,13 @@ func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 	if t, ok := e.FxTicks("splash"); ok {
 		a.DrawBlood(dst, t)
 	}
-	if e.HasLine() {
+	if e.OnPaper() {
+		// A note or a letter is written on the paper: no text box, only the arrow.
+		if e.LineDone() {
+			frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
+			_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)
+		}
+	} else if e.HasLine() {
 		a.drawTextBox(dst, e)
 	}
 	if e.Holding() {
@@ -345,6 +355,10 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 			}
 			if bg == "desk_day" {
 				a.drawDeskDay(dst, e)
+				return
+			}
+			if bg == "note" || bg == "letter" {
+				a.drawPaper(dst, e, def)
 				return
 			}
 			_ = a.bgs[def.sheet].Draw(dst, layers, 0, 0, 0)
@@ -606,7 +620,7 @@ func (a *Art) drawName(dst *ebiten.Image, speaker string) {
 			plateCapTop-capTopOffset, colPaper)
 		return
 	}
-	placed, width := Layout(name, sheetMetrics{sheet.Meta}, style)
+	placed, width := Layout(name, SheetMetrics{sheet.Meta}, style)
 	x0 := plateX0 + (plateX1-plateX0+1-width)/2
 	// A glyph cell's baseline is row 8 and capitals start at row 2, so the
 	// cell's top sits 2 rows above the capital tops.
@@ -638,11 +652,11 @@ func (a *Art) drawChoices(dst *ebiten.Image, e *Engine) {
 	}
 }
 
-// sheetMetrics lets Layout read glyph widths from a handwriting sheet's
+// SheetMetrics lets Layout read glyph widths from a handwriting sheet's
 // layer user data.
-type sheetMetrics struct{ meta *sprites.Meta }
+type SheetMetrics struct{ meta *sprites.Meta }
 
-func (m sheetMetrics) Advance(glyph string) (adv int, canJoin, ok bool) {
+func (m SheetMetrics) Advance(glyph string) (adv int, canJoin, ok bool) {
 	data := m.meta.LayerData(glyph)
 	if data == "" {
 		return 0, false, false
@@ -673,3 +687,63 @@ func WrapText(text string, width int, measure func(string) int) []string {
 	}
 	return lines
 }
+
+// ---- notes and letters, written on the paper ----
+
+// drawPaper paints a note or a letter: the paper, the writer's ink and then
+// the hands holding it. The ink is every line so far in the writer's hand;
+// the line being typed is written glyph by glyph.
+func (a *Art) drawPaper(dst *ebiten.Image, e *Engine, def bgDef) {
+	sheet := a.bgs[def.sheet]
+	_ = sheet.Draw(dst, def.layers[:2], 0, 0, 0) // backdrop, paper
+	hand, style := a.inkHana, HanaStyle
+	if e.Writer() == "mayu" {
+		hand, style = a.inkMayu, MayuStyle
+	}
+	spec := LetterPaper
+	if e.BG() == "note" {
+		spec = NotePaper
+	}
+	metrics := SheetMetrics{hand.Meta}
+	lines := PaperText(e.Paper())
+	written := 0 // letters the pen has written so far
+	for i, line := range lines {
+		if i < len(lines)-1 || !e.OnPaper() || e.LineDone() {
+			written += countLetters(line)
+			continue
+		}
+		reveal := len([]rune(PaperText([]string{e.Shown()})[0]))
+		written += Written(line, reveal)
+	}
+	for _, row := range PaperRows(lines, spec, metrics, style) {
+		for _, p := range row.Glyphs {
+			if row.First+p.Char <= written {
+				_ = hand.Draw(dst, []string{p.Glyph}, 0, row.X+p.X, row.Base-glyphBaseRow+p.Y)
+			}
+		}
+	}
+	if e.BG() == "note" && e.LineDone() {
+		// Hana signs her note; the signature is not a line of the script.
+		sign, w := Layout(noteSignature, metrics, style)
+		for _, p := range sign {
+			_ = hand.Draw(dst, []string{p.Glyph}, 0, spec.Right-w+p.X, noteSignBase-glyphBaseRow+p.Y)
+		}
+	}
+	_ = sheet.Draw(dst, def.layers[2:], 0, 0, 0) // hands
+}
+
+// PaperText is what is written for the lines of the script: "<3" is drawn
+// as the heart glyph.
+func PaperText(lines []string) []string {
+	out := make([]string, len(lines))
+	for i, l := range lines {
+		out[i] = strings.ReplaceAll(l, "<3", "♥")
+	}
+	return out
+}
+
+const (
+	glyphBaseRow  = 8 // a glyph cell's baseline is its row 8 (see drawName)
+	noteSignature = "- H."
+	noteSignBase  = 138
+)

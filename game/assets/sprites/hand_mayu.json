@@ -637,6 +637,15 @@
     "spriteSourceSize": { "x": 0, "y": 0, "w": 12, "h": 12 },
     "sourceSize": { "w": 12, "h": 12 },
     "duration": 100
+   },
+   {
+    "filename": "♥#0",
+    "frame": { "x": 96, "y": 84, "w": 12, "h": 12 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 12, "h": 12 },
+    "sourceSize": { "w": 12, "h": 12 },
+    "duration": 100
    }
  ],
  "meta": {
@@ -719,7 +728,8 @@
    { "name": ":", "opacity": 255, "blendMode": "normal", "data": "adv=2;join=0" },
    { "name": "-", "opacity": 255, "blendMode": "normal", "data": "adv=4;join=0" },
    { "name": "…", "opacity": 255, "blendMode": "normal", "data": "adv=5;join=0" },
-   { "name": "join", "opacity": 255, "blendMode": "normal", "data": "adv=2;join=0" }
+   { "name": "join", "opacity": 255, "blendMode": "normal", "data": "adv=2;join=0" },
+   { "name": "♥", "opacity": 255, "blendMode": "normal", "data": "adv=9;join=0" }
   ]
  }
 }

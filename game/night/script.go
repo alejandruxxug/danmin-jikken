@@ -40,6 +40,8 @@ import (
 //	lock 5                        pause that clicks cannot cut short
 //	auto                          the next line goes on by itself when typed
 //	route                         set route_mayu / route_hana / route_nobody from the flags
+//	writer mayu                   whose hand writes the Note:/Letter: lines on the paper
+//	                              (hana is the default; a new bg puts it back)
 //	end day                       the night is over; the game decides what follows
 //
 // Every error names the file and the line.
@@ -71,6 +73,7 @@ const (
 	OpAuto
 	OpRoute
 	OpLayer
+	OpWriter
 )
 
 // Part is one "key=value" change to a pose.
@@ -409,6 +412,11 @@ func parseCommand(n *Node, word, rest string) error {
 			if n.Number, err = strconv.ParseFloat(v, 64); err != nil || n.Number <= 0 {
 				err = fmt.Errorf("%s %q: want a positive number", word, v)
 			}
+		}
+	case "writer":
+		n.Op = OpWriter
+		if n.Name, err = one(); err == nil && !IsCharacter(n.Name) {
+			err = fmt.Errorf("unknown writer %q (want mayu or hana)", n.Name)
 		}
 	case "hold":
 		n.Op = OpHold
