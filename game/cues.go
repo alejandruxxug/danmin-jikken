@@ -61,8 +61,37 @@ func sfxFile(cue string) string {
 var rockStarts = map[string]time.Duration{
 	"sleep":   0, // Sad orchestral theme, cut at 2:22.5 of the original
 	"wake":    0, // Realm of Torment, from the start
-	"forever": 0, // Ironbound, cut at 1:24.7 of the original
+	"forever": 0, // Ironbound: the real start is computed (syncedStart), this is only the fallback
 	"317":     0, // Unholy Surge, from the start
+}
+
+// rockDrops is, for the endings whose music is timed to the picture, the
+// moment inside the rock file that must land exactly when the title pops.
+// Only Forever has one: Ironbound's crunch, 1:24.7 of the original, in a file
+// cut from foreverCutFrom of the original (assets/sound/README.txt).
+var rockDrops = map[string]time.Duration{
+	"forever": foreverCrunch - foreverCutFrom,
+}
+
+const (
+	foreverCrunch = 84700 * time.Millisecond // the measured crunch in the original
+	// ending_rock_forever.mp3 is the original cut at MP3 frame 1914 (frames are
+	// 1152 samples at 44.1 kHz), about 50.0 s, to the end of the song.
+	foreverCutFrom = time.Duration(1914*1152) * time.Second / 44100
+)
+
+// foreverFadeInTicks is the short fade-in of Forever's music (3 s).
+const foreverFadeInTicks = 180
+
+// syncedStart is where in its file a track must start so that its drop lands
+// after titleAt ticks of playing. If the file does not reach back that far
+// the track starts at 0 and clamped says so (the drop will then be late).
+func syncedStart(drop time.Duration, titleAt int) (start time.Duration, clamped bool) {
+	start = drop - time.Duration(titleAt)*time.Second/60
+	if start < 0 {
+		return 0, true
+	}
+	return start, false
 }
 
 // creditsFadeTicks is how long the rock fades out at the very end of the

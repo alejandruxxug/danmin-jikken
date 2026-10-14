@@ -58,6 +58,7 @@ type endingScene struct {
 	cards  []creditCard
 	blood  int // ticks since the blood splashed (Forever); -1 when it has not
 	title  *titleArt
+	timed  bool          // the rock plays from the first line, timed to the title (Forever)
 	glitch *Glitch       // the secret ending's lag and glitch (nil for the others)
 	buf    *ebiten.Image // the picture drawn aside, before the glitch tears it
 }
@@ -80,7 +81,40 @@ func (s *endingScene) Enter(env *Env) error {
 	s.cards = CreditCards()
 	env.Ending = s.name
 	s.script = &nightScene{script: night.EndingScript(s.name), onEnd: s.scriptEnded, replay: s.replay}
-	return s.script.Enter(env)
+	if err := s.script.Enter(env); err != nil {
+		return err
+	}
+	return s.planMusic()
+}
+
+// planMusic works out the ending's fixed timeline (the script plays by itself,
+// see `autoplay on`) and, for an ending whose music is timed to it, starts the
+// music now. The title pops scriptTicks + silenceTicks after the first line;
+// Forever's rock is started so that its drop lands on that very tick.
+func (s *endingScene) planMusic() error {
+	script, err := night.LoadScript(night.EndingScript(s.name))
+	if err != nil {
+		return err
+	}
+	scriptTicks, err := night.Timeline(script, s.script.engine.Flags(), Username())
+	if err != nil {
+		return err
+	}
+	s.env.EndingTitleAt = scriptTicks + silenceTicks
+	drop, timed := rockDrops[s.name]
+	s.timed = timed
+	if !timed || s.env.Sound == nil {
+		return nil
+	}
+	start, clamped := syncedStart(drop, s.env.EndingTitleAt)
+	s.env.EndingRockFrom = start.Seconds()
+	if clamped {
+		s.env.Sound.Note(fmt.Sprintf("ending %s: the rock file starts too late to reach its drop by tick %d; starting at 0", s.name, s.env.EndingTitleAt))
+	}
+	s.env.MusicCue = "ending_rock_" + s.name
+	s.env.Sound.PlayMusic("ending_rock_"+s.name, false, start)
+	s.env.Sound.FadeIn(foreverFadeInTicks)
+	return nil
 }
 
 // scriptEnded is the ending script's "end card". The secret ending leaves its
@@ -108,12 +142,18 @@ func (s *endingScene) setPhase(p endingPhase) {
 	s.env.EndingPhase = p.String()
 	switch p {
 	case phaseSilence:
+		if s.timed {
+			return // Forever: the music plays on through the black, the cut is only visual
+		}
 		s.env.SetMusic("") // hard cut: nothing plays under the black
 		if s.env.Sound != nil {
 			s.env.Sound.Preload("ending_rock_" + s.name) // decode now, in the quiet, so the slam is not late
 		}
 	case phaseTitle:
 		s.script.engine.CutToStill() // the last picture comes back (some endings name theirs)
+		if s.timed {
+			return // the rock has been playing since the first line
+		}
 		s.env.MusicCue = "ending_rock_" + s.name
 		if s.env.Sound != nil { // the rock slams in, mid-riff, no fade-in
 			s.env.Sound.PlayMusic("ending_rock_"+s.name, false, rockStarts[s.name])

@@ -42,6 +42,5 @@ lock 0.3
 fx splash
 wait 0.1
 bg black
-music off
 sfx off
 end card

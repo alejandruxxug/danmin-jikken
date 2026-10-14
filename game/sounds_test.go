@@ -91,17 +91,107 @@ func TestRockStartsCoverEveryEnding(t *testing.T) {
 	}
 }
 
-// The rock must last through the silence-free part of the ending (title and
-// credits) plus the fade, or the credits would roll in silence. The files are
-// 80 s long.
+// The rock must last through what plays after it enters (title and credits)
+// or the credits would roll in silence. Each file's real length is read. For
+// Forever the rock enters earlier, so what counts is the part of the file
+// after the drop, which lands on the title.
 func TestRockOutlastsTheCredits(t *testing.T) {
-	const rockTicks = 80 * 60
-	need := secretTitleTicks + CreditsTicks(CreditCards())
-	if need > rockTicks {
-		t.Errorf("title + credits last %d ticks but the rock tracks only %d", need, rockTicks)
+	p := soundPlayer(t)
+	need := time.Duration(secretTitleTicks+CreditsTicks(CreditCards())) * time.Second / 60
+	for _, name := range night.Endings {
+		length, err := p.Length("ending_rock_" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		left := length - rockStarts[name] // from the slam to the end of the file
+		if drop, timed := rockDrops[name]; timed {
+			left = length - drop
+		}
+		if left < need {
+			t.Errorf("%s: %v of rock after the title enters, but the title and credits last %v", name, left, need)
+		}
 	}
 	if CreditsTicks(CreditCards())-creditsFadeTicks < 0 {
 		t.Error("the fade starts before the credits")
+	}
+}
+
+// Where the timed rock starts: the drop minus the time to the title, never
+// before the start of the file.
+func TestSyncedStart(t *testing.T) {
+	for _, c := range []struct {
+		drop    time.Duration
+		titleAt int
+		start   time.Duration
+		clamped bool
+	}{
+		{34 * time.Second, 600, 24 * time.Second, false}, // 10 s of ticks
+		{34 * time.Second, 60 * 34, 0, false},            // lands exactly at the file's start
+		{34 * time.Second, 60*34 + 1, 0, true},           // one tick too long: starts at 0, late
+		{34 * time.Second, 0, 34 * time.Second, false},   // no lead-up: the drop is the start
+	} {
+		start, clamped := syncedStart(c.drop, c.titleAt)
+		if start != c.start || clamped != c.clamped {
+			t.Errorf("syncedStart(%v, %d) = %v, %v; want %v, %v", c.drop, c.titleAt, start, clamped, c.start, c.clamped)
+		}
+	}
+}
+
+// Forever's rock reaches back far enough for every path of its script.
+func TestForeverRockReachesItsDrop(t *testing.T) {
+	script, err := night.LoadScript(night.EndingScript(night.EndingForever))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, flags := range []night.Flags{{"route_hana": true}, {"route_hana": true, "closed_eyes": true}} {
+		ticks, err := night.Timeline(script, flags, "Test")
+		if err != nil {
+			t.Fatal(err)
+		}
+		start, clamped := syncedStart(rockDrops[night.EndingForever], ticks+silenceTicks)
+		t.Logf("forever %v: title at %d ticks, rock starts %.2f s into the file", flags.Names(), ticks+silenceTicks, start.Seconds())
+		if clamped || start < 2*time.Second {
+			t.Errorf("forever %v: the rock starts at %v: cut the file earlier", flags.Names(), start)
+		}
+	}
+}
+
+// Forever from the backdoor with nobody clicking: the music starts with the
+// first line, the title comes by itself at the planned tick, and the music
+// was not restarted or stopped on the way.
+func TestForeverPlaysItselfToTheTitle(t *testing.T) {
+	g, err := New(Options{Enabled: true, Scene: "ending.forever", Flags: "route_hana"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := g.scenes.Current().(*endingScene)
+	want := g.env.EndingTitleAt
+	if want == 0 || g.env.EndingRockFrom <= 0 {
+		t.Fatalf("no plan: title at %d, rock from %v", want, g.env.EndingRockFrom)
+	}
+	for tick := 0; s.phase != phaseTitle; tick++ {
+		if tick > want+10 {
+			t.Fatalf("no title after %d ticks (planned %d), phase %v", tick, want, s.phase)
+		}
+		if err := s.Update(); err != nil {
+			t.Fatal(err)
+		}
+		g.env.Input.endFrame()
+	}
+	if g.env.MusicCue != "ending_rock_forever" {
+		t.Errorf("music cue %q", g.env.MusicCue)
+	}
+	plays := 0
+	for _, l := range g.env.Sound.Log {
+		if l == "music ending_rock_forever" {
+			plays++
+		}
+		if l == "music off" {
+			t.Error("the music was stopped on the way to the title")
+		}
+	}
+	if plays != 1 {
+		t.Errorf("the rock was started %d times, want once", plays)
 	}
 }
 
@@ -203,7 +293,7 @@ func TestEverySoundFileIsReal(t *testing.T) {
 			t.Fatal(err)
 		}
 		name := strings.TrimSuffix(e.Name(), ext)
-		if strings.HasPrefix(name, "ending_rock_") && len(data) < 2_500_000 {
+		if strings.HasPrefix(name, "ending_rock_") && len(data) < 2_500_000 { // Forever's runs from about 0:50 to the end of the song, 6.2 MB
 			t.Errorf("%s is only %d bytes: too short for the credits", e.Name(), len(data))
 		}
 		if len(data) > 1<<20 {

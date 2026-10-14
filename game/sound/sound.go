@@ -51,6 +51,9 @@ type Player struct {
 	fadeLeft, fadeTotal int
 	fadeEased           bool // the fade follows a smooth S curve (FadeOutEased)
 
+	// A fade-in in progress (FadeIn): inLeft counts ticks down to 0.
+	inLeft, inTotal int
+
 	files   map[string]string // cue -> file on disk that stands in for the embedded one (Override)
 	missing map[string]bool
 	Log     []string // every request, like "sfx stamp_thunk" or "music title"
@@ -80,7 +83,7 @@ func (p *Player) SFXVolume() float64   { return p.sfxVol }
 func (p *Player) SetMusicVolume(v float64) {
 	p.musicVol = min(max(v, 0), 1)
 	if p.music != nil {
-		p.music.SetVolume(p.musicVol * p.fadeGain())
+		p.music.SetVolume(p.musicVol * p.gain())
 	}
 }
 
@@ -273,13 +276,36 @@ func (p *Player) fadeGain() float64 {
 	return FadeGain(p.fadeLeft, p.fadeTotal)
 }
 
-// MusicGain is how loud the music plays right now: the volume times the fade.
-// The test dump shows it.
+// FadeIn raises the music that was just started from silence to full volume
+// over the given number of ticks, with a smooth start and end. Call it right
+// after PlayMusic. Update must be called every frame for it to run.
+func (p *Player) FadeIn(ticks int) {
+	p.Log = append(p.Log, "music fade in")
+	p.inLeft, p.inTotal = ticks, ticks
+	if p.music != nil {
+		p.music.SetVolume(p.musicVol * p.gain())
+	}
+}
+
+// fadeInGain is the fade-in's multiplier now: 0 at its start, 1 at its end
+// (and 1 when there is no fade-in).
+func (p *Player) fadeInGain() float64 {
+	if p.inTotal <= 0 {
+		return 1
+	}
+	return 1 - EasedFadeGain(p.inLeft, p.inTotal)
+}
+
+// gain is both fades together.
+func (p *Player) gain() float64 { return p.fadeGain() * p.fadeInGain() }
+
+// MusicGain is how loud the music plays right now: the volume times the
+// fades. The test dump shows it.
 func (p *Player) MusicGain() float64 {
 	if p.current == "" {
 		return 0
 	}
-	return p.musicVol * p.fadeGain()
+	return p.musicVol * p.gain()
 }
 
 // Fading reports whether a fade-out is in progress.
@@ -304,14 +330,16 @@ func EasedFadeGain(left, total int) float64 {
 
 // Update moves a fade-out one tick forward. Call it once per frame.
 func (p *Player) Update() {
-	if p.fadeLeft <= 0 {
-		return
+	if p.inLeft > 0 {
+		p.inLeft--
 	}
-	p.fadeLeft--
-	if p.music != nil {
-		p.music.SetVolume(p.musicVol * p.fadeGain())
+	if p.fadeLeft > 0 {
+		p.fadeLeft--
 	}
-	if p.fadeLeft == 0 {
+	if p.music != nil && (p.inTotal > 0 || p.fadeTotal > 0) {
+		p.music.SetVolume(p.musicVol * p.gain())
+	}
+	if p.fadeTotal > 0 && p.fadeLeft == 0 {
 		p.stop()
 	}
 }
@@ -324,6 +352,7 @@ func (p *Player) StopMusic() {
 
 func (p *Player) stop() {
 	p.fadeLeft, p.fadeTotal, p.fadeEased = 0, 0, false
+	p.inLeft, p.inTotal = 0, 0
 	if p.music != nil {
 		p.music.Pause()
 		p.music = nil

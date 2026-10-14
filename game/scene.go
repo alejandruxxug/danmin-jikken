@@ -99,11 +99,13 @@ type Env struct {
 	GalleryState *DumpGallery
 
 	// The end of the run.
-	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)
-	EndingPhase    string // script, silence, title or credits
-	View           View   // where the picture sits on the screen (the dump shows it)
-	MusicCue       string // the music the story asked for last (the sound system plays it)
-	SleepLogPath   string // where the secret ending wrote sleep_log_317.txt ("" if it did not)
+	Ending         string  // the ending that is playing: sleep, wake, forever, 317 ("" before)
+	EndingPhase    string  // script, silence, title or credits
+	EndingTitleAt  int     // ticks from the ending's first line to its title (the script plus the black beat)
+	EndingRockFrom float64 // Forever: seconds into the rock file where it starts so its drop lands on the title (0 for the others)
+	View           View    // where the picture sits on the screen (the dump shows it)
+	MusicCue       string  // the music the story asked for last (the sound system plays it)
+	SleepLogPath   string  // where the secret ending wrote sleep_log_317.txt ("" if it did not)
 	SleepLogError  string
 	EndingGlitch   float64          // the secret ending's glitch strength now (0 to 1), for the dump
 	SkipToCard     bool             // test mode: an ending scene jumps from its script to its card
@@ -155,6 +157,7 @@ func (e *Env) NewRun() {
 	e.Scores = make(map[string]int)
 	e.savedRows = nil
 	e.Ending, e.EndingPhase, e.MusicCue = "", "", ""
+	e.EndingTitleAt, e.EndingRockFrom = 0, 0
 	e.QuitAfterTop10 = false
 }
 

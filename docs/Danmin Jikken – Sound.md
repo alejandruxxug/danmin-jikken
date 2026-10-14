@@ -75,7 +75,7 @@ In the game the ending plays the title over the rock, then the credits, then the
 
 Not in the folder: **Credits (Slow Heavy Rock)** (Pixabay blocks automated downloads, I did not work around it) and the honourable mentions (no measured cut). Each file is 80 s, cut at an mp3 frame boundary with no re-encoding (the wav at the sample). The CC-BY ones need a credit line if you pick them. Sources and licence notes: `game/assets/sound/audition/README.txt`.
 
-**Alejo's pick:** 
+**Alejo's pick (2026-10-14):** **Ironbound, with its default drop (1:24.7), synced to the title.** The ending is now timed (it plays by itself), so Ironbound plays from the ending's first line, starting early enough that the crunch at 1:24.7 lands exactly when the ending title pops.
 
 To use a pick: replace `game/assets/sound/ending_rock_forever.mp3` with the audition file (copy it with that name) and add the credit if it is CC-BY. Say the word and the builder does it.
 
@@ -229,20 +229,22 @@ Built 2026-10-14 by the builder. I can't listen, so **every row below is a defau
 | `title` | Title (loops) | `title.mp3` | Vampire's Piano, TAD, CC0 | kept |
 | `night_ambience` | All nights (loops) | `night_ambience.mp3` | Paranoid Truth, Tsorthan Grove, CC0 | kept |
 | `day_hum` | The day desk (loops, stops under the strobe) | `day_hum.wav` | a 60 Hz hum with harmonics written for the game, 3 s, loops without a click | **default, confirm** |
-| `ending_rock_forever` | Forever ending | `ending_rock_forever.mp3` | Ironbound, Zander Noriega, **CC BY 3.0 (credit)**. Cut at 1:24.7, 80 s kept | **default, confirm** |
+| `ending_rock_forever` | Forever ending | `ending_rock_forever.mp3` | Ironbound, Zander Noriega, **CC BY 3.0 (credit)**. Cut from 0:50.0 (MP3 frame 1914) to the end of the song, 6.2 MB. Plays from the first line, timed so 1:24.7 hits the title | **picked** |
 | `ending_rock_sleep` | Sleep ending | `ending_rock_sleep.mp3` | Sad orchestral theme, Gichco, CC0. Cut at 2:22.5, 80 s kept | **default, confirm** |
 | `ending_rock_wake` | Wake ending | `ending_rock_wake.mp3` | Realm of Torment, Vitalezzz, CC0. From 0:00, 80 s kept | **default, confirm** |
 | `ending_rock_317` | 3:17 ending | `ending_rock_317.mp3` | Unholy Surge, Vitalezzz, CC0. From 0:00, 80 s kept | **default, confirm** |
 | `driftwell_jingle` (`music jingle` in the Sleep ending, `music driftwell_jingle` in the Prologue) | Plays once | `driftwell_jingle.mp3` | Hot Swing, Kevin MacLeod, **CC BY 4.0 (credit)**. 1.0 s to 25.0 s of the original. The "last note held too long" is NOT made: the track just ends. | **default, confirm** |
 | `night3_tension` (night 3: starts when the eyes open on Ward C, off in Hana's room, back at the gurney, fades out over 5 s from "Tonight we make your rest permanent" so it is silent when the ending starts; the black opening has no music) | `night3_tension.mp3` (3 MB, about 3 min, looped) | Narrow Corridors, TinyWorlds, CC0 (opengameart.org/content/narrow-corridors), "a suspension building piece". Not heard by the builder. Other CC0 candidates: Deep Humidity (opengameart.org/content/deep-humidity), Nighttime Solitude | **default, confirm by ear** |
 
-The rock files are **cut at the slam** (frame-level mp3 cut, no re-encoding), so the game plays them from 0 (`rockStarts` in `cues.go` is all 0 and says why). Reasons: no decoding of minutes of music nobody hears, and the repo stays about 13 MB smaller. 80 s is enough: card 6 s (10 s for 3:17) + credits roll about 50 s; a test fails if the roll ever outgrows the track.
+**The Forever exception (2026-10-14):** the ending plays by itself, so its length is known (`night.Timeline`). Ironbound starts at the first line at the file position `1:24.7 − T`, with a 3 s eased fade-in, and **keeps playing through the black** (no 1.5 s silence, no slam: the cut to black is only visual). T is the script plus the 1.5 s beat: **30.5 s** on Hana's route with the eyes kept open (starts at 0:54.2 of the original), **22.7 s** with the eyes closed (starts at 1:02.0). The credits fade it out over the last 4 s as before. The other three endings keep the silence and the slam below.
+
+The other rock files are **cut at the slam** (frame-level mp3 cut, no re-encoding), so the game plays them from 0 (`rockStarts` in `cues.go` is all 0 and says why). Reasons: no decoding of minutes of music nobody hears, and the repo stays about 13 MB smaller. 80 s is enough: card 6 s (10 s for 3:17) + credits roll about 50 s; a test fails if the roll ever outgrows the track.
 
 ### The ending, as built
 
 | Step | Code |
 |---|---|
-| Hard cut, 1.5 s silence | `phaseSilence`: `SetMusic("")`; the rock is **decoded now** (`Player.Preload`) so the slam is not late |
+| Hard cut, 1.5 s silence | `phaseSilence`: `SetMusic("")`; the rock is **decoded now** (`Player.Preload`) so the slam is not late. **Forever skips both**: its music is already playing (`planMusic`, `syncedStart`, `Player.FadeIn`) |
 | Slam, no fade-in | `phaseCard`: `PlayMusic("ending_rock_<name>", false, rockStarts[name])` |
 | Credits under the same track | the track just keeps playing |
 | Fade in the last seconds | when 4 s of credits are left, `Player.FadeOut(240)` (a tested linear ramp, `FadeGain`); skipping the credits hard-cuts at the top-10 |

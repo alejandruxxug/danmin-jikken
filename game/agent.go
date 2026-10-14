@@ -780,16 +780,20 @@ type Dump struct {
 
 	// The route and the ending (from the flags), the ending's phase, the
 	// secret ending's file, and the backgrounds that still have no art.
-	Route        string   `json:"route"`
-	Ending       string   `json:"ending"`
-	EndingPhase  string   `json:"endingPhase"`
-	View         View     `json:"view"` // where the picture sits on the screen (fullscreen fit)
-	MusicCue     string   `json:"musicCue"`
-	EndingGlitch float64  `json:"endingGlitch"` // the secret ending's glitch strength, 0 to 1
-	Settings     Settings `json:"settings"`     // the settings the game runs with
-	SleepLogPath string   `json:"sleepLogPath"`
-	SleepLogErr  string   `json:"sleepLogError"`
-	Placeholders []string `json:"placeholders"`
+	Route       string `json:"route"`
+	Ending      string `json:"ending"`
+	EndingPhase string `json:"endingPhase"`
+	// Ticks from the ending's first line to its title, and where in the rock
+	// file Forever's music starts so its drop lands on that title.
+	EndingTitleAt  int      `json:"endingTitleAt"`
+	EndingRockFrom float64  `json:"endingRockFrom"`
+	View           View     `json:"view"` // where the picture sits on the screen (fullscreen fit)
+	MusicCue       string   `json:"musicCue"`
+	EndingGlitch   float64  `json:"endingGlitch"` // the secret ending's glitch strength, 0 to 1
+	Settings       Settings `json:"settings"`     // the settings the game runs with
+	SleepLogPath   string   `json:"sleepLogPath"`
+	SleepLogErr    string   `json:"sleepLogError"`
+	Placeholders   []string `json:"placeholders"`
 	// The SCENES gallery: the unlocked cards, the flags saved for the
 	// replays, the card that is replaying, and the gallery's own state.
 	ScenesUnlocked []string     `json:"scenesUnlocked"`
@@ -967,6 +971,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.EndingGlitch = env.EndingGlitch
+	d.EndingTitleAt, d.EndingRockFrom = env.EndingTitleAt, env.EndingRockFrom
 	d.Settings = env.Settings()
 	d.ScenesUnlocked, d.SceneFlags = append([]string{}, env.Unlocked...), append([]string{}, env.SavedFlags...)
 	d.Replaying, d.Gallery = env.Replaying, env.GalleryState

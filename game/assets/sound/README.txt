@@ -5,7 +5,8 @@ MUSIC
 title.mp3               Vampire's Piano, TAD, CC0, opengameart.org/content/vampires-piano
 night_ambience.mp3      Paranoid Truth, Tsorthan Grove, CC0, opengameart.org/content/paranoid-truth
 ending_rock_forever.mp3 Ironbound, Zander Noriega, CC BY 3.0 (CREDIT REQUIRED), opengameart.org/content/ironbound
-                        https://creativecommons.org/licenses/by/3.0/  Cut: starts at 1:24.7 of the original (the crunch), 80 s kept.
+                        https://creativecommons.org/licenses/by/3.0/  Cut: from MP3 frame 1914 (about 0:50.0) of the original to the end of the song. The crunch (1:24.7) is 34.7 s into the file;
+                        the game starts the file earlier or later so the crunch lands on the ending title (rockDrops in cues.go).
 ending_rock_sleep.mp3   Sad orchestral theme, Gichco, CC0, opengameart.org/node/29751. Cut: starts at 2:22.5 of the original, 80 s kept.
 ending_rock_wake.mp3    Realm of Torment, Vitalezzz, CC0, opengameart.org/content/realm-of-torment. From 0:00, 80 s kept.
 ending_rock_317.mp3     Unholy Surge, Vitalezzz, CC0, opengameart.org/content/unholy-surge. From 0:00, 80 s kept.
@@ -13,8 +14,8 @@ night3_tension.mp3 Narrow Corridors (narrow_corridors_short), TinyWorlds, CC0, o
 driftwell_jingle.mp3    Hot Swing, Kevin MacLeod (incompetech.com), CC BY 4.0 (CREDIT REQUIRED)
                         https://creativecommons.org/licenses/by/4.0/  Cut: 1.0 s to 25.0 s of the original (the first second is silence).
 
-The four rock tracks were cut at MP3 frame boundaries with a small script (no re-encoding, so no quality loss). The measured slam
-time of each is the "cut" column of the Sound note. The cut file starts on the slam, so the game plays it from 0 (rockStarts in cues.go).
+The rock tracks were cut at MP3 frame boundaries with a small script (no re-encoding, so no quality loss). The measured slam
+time of each is the "cut" column of the Sound note. The Sleep, Wake and 3:17 files start on the slam, so the game plays them from 0 (rockStarts in cues.go). Forever's starts well before it.
 
 SOUND EFFECTS (short, 16-bit mono wav, volume-normalised and trimmed; every one CC0)
 bell.wav          Pleasing Bell Sound Effect, Julie Damsgaard / Spring Spring (opengameart.org/content/pleasing-bell-sound-effect)
