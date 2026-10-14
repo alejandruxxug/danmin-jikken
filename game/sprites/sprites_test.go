@@ -147,3 +147,23 @@ func TestDarkerStaysOnThePalette(t *testing.T) {
 		t.Errorf("outline colour changed to %v", got)
 	}
 }
+
+// The darker copy of a layer and the shadow are made once and reused.
+func TestDarkAndShadowCopiesAreCached(t *testing.T) {
+	sheet, err := Load(os.DirFS("testdata"), "tiny")
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer := sheet.Layers[0]
+	a, err := sheet.Shadow(layer, 0, color.RGBA{0x9f, 0xb1, 0x9f, 0xff})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := sheet.Shadow(layer, 0, color.RGBA{0x9f, 0xb1, 0x9f, 0xff})
+	if a != b {
+		t.Error("the shadow should be cached")
+	}
+	if _, err := sheet.Shadow("nope", 0, color.RGBA{}); err == nil {
+		t.Error("a missing layer should fail")
+	}
+}

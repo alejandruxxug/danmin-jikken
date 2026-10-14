@@ -101,7 +101,17 @@ key Space
 click 212 140      # 1× game coordinates (Figma px ÷ 4)
 mouse 5 135        # hold the cursor there; within 48 px of a side it pans the camera
 pan 240            # put the camera at x = 240 right away
-stamp admit        # use a stamp on the window patient (admit, refer, discharge); same as clicking it
+stamp admit        # use a stamp on the window patient (admit, refer, discharge) straight away, skipping the desk
+advance 120        # run the shift 120 game seconds at once (queue, clock; the patients' own timers stay real-time)
+type marcus        # type into the RECORDS name field (Tab fills in the window patient)
+desk               # look down to the desk (the 0.3 s tilt plays); reception looks back up
+folder             # open the closed folder on the desk
+turn               # turn the top page by itself (the same flip a drag finishes)
+page sleeplog      # show a page at once: referral, sleeplog, wristband (returning patients only)
+drag 318 213 200 213   # press the dog-eared corner, drag the page left, let go (also: down X Y / mouse X Y / up)
+lift admit         # lift a stamp off the desk into the hand (admit, refer, discharge)
+apply              # press the stamp in the hand on the open referral (the same stamping as `stamp`)
+putback            # put the stamp back on the desk
 shot after_admit.png
 shot4 after_admit_x4.png
 dump after_admit.json
@@ -113,7 +123,10 @@ dump after_admit.json
 |---|---|---|
 | `title` | Title, 断眠実験 + dagger | placeholder (clears to a palette colour); any key or click starts day 1 until the real title (M7) |
 | `day.reception` | FNAF desk, front view | **built** (approved views). On day 1 Old Cecily nods off at the window a few seconds after she arrives (`-day 1 -seed 7 -frames 260` shows it; the dump's `dozing` names her and her look is `dozing`; `click 240 110` wakes her; `stamp` is refused until then). Each visitor has their own window sprite, the desk memo changes per day, window guests are clipped to the glass. Queue walks up, the window patient + ADMIT / DISCHARGE / REFER stamps (cubby or stamp handle), sleepers in the chairs, hallway sleepers, HUD (DAY plate, PATIENTS n/N, computer tab), the no-room alert, line boil (characters 125 ms, room and props 375 ms), walk bob, blinking. Starts the shift if none is running |
-| `day.computer` | Patient computer open, BEDS tab (RECORDS / SLEEP LOGS / WARD FEED are placeholders until M4) | **built**. Rooms, hallway sleepers + CALL STAFF, staff busy/free. Shares the reception's running shift; `-clock`, `-day`, `-sleepy` apply |
+| `day.desk` | The look-down desk (FILES tab / `desk` command): the closed folder slides in, click it to open, drag the page corner to flip, lift a stamp and press it on the FOR DESK USE box. The tilt plays (0.3 s) | **built** (M4). While you are on the desk the reception goes on behind it |
+| `day.desk.closed`, `day.desk.referral`, `day.desk.sleeplog`, `day.desk.wristband` | The same desk entered **settled** (no tilt) with the first guest's folder on it: closed, or open on that page. `wristband` needs a returning patient: `-day 3` | **built** (M4). Test mode only; they fast-forward the shift until the folder has slid in |
+| `day.computer.records`, `day.computer.sleeplogs`, `day.computer.wardfeed` | The patient computer on RECORDS (type a name), SLEEP LOGS or WARD FEED. Use `advance N` first so people have arrived | **built** (M4) |
+| `day.computer` | Patient computer open, BEDS tab | **built**. Rooms, hallway sleepers + CALL STAFF, staff busy/free. Shares the reception's running shift; `-clock`, `-day`, `-sleepy` apply |
 | `day.top10` | Top-10 clerks (end of every shift) | **built**. Stops the shift, saves today's score to the scores file, shows ranks + the ghost row. `-score N -scores f.txt` reaches it directly |
 | `night` | Night VN, first beat (`night.<beat>` for a specific one) | planned |
 | `transition.night1` / `2` / `3` | The day → night strobe into that night (Art Direction → the strobe) | planned |
@@ -133,6 +146,11 @@ game/ward.go            Ward: Admit (goroutine per admitted patient), Attend, As
 game/desk.go            DeskArt (sheets + font) and the painter that draws room, guests, HUD, alert
 game/reception.go       day.reception: edge pan and the clicks
 game/computer.go        day.computer: the flip-up terminal, BEDS tab
+game/computer_tabs.go   the RECORDS, SLEEP LOGS and WARD FEED tabs (records.go holds their data: lookup, mismatches, traces)
+game/papers.go          Date, Papers, Visitor.Problem: what each visitor's papers show and the problem derived from them
+game/desk_state.go      the look-down desk's logic: folder, pages, page flip, stamp in hand, citation (no drawing)
+game/desk_scene.go      day.desk, with desk_draw.go (folder, ID, pages, stamps) and warp.go (DrawTriangles bends)
+game/severe.go          Severe patients: pips, call light, quick-answer bonus, darkening (sprites/darker.go swaps the palette)
 game/top10.go           day.top10
 game/scorefile.go       danmin_scores.txt: load, append, ghost row, ranking (tests in scorefile_test.go)
 game/text.go + fonts/   Silkscreen (OFL) at size 8, whole pixels
