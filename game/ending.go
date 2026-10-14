@@ -31,20 +31,12 @@ func (p endingPhase) String() string {
 const (
 	silenceTicks     = 90  // black and quiet before the rock
 	cardTicks        = 360 // the card stays up 6 s
+	secretCardTicks  = 600 // the secret ending's card stays 10 s, the glitch needs the time
 	creditsSkipAfter = 30  // a click skips a phase only after half a second
 	creditsPixelsPer = 0.3 // the credits scroll this many pixels a tick
-	cardLineY        = 118
-	cardSubY         = 136
 )
 
-// endingCards are the card titles. Forever's subtitle is the one in the Sound note.
-var endingCards = map[string]string{
-	night.EndingSleep:   "SLEEP ENDING",
-	night.EndingWake:    "WAKE ENDING",
-	night.EndingForever: "FOREVER ENDING",
-	night.Ending317:     "3:17",
-}
-
+// endingSubtitle is the line under every card (the one in the Sound note).
 const endingSubtitle = "Halcyon Rest, Ward B - 3:17 AM"
 
 // endingScene plays one ending (ending.sleep, ending.wake, ending.forever,
@@ -58,6 +50,9 @@ type endingScene struct {
 	ticks   int // ticks into the phase
 	credits []string
 	blood   int // ticks since the blood splashed (Forever); -1 when it has not
+	card    *cardArt
+	glitch  *Glitch       // the secret ending's lag and glitch (nil for the others)
+	buf     *ebiten.Image // the card drawn aside, before the glitch tears it
 }
 
 func (s *endingScene) Enter(env *Env) error {
@@ -66,6 +61,14 @@ func (s *endingScene) Enter(env *Env) error {
 	var err error
 	if s.font, err = LoadFont(); err != nil {
 		return err
+	}
+	if s.card, err = loadCardArt(env.Sprites, s.name); err != nil {
+		return err
+	}
+	if s.name == night.Ending317 {
+		if s.glitch, err = NewGlitch(env.Sprites, env.Seed); err != nil {
+			return err
+		}
 	}
 	s.credits = CreditLines()
 	env.Ending = s.name
@@ -109,9 +112,17 @@ func (s *endingScene) setPhase(p endingPhase) {
 
 func (s *endingScene) Update() error {
 	if s.phase == phaseScript {
+		if s.env.SkipToCard { // the backdoor's "card": jump to the end of the script
+			s.env.SkipToCard = false
+			return s.scriptEnded("")
+		}
 		return s.script.Update()
 	}
 	s.ticks++
+	s.env.EndingGlitch = 0
+	if s.glitch != nil && s.phase >= phaseCard {
+		s.env.EndingGlitch = s.glitchLevel()
+	}
 	if s.blood >= 0 {
 		s.blood++
 	}
@@ -125,7 +136,7 @@ func (s *endingScene) Update() error {
 			s.setPhase(phaseCard)
 		}
 	case phaseCard:
-		if s.ticks >= cardTicks || skip {
+		if s.ticks >= s.cardLength() || skip {
 			s.setPhase(phaseCredits)
 		}
 	case phaseCredits:
@@ -149,22 +160,69 @@ func (s *endingScene) creditsDone() bool {
 func (s *endingScene) Draw(screen *ebiten.Image) {
 	defer s.drawBlood(screen) // on top of the card
 	screen.Fill(paletteInk)
-	switch s.phase {
-	case phaseScript:
+	if s.phase == phaseScript {
 		s.script.Draw(screen)
-	case phaseCard:
-		s.centered(screen, endingCards[s.name], cardLineY, colPaperRGBA)
-		s.centered(screen, endingSubtitle, cardSubY, colMidRGBA)
-	case phaseCredits:
-		y := creditsY(s.ticks)
-		for i, line := range s.credits {
-			c := color.Color(colMidRGBA)
-			if strings.HasPrefix(line, "#") {
-				line, c = strings.TrimPrefix(line, "# "), colPaperRGBA
-			}
-			if ly := y + i*creditsLineStep; ly > -creditsLineStep && ly < ScreenH {
-				s.centered(screen, line, ly, c)
-			}
+		return
+	}
+	draw := s.drawCard
+	if s.phase == phaseCredits {
+		draw = s.drawCredits
+	}
+	if s.glitch == nil || s.phase == phaseSilence {
+		if s.phase != phaseSilence {
+			draw(screen)
+		}
+		return
+	}
+	// The secret ending: draw aside, then let the glitch tear it onto the screen.
+	if s.buf == nil {
+		s.buf = ebiten.NewImage(ScreenW, ScreenH)
+	}
+	s.buf.Fill(paletteInk)
+	draw(s.buf)
+	s.glitch.Apply(screen, s.buf, s.ticks, s.glitchLevel(), s.env.ReduceFlashing)
+}
+
+// cardLength is how long the card stays up: the secret ending's glitch needs
+// longer to ramp up.
+func (s *endingScene) cardLength() int {
+	if s.glitch != nil {
+		return secretCardTicks
+	}
+	return cardTicks
+}
+
+// glitchLevel is the secret ending's glitch strength now: it ramps up over
+// the card and stays strong under the credits.
+func (s *endingScene) glitchLevel() float64 {
+	if s.phase == phaseCredits {
+		return 0.7
+	}
+	return glitchLevel(s.ticks)
+}
+
+// drawCard paints the ending card.
+func (s *endingScene) drawCard(dst *ebiten.Image) {
+	shown := s.ticks
+	if s.glitch != nil {
+		shown = lagTick(s.ticks, s.env.Seed, s.glitchLevel())
+	}
+	s.card.draw(dst, s.name, shown)
+	label, subtitle := cardSmall(s.name)
+	s.centered(dst, label, cardLabelY, colMidRGBA)
+	s.centered(dst, subtitle, cardSubY, colMidRGBA)
+}
+
+// drawCredits paints the rolling credits.
+func (s *endingScene) drawCredits(dst *ebiten.Image) {
+	y := creditsY(s.ticks)
+	for i, line := range s.credits {
+		c := color.Color(colMidRGBA)
+		if strings.HasPrefix(line, "#") {
+			line, c = strings.TrimPrefix(line, "# "), colPaperRGBA
+		}
+		if ly := y + i*creditsLineStep; ly > -creditsLineStep && ly < ScreenH {
+			s.centered(dst, line, ly, c)
 		}
 	}
 }

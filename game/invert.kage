@@ -1,0 +1,10 @@
+//kage:unit pixels
+
+package main
+
+// The secret ending's glitch (glitch.go): a strip of the picture with its
+// colours swapped for their opposites.
+func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
+	c := imageSrc0At(srcPos)
+	return vec4(c.a-c.rgb, c.a) // the picture is premultiplied, so the opposite is alpha minus colour
+}

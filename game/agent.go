@@ -105,7 +105,7 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op    string // "next", "choose", "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "shot" or "dump"
+	Op    string // "next", "choose", "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "card", "shot" or "dump"
 	Text  string // type: the characters
 	N     int    // wait: frames; pan: camera x
 	Stamp Stamp  // stamp: which one
@@ -322,7 +322,7 @@ func parseCommand(words []string) (Command, error) {
 		default:
 			return cmd, fmt.Errorf("auto takes nothing, on or off")
 		}
-	case "next", "skipstrobe":
+	case "next", "skipstrobe", "card":
 		if len(args) != 0 {
 			return cmd, fmt.Errorf("%s takes no argument", cmd.Op)
 		}
@@ -511,6 +511,8 @@ func (a *Agent) runCommands(env *Env) {
 			}
 		case "skipstrobe": // the strobe scene ends on its next frame
 			env.SkipStrobe = true
+		case "card": // an ending scene jumps from its script to its card
+			env.SkipToCard = true
 		case "choose":
 			if env.Night != nil {
 				_ = env.Night.Choose(cmd.N - 1) // no menu open: nothing happens, as for a click
@@ -724,6 +726,7 @@ type Dump struct {
 	Ending       string   `json:"ending"`
 	EndingPhase  string   `json:"endingPhase"`
 	MusicCue     string   `json:"musicCue"`
+	EndingGlitch float64  `json:"endingGlitch"` // the secret ending's glitch strength, 0 to 1
 	SleepLogPath string   `json:"sleepLogPath"`
 	SleepLogErr  string   `json:"sleepLogError"`
 	Placeholders []string `json:"placeholders"`
@@ -892,6 +895,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	}
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
+	d.EndingGlitch = env.EndingGlitch
 	d.Placeholders = []string{}
 	d.SoundLog, d.SoundMissing = []string{}, []string{}
 	if env.Sound != nil {

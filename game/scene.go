@@ -86,6 +86,8 @@ type Env struct {
 	MusicCue       string // the music the story asked for last (the sound system plays it)
 	SleepLogPath   string // where the secret ending wrote sleep_log_317.txt ("" if it did not)
 	SleepLogError  string
+	EndingGlitch   float64          // the secret ending's glitch strength now (0 to 1), for the dump
+	SkipToCard     bool             // test mode: an ending scene jumps from its script to its card
 	QuitAfterTop10 bool             // the 3:17 ending closes the game after the top-10
 	savedRows      map[int]ScoreRow // the score row of each day already saved, so a day is saved once
 
