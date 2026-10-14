@@ -36,6 +36,7 @@ type Meta struct {
 	Layers    []string
 	Tags      map[string]Tag
 	opacity   map[string]float32 // layer name -> 0..1 (the Aseprite layer opacity)
+	data      map[string]string  // layer name -> the layer's user data (the handwriting sheets: "adv=5;join=1")
 
 	// BoilScale slows the animation down: 1 plays the tags at the speed in
 	// the json, 3 plays them three times slower. 0 counts as 1. The game sets
@@ -61,6 +62,7 @@ type jsonMeta struct {
 	Layers []struct {
 		Name    string `json:"name"`
 		Opacity *int   `json:"opacity"` // 0-255; missing means fully opaque
+		Data    string `json:"data"`    // user data text
 	} `json:"layers"`
 	FrameTags []struct {
 		Name string `json:"name"`
@@ -81,6 +83,7 @@ func Parse(data []byte) (*Meta, error) {
 		Tags:   make(map[string]Tag),
 
 		opacity: make(map[string]float32),
+		data:    make(map[string]string),
 	}
 	for _, jf := range f.Frames {
 		m.frames[jf.Filename] = image.Rect(jf.Frame.X, jf.Frame.Y, jf.Frame.X+jf.Frame.W, jf.Frame.Y+jf.Frame.H)
@@ -97,6 +100,7 @@ func Parse(data []byte) (*Meta, error) {
 	for _, l := range f.Meta.Layers {
 		m.Layers = append(m.Layers, l.Name)
 		m.opacity[l.Name] = 1
+		m.data[l.Name] = l.Data
 		if l.Opacity != nil {
 			m.opacity[l.Name] = float32(*l.Opacity) / 255
 		}
@@ -165,6 +169,9 @@ func (m *Meta) Opacity(layer string) float32 {
 	}
 	return 1
 }
+
+// LayerData is the user data text of a layer ("" if it has none).
+func (m *Meta) LayerData(layer string) string { return m.data[layer] }
 
 func (m *Meta) durationOf(n int) time.Duration {
 	if n < 0 || n >= len(m.durations) {

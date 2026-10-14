@@ -167,3 +167,22 @@ func TestDarkAndShadowCopiesAreCached(t *testing.T) {
 		t.Error("a missing layer should fail")
 	}
 }
+
+func TestRemappedSwapsOnlyTheNamedColours(t *testing.T) {
+	sheet, err := Load(os.DirFS("testdata"), "tiny")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := color.RGBAModel.Convert(sheet.pic.At(0, 0)).(color.RGBA)
+	red := color.RGBA{0x8a, 0x03, 0x03, 0xff}
+	copySheet := sheet.Remapped(map[color.RGBA]color.RGBA{first: red})
+	if got := color.RGBAModel.Convert(copySheet.pic.At(0, 0)); got != red {
+		t.Errorf("pixel (0,0) = %v, want %v", got, red)
+	}
+	if got := color.RGBAModel.Convert(sheet.pic.At(0, 0)); got != first {
+		t.Error("the original sheet must not change")
+	}
+	if copySheet.Meta != sheet.Meta {
+		t.Error("the copy shares the original's frames")
+	}
+}

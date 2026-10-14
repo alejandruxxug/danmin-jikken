@@ -21,6 +21,7 @@ const maxSteps = 10000
 var fxLength = map[string]int{
 	"fade_in":    90,
 	"eyes_close": 72,
+	"faces":      40,
 	"red_pixel":  30,
 }
 
@@ -326,9 +327,10 @@ func (e *Engine) Speaker() string { return e.speaker }
 // Thinking says whether the line is the player's thought.
 func (e *Engine) Thinking() bool { return e.thinking }
 
-// HasLine says whether a line (not a menu or a wait) is on the screen.
+// HasLine says whether the text box is on the screen: a line is being
+// shown (or, in a menu, stays shown above the buttons).
 func (e *Engine) HasLine() bool {
-	return !e.ended && !e.waiting && len(e.options) == 0 && len(e.text) > 0
+	return !e.ended && !e.waiting && len(e.text) > 0
 }
 
 // Options returns the open menu's options (nil when there is none).
