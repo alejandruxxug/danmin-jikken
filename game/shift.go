@@ -114,6 +114,7 @@ type Shift struct {
 
 	ward   *Ward
 	rng    *rand.Rand // the guests' blink timers; only the game thread uses it
+	snore  snoreState // the ward's snoring (snore.go)
 	speed  float64
 	scores map[string]int // Env.Scores, written under the key "day<N>"
 	ticks  int
@@ -158,6 +159,7 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 	s := &Shift{
 		Day: day, Rules: rules, ward: ward, speed: speed, scores: scores,
 		rng:       rand.New(rand.NewSource(seed + int64(day)*100 - 1)),
+		snore:     snoreState{rng: rand.New(rand.NewSource(seed + int64(day)*100 - 2))},
 		sleepers:  make(map[string]*Sleeper),
 		busyUntil: make(map[string]float64),
 		trace:     make(map[string][]bool),
@@ -228,16 +230,18 @@ func (s *Shift) Stop() error { return s.ward.Stop() }
 // Update moves the shift one tick forward. Call it once per frame.
 func (s *Shift) Update() {
 	s.ticks++
-	if len(s.sleepers) > 0 && s.ticks%snoreEvery == 0 {
-		playSFX("snore") // the ward keeps snoring while someone sleeps
+	s.snoreStep() // the ward keeps snoring while someone sleeps
+	if o := s.desk.out; o != nil && o.points >= pointsRightStamp && s.ticks == o.at {
+		playSFX("chime_right") // the +100 floats up: a right call chimes
 	}
 	// Collect what the patient goroutines reported since the last frame.
 	// The picture itself comes from the snapshot, never from the events.
 	for _, ev := range s.ward.Drain() {
 		switch ev.Kind {
 		case simulation.FellAsleep:
-			playSFX("snore")
 			s.sleepers[ev.PatientID] = &Sleeper{Location: ev.Location, Since: s.Seconds()}
+			s.snore.next = 0 // the first snore of this sleeper is now
+			s.snoreNow(ev.PatientID)
 		case simulation.WokeUp:
 			delete(s.sleepers, ev.PatientID)
 		}

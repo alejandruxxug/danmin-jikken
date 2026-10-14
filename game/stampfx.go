@@ -146,3 +146,11 @@ func playSFX(name string) {
 	}
 	activeSound.PlaySFXGain(name, gain)
 }
+
+// playSFXGain plays a cue at the given gain, ignoring the sfxGain table (the
+// snores choose their own volume).
+func playSFXGain(name string, gain float64) {
+	if activeSound != nil {
+		activeSound.PlaySFXGain(name, gain)
+	}
+}

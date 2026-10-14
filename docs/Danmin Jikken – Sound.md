@@ -211,7 +211,8 @@ The rock files are **cut at the slam** (frame-level mp3 cut, no re-encoding), so
 | Cue (script or code) | File | Source and licence | Pick |
 |---|---|---|---|
 | reception bell (`bell`, day) | `bell.wav` | Pleasing Bell Sound Effect, Julie Damsgaard / Spring Spring, CC0 | **default, confirm** |
-| `snore` (a patient falls asleep, then every 3.5 s while anyone sleeps, gain 0.5) | `snore.wav` | 80 CC0 creature SFX, rubberduck, CC0. A 0.4 s snort, not a long snore | **default, weak, confirm** |
+| `snore`, `snore_2`, `snore_3`, `snore_4` (a sleeper snores: random variant, never the same twice; gain 0.2 to 0.3 in a bed, 0.8 to 1.0 in the hallway; every 3 to 7 s, shorter with more sleepers; none with 0 sleepers; `game/snore.go`) | `snore.wav` (0.44 s), `snore_2.wav` (0.93 s), `snore_3.wav` (3.2 s), `snore_4.wav` (6.3 s) | `snore`: 80 CC0 creature SFX, rubberduck, CC0. `snore_2`: `snore_02` from 80 CC0 creature SFX 2, rubberduck, CC0. `snore_3`: Breathing tired, CC0 (opengameart.org/content/breathing-tired). `snore_4`: littlegrunts, crueltyinc, CC0 ("noises in my sleep", opengameart.org/content/little-grunts). 2, 3 and 4 are mono 16-bit, peak normalised to 0.5. Real long snores are rare on OpenGameArt, so these are short snorts, a breathing and sleep grunts | **default, weak, confirm by ear** |
+| `chime_right` (the +100 floats up after a right stamp; gain 0.7; a wrong stamp, the +50s and QUICK are silent) | `chime_right.mp3` (1.4 s) | Chime_Confirm from "Chimey UI sounds", MouseBYTE, CC0 (opengameart.org/content/chimey-ui-sounds). Not heard by the builder: may not be a two-note ding | **default, confirm by ear** |
 | `stamp_thunk`, also the SFX volume test in Settings | `stamp_thunk.wav` | thud3, Metal Impact Sounds, Brian MacIntosh, CC0 | **default, confirm** |
 | `stamp_lift` (gain 0.8) | `stamp_lift.wav` | wood_hit_01, 100 CC0 metal and wood SFX, rubberduck, CC0 | **default, confirm** |
 | `pipe_snap` (Forever: the ceiling pipe snaps on the first frame of the break, then the splash) | `pipe_snap.ogg` | wood_breaking_01, 100 CC0 metal and wood SFX, rubberduck, CC0 (opengameart.org/content/100-cc0-metal-and-wood-sfx). Not auditioned; alternatives in the same pack: wood_breaking_02, wood_cracking_01..04, metal_hit_01..05 | **default, confirm** |
@@ -233,7 +234,7 @@ All cues in the scripts and in the Go code have a file (two tests check it, ever
 
 ### Rules the code follows
 
-- Music and SFX go through the Settings volumes; SFX also have a per-cue gain (`sfxGain` in `cues.go`): the snore (repeats under the whole shift, one cue for the whole ward) and the ringing are held down.
+- Music and SFX go through the Settings volumes; SFX also have a per-cue gain (`sfxGain` in `cues.go`): the ringing is held down; the snores choose their own gain by where the sleeper is.
 - `-reduce-flashing` changes only the picture; the stun sound is the same and is quiet by design.
 - In `-agent` test mode the player is muted and plays nothing; every request is still in the dump (`soundLog`) and `soundFiles` shows the file each cue resolves to.
 

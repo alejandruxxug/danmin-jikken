@@ -37,12 +37,12 @@ func musicFile(cue string) string {
 func isJingle(cue string) bool { return musicFile(cue) == "driftwell_jingle" }
 
 // sfxGain is how loud a cue plays compared with its file (0 to 1, on top of
-// the SFX volume). The default is 1. The snore and the stun's ringing are held
-// down: the snore repeats under the whole shift, the ringing is a high tone.
+// the SFX volume). The default is 1. The stun's ringing is held down (a high
+// tone). The snores set their own gain by where the sleeper is (snore.go).
 var sfxGain = map[string]float64{
-	"snore":      0.5,
-	"stun_ring":  0.6,
-	"stamp_lift": 0.8,
+	"chime_right": 0.7,
+	"stun_ring":   0.6,
+	"stamp_lift":  0.8,
 }
 
 // sfxFile is the file name a script's sfx cue plays.
@@ -68,11 +68,6 @@ var rockStarts = map[string]time.Duration{
 // creditsFadeTicks is how long the rock fades out at the very end of the
 // credits roll (4 s).
 const creditsFadeTicks = 240
-
-// snoreEvery is how often a sleeping patient snores again (3.5 s), as long
-// as someone is asleep. One cue for the whole ward, so ten sleepers are not
-// ten times as loud.
-const snoreEvery = 210
 
 // playStun is the stun of the day-to-night strobe: a hit, a ringing whine and
 // a heartbeat (Art Direction -> Day to night strobe).

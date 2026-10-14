@@ -132,6 +132,10 @@ func decode(data []byte, ext string) ([]byte, error) {
 // PlaySFX plays a short sound once at full gain.
 func (p *Player) PlaySFX(name string) { p.PlaySFXGain(name, 1) }
 
+// Note adds a line to the log that is not a sound request ("note snore P-001
+// room variant 2 gain 0.25"), so the test dump can show why a sound played.
+func (p *Player) Note(text string) { p.Log = append(p.Log, "note "+text) }
+
 // PlaySFXGain plays a short sound once, scaled by gain (0 to 1) on top of the
 // SFX volume. Several can play at the same time.
 func (p *Player) PlaySFXGain(name string, gain float64) {

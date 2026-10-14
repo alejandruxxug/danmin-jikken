@@ -55,9 +55,12 @@ func TestEveryCodeCueHasAFile(t *testing.T) {
 	p := soundPlayer(t)
 	cues := []string{
 		"title", "night_ambience", "day_hum", // music
-		"bell", "snore", "stamp_thunk", "stamp_lift", // the day
+		"bell", "snore", "stamp_thunk", "stamp_lift", "chime_right", // the day
 		"stun_hit", "stun_ring", "heartbeat", // the strobe's stun
 		"driftwell_jingle",
+	}
+	for v := 1; v <= snoreVariants; v++ {
+		cues = append(cues, snoreName(v))
 	}
 	for _, name := range night.Endings {
 		cues = append(cues, "ending_rock_"+name)
@@ -165,8 +168,8 @@ func TestStunCuesAndGains(t *testing.T) {
 	if got != "sfx stun_hit,sfx stun_ring,sfx heartbeat" {
 		t.Errorf("stun log = %q", got)
 	}
-	if sfxGain["snore"] >= 1 || sfxGain["stun_ring"] >= 1 {
-		t.Error("the snore and the ringing must be quieter than their files")
+	if sfxGain["stun_ring"] >= 1 {
+		t.Error("the ringing must be quieter than its file")
 	}
 }
 

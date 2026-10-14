@@ -18,6 +18,10 @@ time of each is the "cut" column of the Sound note. The cut file starts on the s
 SOUND EFFECTS (short, 16-bit mono wav, volume-normalised and trimmed; every one CC0)
 bell.wav          Pleasing Bell Sound Effect, Julie Damsgaard / Spring Spring (opengameart.org/content/pleasing-bell-sound-effect)
 snore.wav         "snore", 80 CC0 creature SFX, rubberduck (opengameart.org/content/80-cc0-creature-sfx)
+snore_2.wav       snore_02, 80 CC0 creature SFX 2, rubberduck (opengameart.org/content/80-cc0-creture-sfx-2), mono, peak 0.5
+snore_3.wav       Breathing tired, CC0 (opengameart.org/content/breathing-tired), mono, peak 0.5
+snore_4.wav       littlegrunts, crueltyinc, CC0 (opengameart.org/content/little-grunts), mono, peak 0.5
+chime_right.mp3   Chime_Confirm, Chimey UI sounds, MouseBYTE, CC0 "no rights reserved" (opengameart.org/content/chimey-ui-sounds), the right-stamp ding
 breath.wav        "breath", same pack
 stamp_thunk.wav   thud3, Metal Impact Sounds, Brian MacIntosh (opengameart.org/content/metal-impact-sounds)
 clock_chime.wav   bong1, same pack

@@ -941,7 +941,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 		d.SoundLog = append(d.SoundLog, env.Sound.Log[max(0, len(env.Sound.Log)-30):]...)
 		d.SoundMissing = append(d.SoundMissing, env.Sound.Missing()...)
 		for _, entry := range d.SoundLog {
-			if _, cue, ok := strings.Cut(entry, " "); ok && cue != "off" && cue != "fade" {
+			if _, cue, ok := strings.Cut(entry, " "); ok && cue != "off" && cue != "fade" && !strings.HasPrefix(entry, "note ") {
 				d.SoundFiles[cue] = env.Sound.FileName(cue)
 			}
 		}
