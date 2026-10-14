@@ -19,6 +19,7 @@
 | [[Danmin Jikken – Art Direction]] | Anime pixel art, resolution, palette + the red rule, the sprite layer system, references |
 | [[Danmin Jikken – Build Plan]] | 🗓️ Milestones M0–M8 to Oct 19, parallel lanes for several sessions, progress log |
 | [[Danmin Jikken – Architecture]] | Go + Ebitengine, how every OOP concept maps to the game, goroutine patients, packages, the assignment checklist |
+| [[Danmin Jikken – Sound]] | Royalty-free music and SFX shortlist: ending-rock options with the cut timestamps, a pick list per cue, licences and credit lines |
 
 **Repo:** `~/Documents/Uni/4th Semester/Langs&Compilers/danmin-jikken`. **These notes live in the repo's `docs/` folder;** the Obsidian folder `ACC/Danmin Jikken` is a symlink to it, so both are the same files. The full brief is `docs/brief.pdf` (local only).
 

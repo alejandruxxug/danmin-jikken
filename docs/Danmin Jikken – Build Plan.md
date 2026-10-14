@@ -16,7 +16,7 @@ Back to [[Danmin Jikken]] · Scope board: https://claude.ai/artifact/8K8TSeebvPn
 | **M2** ✅ | Wed–Thu Oct 14–15 | **GUI skeleton + reception view** | d1, d2, d3, a2, d11 | Ebitengine window 480×270 ×4, FNAF pan, patients arrive and fall asleep live, line boil on |
 | **M3** ✅ | Thu Oct 15 | **The day loop** | d4, d5, d8, d9 | Click a sleeper → staff dispatched; beds panel + "no room" on screen; score + top-10; 3 days of rising difficulty |
 | **M4** | Fri Oct 16 | **The computer + documents** | d6, d12, d10 | Flip-up terminal with the 4 queries + live ward feed; Papers, Please checks (ID, referral, stamps, daily rules) |
-| **M5** | Fri–Sat Oct 16–17 | **Night engine + night 1** | n1, n2, n3, a4 | Day → night strobe (inverted) + day CRT; VN text box, choices, flags; the Prologue and night 1 playable with Mayu and Hana at 256 px |
+| **M5** | Fri–Sat Oct 16–17 | **Night engine + night 1** | n1, n2, n3, a4 | Day → night strobe (inverted) + day CRT **filmed by a camera** (rolling refresh band, moiré, exposure pumping; Art Direction → Day screen CRT); VN text box, choices, flags; the Prologue and night 1 playable with Mayu and Hana at 256 px |
 | **M6** | Sat–Sun Oct 17–18 | **Nights 2–3, endings, meta-horror** | n4, n5, a5 | Kanashibari, Hana's room, the gurney, the 3 routes and **4 endings** (Sleep, Wake, Forever, 3:17) from [[Danmin Jikken – Script]]; OS username + `sleep_log_317.txt` |
 | **M7** | Sun Oct 18 | **Title, art pass, sound** | a1, a3, d13 | 断眠実験 title with the dagger; all portraits; bell, snores, Driftwell jingle |
 | **M8** | Mon Oct 19 | **Freeze + paperwork** | r5, x1 | Feature freeze **20:00**. README + AI_USAGE.md final, clean-clone check, submit before 23:59 |
