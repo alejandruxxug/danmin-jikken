@@ -41,6 +41,7 @@ type Options struct {
 	Shot4   string // x4 PNG, written when the run ends
 	Dump    string // json state, written when the run ends
 	NoCRT   bool
+	PowerOn bool // start the day with the CRT turn-on playing
 	// ReduceFlashing is a player option (Settings -> Reduce flashing), so it
 	// works without -agent.
 	ReduceFlashing bool
@@ -77,6 +78,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Dump, "dump", "", "save the game state as json when the run ends")
 	fs.BoolVar(&o.NoCRT, "nocrt", false, "turn the day CRT filter off")
 	fs.BoolVar(&o.ReduceFlashing, "reduce-flashing", false, "replace the day-to-night strobe by one slow invert-and-fade")
+	fs.BoolVar(&o.PowerOn, "poweron", false, "play the CRT turn-on at the start (see it with wait N and shot4)")
 	fs.BoolVar(&o.Quit, "quit", false, "exit when the script (or -frames) ends")
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
 	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
@@ -394,6 +396,9 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 	}
 	env.NightLine = opts.Line
 	env.CRT = !opts.NoCRT
+	if opts.PowerOn {
+		env.StartPowerOn()
+	}
 	env.ReduceFlashing = opts.ReduceFlashing
 	env.Input.IgnoreReal = true
 	if opts.PanSet {

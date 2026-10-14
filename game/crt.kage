@@ -11,6 +11,13 @@ var Day float      // 1, 2 or 3: the screen breaks down more each day
 var Invert float   // 1 swaps black and white (the strobe), 0 leaves the picture
 var Time float     // seconds, for the flicker, the band, the moire and the grain
 var Filmed float   // how strong the "camera filming a CRT" look is (0 to 1)
+var PowerOn float  // the day turning on: progress 0 to 1, or -1 when it is not (poweron.go)
+
+// The turn-on's phase boundaries as fractions of PowerOn: 6, 10 and 18 of
+// 48 ticks. They must match powerOnPhases (a test checks the text).
+const dotEnd = 0.125
+const lineEnd = 0.2083
+const openEnd = 0.375
 
 // hash is a cheap random number from 0 to 1 for the grain.
 func hash(p vec2) float {
@@ -23,8 +30,33 @@ func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
 	c := uv*2 - 1                               // -1..1, the middle is 0
 	edge := dot(c, c) / 2                       // 0 in the middle, 1 in the corners
 
+	// Turn-on, first half: black, then a dot, then a thin line (white on black).
+	settle := 1.0 // 0 right after the flash, 1 once settled
+	if PowerOn >= 0 {
+		if PowerOn < dotEnd {
+			t := PowerOn / dotEnd
+			r := length(c * vec2(1, 0.5625)) // round on a 16:9 screen
+			glow := smoothstep(0.05+0.03*t, 0, r)
+			return vec4(vec3(glow), 1)
+		}
+		if PowerOn < lineEnd {
+			t := (PowerOn - dotEnd) / (lineEnd - dotEnd)
+			if abs(c.x) < 0.04+0.96*t && abs(c.y) < 0.012 {
+				return vec4(1, 1, 1, 1)
+			}
+			return vec4(0, 0, 0, 1)
+		}
+		if PowerOn >= openEnd {
+			settle = (PowerOn - openEnd) / (1 - openEnd)
+		} else {
+			settle = 0
+		}
+	}
+
 	// Fisheye: push the picture outwards a little more the further from the middle.
-	bent := c * (1 + Curve*dot(c, c))
+	// While settling, the curve wobbles once.
+	curve := Curve * (1 + 0.8*sin(settle*6.2832)*(1-settle))
+	bent := c * (1 + curve*dot(c, c))
 	p := (bent + 1) / 2
 	if p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1 {
 		return vec4(0, 0, 0, 1) // outside the bent glass
@@ -77,6 +109,22 @@ func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
 	// Filmed look 3, exposure pumping and grain.
 	col *= 1 + Filmed*0.03*sin(Time*1.1)
 	col += (hash(floor(dstPos.xy)+floor(Time*24)) - 0.5) * 0.06 * Filmed
+
+	if PowerOn >= lineEnd && PowerOn < openEnd {
+		// Turn-on, the line stretches up and down into the picture, with a white flash.
+		t := (PowerOn - lineEnd) / (openEnd - lineEnd)
+		if abs(c.y) > 0.012+(1-0.012)*t*t {
+			return vec4(0, 0, 0, 1)
+		}
+		col = mix(col, vec3(1), 1-t)
+	}
+	if PowerOn >= openEnd {
+		// Settling: over-bright fading to normal, and one quick pass of the band.
+		col *= 1 + 0.4*(1-settle)*(1-settle)
+		if abs(uv.y-settle) < 0.06 {
+			col *= 0.92
+		}
+	}
 
 	col = mix(col, vec3(1)-col, Invert)
 	return vec4(clamp(col, 0, 1), 1)

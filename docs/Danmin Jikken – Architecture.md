@@ -88,6 +88,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-pan X` | Camera x at the start, 0–240 (default 120 = the Figma frame's crop). Reception only | Shots line up with the Figma view, or show the far ends of the room |
 | `-nocrt` | Turns the day CRT filter off (Art Direction → Day screen). **Works without `-agent` too** (a player option; **F10** toggles it in the game). With the filter on, `-shot4` and `shot4` are the filtered picture; `-shot` (1×) is always the plain canvas | Screenshots line up pixel for pixel with the Figma views |
 | `-line N` | Night scenes: start at the first command on or after line N of the script file (it plays the story up to there silently; a menu on the way is answered with the option your `-flags` already chose, else the first) | Jump into the middle of a night |
+| `-poweron` | Starts the day with the CRT turn-on playing (48 ticks: dot, line, open with a white flash, settle). See it with `wait N` and `shot4`; with `-nocrt` it is a plain fade from black | Check the day turning on like a CRT |
 | `-reduce-flashing` | Replaces the strobe with one slow invert-and-fade (Settings → Reduce flashing). **Works without `-agent`** | Check the safe version |
 | `-scores <file>` | Scores file to read and write. Without it the top-10 keeps scores in memory (the real `danmin_scores.txt` is never touched in test mode) | Top-10 and the ghost row on a scratch file |
 | `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |

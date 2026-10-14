@@ -25,7 +25,7 @@ speed 11
 fx eyes_close
 sfx wheels_stop
 wait 1.4
-bg white
+bg black
 music driftwell_jingle
 wait 0.8
 end day1

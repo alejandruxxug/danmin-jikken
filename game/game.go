@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 
 	"danmingame/night"
 )
@@ -110,6 +111,7 @@ func (g *Game) Update() error {
 		}
 	}
 	g.ticks++
+	g.env.tickPowerOn()
 	if g.env.Input.KeyPressed(ebiten.KeyF10) {
 		g.env.CRT = !g.env.CRT // Settings -> CRT effect: some players find the curved, flickering text hard to read
 	}
@@ -160,6 +162,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.canvas = ebiten.NewImage(ScreenW, ScreenH)
 	}
 	g.scenes.Draw(g.canvas)
+	if usesCRT(g.scenes.ID(), g.scenes.Current()) {
+		g.fadeFromBlack(g.canvas)
+	}
 	if g.agent != nil {
 		g.agent.AfterDraw(g, g.canvas)
 	}
@@ -187,7 +192,18 @@ func (g *Game) crtOn() bool {
 
 // crtParams are the shader's numbers for this frame.
 func (g *Game) crtParams() CRTParams {
-	return DefaultCRT(g.env.Day, float64(g.ticks)/60, g.env.Invert)
+	p := DefaultCRT(g.env.Day, float64(g.ticks)/60, g.env.Invert)
+	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn {
+		p.PowerOn = st.Progress
+	}
+	return p
+}
+
+// fadeFromBlack is the turn-on without the CRT (-nocrt): a plain fast fade.
+func (g *Game) fadeFromBlack(canvas *ebiten.Image) {
+	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn && !g.env.CRT {
+		vector.FillRect(canvas, 0, 0, ScreenW, ScreenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8((1 - st.Progress) * 255)}, false)
+	}
 }
 
 // fitScreen says how to show the 480x270 picture on a screen of w x h real

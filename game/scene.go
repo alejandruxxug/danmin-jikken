@@ -41,11 +41,13 @@ type Env struct {
 	Seed           int64
 	Day            int
 	Speed          float64
-	CRT            bool    // the day CRT filter (Settings -> CRT effect); the night never has it
-	ReduceFlashing bool    // Settings -> Reduce flashing: the strobe becomes one slow invert-and-fade
-	SkipStrobe     bool    // test mode: the strobe scene ends at once
-	StrobeNight    int     // the night the strobe is leading into (0 when none plays), for the dump
-	StrobeTick     int     // ticks into it
+	CRT            bool // the day CRT filter (Settings -> CRT effect); the night never has it
+	ReduceFlashing bool // Settings -> Reduce flashing: the strobe becomes one slow invert-and-fade
+	SkipStrobe     bool // test mode: the strobe scene ends at once
+	StrobeNight    int  // the night the strobe is leading into (0 when none plays), for the dump
+	StrobeTick     int  // ticks into it
+	PoweringOn     bool // the day is turning on like a CRT (poweron.go)
+	PowerOnTick    int
 	Invert         float64 // 1 while the strobe shows its inverted frames (the CRT shader swaps black and white)
 	Clock          *Clock
 	Flags          night.Flags    // story flags the nights set and the day will read

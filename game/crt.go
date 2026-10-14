@@ -15,9 +15,10 @@ import (
 //go:embed crt.kage
 var crtSource []byte
 
-// CRTParams are the seven numbers the shader takes, named as in crt.kage.
+// CRTParams are the numbers the shader takes (the seven of the note, plus
+// PowerOn for the turn-on), named as in crt.kage.
 type CRTParams struct {
-	Scanline, Vignette, Curve, Day, Invert, Time, Filmed float64
+	Scanline, Vignette, Curve, Day, Invert, Time, Filmed, PowerOn float64
 }
 
 // DefaultCRT gives the amounts of the Art Direction note for a day, at a
@@ -31,6 +32,7 @@ func DefaultCRT(day int, seconds, invert float64) CRTParams {
 		Invert:   invert,
 		Time:     seconds,
 		Filmed:   1,
+		PowerOn:  -1, // not turning on
 	}
 }
 
@@ -63,7 +65,7 @@ func (c *CRT) Apply(src *ebiten.Image, scale int, p CRTParams) *ebiten.Image {
 	op.GeoM.Scale(float64(scale), float64(scale))
 	op.Uniforms = map[string]any{
 		"Scanline": float32(p.Scanline), "Vignette": float32(p.Vignette), "Curve": float32(p.Curve),
-		"Day": float32(p.Day), "Invert": float32(p.Invert), "Time": float32(p.Time), "Filmed": float32(p.Filmed),
+		"Day": float32(p.Day), "Invert": float32(p.Invert), "Time": float32(p.Time), "Filmed": float32(p.Filmed), "PowerOn": float32(p.PowerOn),
 	}
 	c.buf.DrawRectShader(src.Bounds().Dx(), src.Bounds().Dy(), c.shader, op)
 	return c.buf

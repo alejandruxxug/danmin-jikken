@@ -109,6 +109,7 @@ func (s *nightScene) finish(to string) error {
 		return fmt.Errorf("night script %s ends with %q: want day1, day2 or day3: %w", s.script, to, err)
 	}
 	s.env.Day = day
+	s.env.StartPowerOn() // the day turns on like a CRT
 	s.env.SwitchTo(SceneDayReception)
 	return nil
 }

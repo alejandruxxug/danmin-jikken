@@ -89,6 +89,6 @@ sfx click
 
 fx eyes_close
 wait 1.2
-bg white
+bg black
 wait 0.7
 end day2
