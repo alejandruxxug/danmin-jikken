@@ -755,6 +755,7 @@ type Dump struct {
 	Route        string   `json:"route"`
 	Ending       string   `json:"ending"`
 	EndingPhase  string   `json:"endingPhase"`
+	View         View     `json:"view"` // where the picture sits on the screen (fullscreen fit)
 	MusicCue     string   `json:"musicCue"`
 	EndingGlitch float64  `json:"endingGlitch"` // the secret ending's glitch strength, 0 to 1
 	Dream        bool     `json:"dream"`        // the Prologue's washed-out filter is on
@@ -928,6 +929,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 			d.Flags = append(d.Flags, name)
 		}
 	}
+	d.View = env.View
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.EndingGlitch = env.EndingGlitch

@@ -3,6 +3,7 @@ package game
 import (
 	"danmingame/night"
 	"errors"
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -115,10 +116,82 @@ func TestFitScreen(t *testing.T) {
 	}
 }
 
-func TestFloorDiv(t *testing.T) {
-	for _, c := range []struct{ a, b, want int }{{9, 4, 2}, {8, 4, 2}, {0, 4, 0}, {-1, 4, -1}, {-4, 4, -1}, {-5, 4, -2}} {
-		if got := floorDiv(c.a, c.b); got != c.want {
-			t.Errorf("floorDiv(%d, %d) = %d, want %d", c.a, c.b, got, c.want)
+// The visual novel in fullscreen fills the width: black only above and below.
+func TestFitScreenFor(t *testing.T) {
+	cases := []struct {
+		name       string
+		w, h       int
+		fill       bool
+		scale      float64
+		offX, offY float64
+	}{
+		{"Retina MacBook, VN", 3024, 1964, true, 6.3, 0, 131.5},
+		{"Retina MacBook, day", 3024, 1964, false, 6, 72, 172},
+		{"1080p is exactly x4", 1920, 1080, true, 4, 0, 0},
+		{"1440p", 2560, 1440, true, 2560.0 / 480, 0, 0},
+		{"2560x1600", 2560, 1600, true, 2560.0 / 480, 0, 80},
+		{"1920x1200", 1920, 1200, true, 4, 0, 60},
+		{"too short for the width: fit the height", 1920, 800, true, 800.0 / 270, (1920 - 480*800.0/270) / 2, 0},
+		{"too narrow, below x1: whole-number fallback", 300, 200, true, 1, -90, -35},
+		{"windowed day, unchanged", 2560, 1440, false, 5, 80, 45},
+	}
+	for _, c := range cases {
+		scale, offX, offY := fitScreenFor(c.w, c.h, c.fill)
+		if math.Abs(scale-c.scale) > 1e-9 || math.Abs(offX-c.offX) > 1e-9 || math.Abs(offY-c.offY) > 1e-9 {
+			t.Errorf("%s: fitScreenFor(%d, %d, %v) = %v, %v, %v; want %v, %v, %v", c.name, c.w, c.h, c.fill, scale, offX, offY, c.scale, c.offX, c.offY)
+		}
+	}
+}
+
+// Clicks land on the right game pixel at a scale that is not a whole number.
+func TestScreenToGame(t *testing.T) {
+	scale, offX, offY := 6.3, 0.0, 131.5 // the Retina MacBook in fullscreen
+	for _, c := range []struct{ px, py, x, y int }{
+		{0, 132, 0, 0},         // the picture's top-left pixel
+		{3023, 1832, 479, 269}, // ... and bottom-right
+		{1512, 982, 240, 135},  // the middle
+		{100, 100, 15, -5},     // in the black bar above: a row outside the picture
+		{3023, 1900, 479, 280}, // below the picture
+	} {
+		if x, y := screenToGame(c.px, c.py, scale, offX, offY); x != c.x || y != c.y {
+			t.Errorf("screenToGame(%d, %d) = %d, %d; want %d, %d", c.px, c.py, x, y, c.x, c.y)
+		}
+	}
+	// A whole-number view with side bars still maps as it did.
+	if x, y := screenToGame(79, 44, 5, 80, 45); x != -1 || y != -1 {
+		t.Errorf("one pixel left of and above the picture is (%d, %d), want (-1, -1)", x, y)
+	}
+}
+
+// Only the visual novel takes the width, and only in fullscreen.
+func TestFillWidthOnlyForTheVisualNovel(t *testing.T) {
+	for id, want := range map[string]bool{
+		"night.1": true, "night.prologue": true, "ending.forever": true,
+		"day.reception": false, "title": false, "transition.night1": false, "day.top10": false,
+	} {
+		if got := vnScene(id); got != want {
+			t.Errorf("vnScene(%q) = %v, want %v", id, got, want)
+		}
+	}
+}
+
+// A night scene fills the width in fullscreen only; a day scene, the title
+// and a windowed night keep the whole-number fit.
+func TestFillWidthDecision(t *testing.T) {
+	for _, c := range []struct {
+		scene      string
+		fullscreen bool
+		want       bool
+	}{
+		{SceneNight1, true, true}, {SceneNight1, false, false},
+		{SceneDayReception, true, false}, {SceneTitle, true, false},
+	} {
+		g, err := New(Options{Enabled: true, Scene: c.scene, Line: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := g.fillWidth(c.fullscreen); got != c.want {
+			t.Errorf("%s, fullscreen %v: fillWidth = %v, want %v", c.scene, c.fullscreen, got, c.want)
 		}
 	}
 }

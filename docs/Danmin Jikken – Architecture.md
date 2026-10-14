@@ -93,7 +93,7 @@ go run ./cmd/danmin -agent -scene day.reception -day 2 -clock 15:40 -seed 7 \
 | `-scores <file>` | Scores file to read and write. Without it the top-10 keeps scores in memory (the real `danmin_scores.txt` is never touched in test mode) | Top-10 and the ghost row on a scratch file |
 | `-score N` | Today's score at the start; `day.top10` saves it as a row | Reach the top-10 and "NEW RECORD" directly |
 | `-sleepy` | Admitted patients nod off within a second and sleep ~2 minutes | Reach sleepers, the hallway and the no-room alert fast |
-| `-fullscreen` | Starts in fullscreen. **Works without `-agent`** (it is a normal player option; F11, Alt+Enter and Cmd+F toggle it too; the window opens at the biggest whole-number scale that fits 90% of the screen and can be resized, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
+| `-fullscreen` | Starts in fullscreen. **The visual novel (`night.*`, `ending.*`) then fills the screen's width** at a non-whole scale (screen width / 480; the dump's `view` shows `scale`, `offX`, `offY`, `fillWidth`); day scenes, the title, the strobes and windowed mode keep the whole-number fit with black bars. Check: `-agent -fullscreen -scene night.1 -dump v.json`. **Works without `-agent`** (it is a normal player option; F11, Alt+Enter and Cmd+F toggle it too; the window opens at the biggest whole-number scale that fits 90% of the screen and can be resized, `key F11` in a script does the same). Screenshots are always of the 480x270 canvas, so this never changes them | A player option, not a test one |
 | `-dark N` | Draws **every** guest N palette steps darker (0-3), to judge the Severe darkening without waiting for a Severe patient to wake up (`dark N` does the same inside a script). In the dump: `forceDark` | The darkening is otherwise hidden: a Severe patient in a bed is not drawn |
 | `-auto` | Night scenes: the VN's AUTO play starts on (the A key or a click on the toggle flips it; the script command `auto [on\|off]` does the same) | See the AUTO wait (`1.2 s + 0.05 s per letter`, at most 6 s) |
 | `-seen-prologue` | Pretends the Prologue was seen on an earlier launch: any key skips it (the cold open). Normally the saved settings file (`danmin_settings.json`, next to the scores file) remembers it | Check the skip |
@@ -175,7 +175,7 @@ game/scorefile.go       danmin_scores.txt: load, append, ghost row, ranking (tes
 game/text.go + fonts/   Silkscreen (OFL) at size 8, whole pixels
 game/input.go           Input: real keys/mouse + injected ones from the backdoor
 game/clock.go           in-game clock (HH:MM)
-game/game.go            Game: canvas, whole-number scaling (fitScreen), fullscreen toggle
+game/game.go            Game: canvas, whole-number scaling with black bars (fitScreen), except the visual novel in fullscreen (fitScreenFor: fills the screen width, sharp-bilinear, black only above and below), fullscreen toggle
 game/agent.go           the whole backdoor: flags, input script, -shot, -dump
 game/assets.go          //go:embed of assets/sprites
 game/sprites/           loader for the Aseprite sheet + json (+ testdata fixture)

@@ -90,7 +90,8 @@ type Env struct {
 
 	// The end of the run.
 	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)
-	EndingPhase    string // script, silence, card or credits
+	EndingPhase    string // script, silence, title or credits
+	View           View   // where the picture sits on the screen (the dump shows it)
 	MusicCue       string // the music the story asked for last (the sound system plays it)
 	SleepLogPath   string // where the secret ending wrote sleep_log_317.txt ("" if it did not)
 	SleepLogError  string
@@ -278,4 +279,16 @@ func (e *Env) SetMusic(name string) {
 		return
 	}
 	e.Sound.PlayMusic(name, true, 0)
+}
+
+// View is where the 480x270 picture sits on the real screen: its scale, the
+// offset of its top-left corner, and whether it fills the width (the visual
+// novel in fullscreen).
+type View struct {
+	W         int     `json:"screenW"`
+	H         int     `json:"screenH"`
+	Scale     float64 `json:"scale"`
+	OffX      float64 `json:"offX"`
+	OffY      float64 `json:"offY"`
+	FillWidth bool    `json:"fillWidth"`
 }

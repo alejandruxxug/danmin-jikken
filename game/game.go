@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -25,6 +26,7 @@ type Game struct {
 	crt     *CRT          // the day filter, drawn to the screen
 	shotCRT *CRT          // the same shader for the x4 screenshots (a buffer of its own)
 	ticks   int           // frames updated so far: the shader's clock
+	sharp   *ebiten.Image // the canvas scaled up by a whole number, for the visual novel's sharp-bilinear fit
 }
 
 // New builds the game from the command-line options and enters the first
@@ -201,20 +203,68 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if g.agent != nil {
 		g.agent.AfterDraw(g, g.canvas)
 	}
-	scale, offX, offY := fitScreen(screen.Bounds().Dx(), screen.Bounds().Dy())
-	var op ebiten.DrawImageOptions
-	op.GeoM.Translate(float64(offX), float64(offY))
+	g.putOnScreen(screen, ebiten.IsFullscreen())
+}
+
+// putOnScreen shows the canvas on the screen. In fullscreen the visual novel
+// fills the screen's width (black only above and below); everything else is
+// shown at the biggest whole-number scale with black around it.
+func (g *Game) putOnScreen(screen *ebiten.Image, fullscreen bool) {
+	w, h := screen.Bounds().Dx(), screen.Bounds().Dy()
+	fill := g.fillWidth(fullscreen)
+	scale, offX, offY := fitScreenFor(w, h, fill)
 	screen.Fill(color.Black) // the bars around the picture
-	if g.crtOn() {
+	switch {
+	case g.crtOn():
 		// The shader scales the picture itself, so it is drawn at 1:1.
-		screen.DrawImage(g.crt.Apply(g.canvas, scale, g.crtParams()), &op)
-		return
+		var op ebiten.DrawImageOptions
+		op.GeoM.Translate(offX, offY)
+		screen.DrawImage(g.crt.Apply(g.canvas, int(scale), g.crtParams()), &op)
+	case fill:
+		g.drawSharp(screen, scale, offX, offY)
+	default:
+		var op ebiten.DrawImageOptions
+		op.GeoM.Scale(scale, scale)
+		op.GeoM.Translate(offX, offY)
+		op.Filter = ebiten.FilterNearest // whole-number scale + nearest = crisp pixels
+		screen.DrawImage(g.canvas, &op)
 	}
-	op.GeoM.Reset()
-	op.GeoM.Scale(float64(scale), float64(scale))
-	op.GeoM.Translate(float64(offX), float64(offY))
-	op.Filter = ebiten.FilterNearest // whole-number scale + nearest = crisp pixels
-	screen.DrawImage(g.canvas, &op)
+}
+
+// drawSharp draws the canvas at a scale that is not a whole number without
+// blurring it ("sharp bilinear"): first scale it up by the next whole number
+// with nearest-neighbour (every pixel becomes a block of equal size), then
+// shrink that to the exact size with linear filtering. Only the edges between
+// blocks blend, over about one screen pixel, instead of some columns being 6
+// pixels wide and others 7 as plain nearest would make them.
+func (g *Game) drawSharp(screen *ebiten.Image, scale, offX, offY float64) {
+	k := int(math.Ceil(scale))
+	if g.sharp == nil || g.sharp.Bounds().Dx() != ScreenW*k {
+		g.sharp = ebiten.NewImage(ScreenW*k, ScreenH*k)
+	}
+	g.sharp.Clear()
+	var up ebiten.DrawImageOptions
+	up.GeoM.Scale(float64(k), float64(k))
+	g.sharp.DrawImage(g.canvas, &up) // nearest is the default filter
+	var down ebiten.DrawImageOptions
+	down.GeoM.Scale(scale/float64(k), scale/float64(k))
+	down.GeoM.Translate(offX, offY)
+	down.Filter = ebiten.FilterLinear
+	screen.DrawImage(g.sharp, &down)
+}
+
+// vnScene says whether a scene id is part of the visual novel: the Prologue
+// and the nights ("night.*") and the endings ("ending.*"). The day-to-night
+// strobes are day pictures (CRT, inverted) and keep the whole-number fit.
+func vnScene(id string) bool {
+	return strings.HasPrefix(id, "night.") || strings.HasPrefix(id, "ending.")
+}
+
+// fillWidth says whether this frame is scaled to the screen's width: a
+// visual novel scene in fullscreen (Alejo, 2026-10-14), not through the
+// day CRT (the report shot of the realization), which keeps whole numbers.
+func (g *Game) fillWidth(fullscreen bool) bool {
+	return fullscreen && vnScene(g.scenes.ID()) && !g.crtOn()
 }
 
 // crtOn says whether this frame goes through the CRT: the setting is on and
@@ -249,6 +299,22 @@ func fitScreen(w, h int) (scale, offX, offY int) {
 	return scale, (w - ScreenW*scale) / 2, (h - ScreenH*scale) / 2
 }
 
+// fitScreenFor is where the 480x270 picture goes on a w x h screen. Without
+// fillWidth it is fitScreen's whole-number fit. With it (the visual novel in
+// fullscreen) the scale is the screen's width over 480, not a whole number,
+// so there are black lines only above and below; if the screen is not wide
+// enough for that (the height runs out first) the picture is fitted to the
+// height, and below x1 it falls back to the whole-number fit.
+func fitScreenFor(w, h int, fillWidth bool) (scale, offX, offY float64) {
+	whole, wx, wy := fitScreen(w, h)
+	if fillWidth {
+		if fit := min(float64(w)/ScreenW, float64(h)/ScreenH); fit >= 1 {
+			return fit, (float64(w) - ScreenW*fit) / 2, (float64(h) - ScreenH*fit) / 2
+		}
+	}
+	return float64(whole), float64(wx), float64(wy)
+}
+
 // pickScale is the biggest whole-number scale from x1 to x4 whose window
 // fits in 90% of the monitor (w x h in points), leaving room for the menu
 // bar and the dock. It is never below x1.
@@ -276,8 +342,10 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func (g *Game) LayoutF(outsideWidth, outsideHeight float64) (float64, float64) {
 	factor := ebiten.Monitor().DeviceScaleFactor()
 	w, h := int(math.Ceil(outsideWidth*factor)), int(math.Ceil(outsideHeight*factor))
-	scale, offX, offY := fitScreen(w, h)
+	fill := g.fillWidth(ebiten.IsFullscreen())
+	scale, offX, offY := fitScreenFor(w, h, fill)
 	g.env.Input.SetView(scale, offX, offY)
+	g.env.View = View{W: w, H: h, Scale: scale, OffX: offX, OffY: offY, FillWidth: fill}
 	return float64(w), float64(h)
 }
 

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"math"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -27,7 +29,7 @@ type Input struct {
 
 	// Where the 480x270 picture sits on the real screen (see fitScreen):
 	// scale 0 means the screen is the picture itself.
-	scale, offX, offY int
+	scale, offX, offY float64
 }
 
 // NewInput makes an Input with nothing injected.
@@ -74,7 +76,7 @@ func (in *Input) InjectUp() {
 }
 
 // SetView tells Input how the game picture is placed on the screen.
-func (in *Input) SetView(scale, offX, offY int) {
+func (in *Input) SetView(scale, offX, offY float64) {
 	in.scale, in.offX, in.offY = scale, offX, offY
 }
 
@@ -85,17 +87,15 @@ func (in *Input) mouse() (x, y int) {
 	if in.scale <= 0 {
 		return px, py
 	}
-	return floorDiv(px-in.offX, in.scale), floorDiv(py-in.offY, in.scale)
+	return screenToGame(px, py, in.scale, in.offX, in.offY)
 }
 
-// floorDiv divides rounding down, so -1 pixel left of the picture is column
-// -1 and not column 0 (Go's / rounds toward zero).
-func floorDiv(a, b int) int {
-	q := a / b
-	if a%b != 0 && (a < 0) != (b < 0) {
-		q--
-	}
-	return q
+// screenToGame turns a point on the real screen into a game pixel, given
+// where the picture sits (its scale and the offset of its top-left corner).
+// math.Floor, so a point just left of or above the picture is column or row
+// -1 and not 0.
+func screenToGame(px, py int, scale, offX, offY float64) (x, y int) {
+	return int(math.Floor((float64(px) - offX) / scale)), int(math.Floor((float64(py) - offY) / scale))
 }
 
 // AnyKeyPressed is true on the frame any key goes down, except the
