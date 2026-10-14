@@ -151,6 +151,12 @@ func (s *Shift) updateDesk() {
 	}
 }
 
+// LastGuestAtDesk is true while the day's last guest is at the desk and not
+// yet stamped (the strobe's flicker starts then).
+func (s *Shift) LastGuestAtDesk() bool {
+	return s.desk.guest != nil && s.served == len(s.Guests)-1
+}
+
 // FolderReady is true once the folder has finished sliding in.
 func (s *Shift) FolderReady() bool {
 	return s.desk.guest != nil && s.ticks-s.desk.arrivedAt >= slideInTicks

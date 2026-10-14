@@ -378,10 +378,3 @@ func WrapText(text string, width int, measure func(string) int) []string {
 	}
 	return lines
 }
-
-// DrawStationFrame draws the nurses' station with no girl, no props and no
-// text box, y pixels down from its place. The day-to-night strobe uses it
-// as the frame of the night that flashes through.
-func (a *Art) DrawStationFrame(dst *ebiten.Image, y int) {
-	_ = a.station.Draw(dst, []string{"wall", "monitor_screen", "counter", "prop_coffee"}, 0, 0, y)
-}

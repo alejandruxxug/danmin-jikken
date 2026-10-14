@@ -123,13 +123,33 @@ func (g *Game) Update() error {
 	}
 	if sh := g.env.Shift(); sh != nil {
 		sh.Update()
-		if sh.Over() {
-			g.env.SwitchTo(SceneDayTop10) // the shift is over: show the scores
+		if g.env.UpdateLiveStrobe(sh) {
+			g.env.SwitchTo(SceneStrobe1) // the strobe goes on in its own scene
+		} else if sh.Over() && g.env.StrobeNight == 0 {
+			if err := g.endShift(); err != nil {
+				return err
+			}
 		}
 	}
 	err := g.scenes.Update()
 	g.env.Input.endFrame()
 	return err
+}
+
+// endShift handles a shift that is over on a day with no strobe (days 2 and
+// 3 until M6 builds nights 2 and 3). The top-10 only comes once, after the
+// last day; the other days save their score silently and go on.
+func (g *Game) endShift() error {
+	if g.env.Day >= LastDay() {
+		g.env.SwitchTo(SceneDayTop10)
+		return nil
+	}
+	if err := g.env.EndShiftSilently(); err != nil {
+		return err
+	}
+	g.env.Day++
+	g.env.SwitchTo(SceneDayReception)
+	return nil
 }
 
 // Draw paints the 480x270 picture on the canvas, saves the screenshots the

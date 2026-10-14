@@ -1,14 +1,11 @@
 package game
 
 import (
-	"fmt"
 	"image/color"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
-
-	"danmingame/night"
 )
 
 // The day-to-night strobe (Art Direction -> Day to night strobe). The
@@ -16,9 +13,9 @@ import (
 // agent can wait to any moment of it.
 //
 //	1 flicker   1.5 s   the day, inverted for a single frame once or twice
-//	2 strobe    0.6-1 s the picture flips normal <-> inverted; some flips are a frame of the night
+//	2 strobe    0.6-1 s the picture flips normal <-> inverted
 //	3 white     0.5 s   full white
-//	4 fall      2 s     the night comes up through white, drifting, with afterimage flashes
+//	4 fall      2 s     the white thins out to solid black, with afterimage flashes; the night script opens on black
 const (
 	flickerTicks = 90
 	whiteTicks   = 30
@@ -34,13 +31,12 @@ type strobeLayer int
 
 const (
 	layerDay strobeLayer = iota
-	layerNight
 	layerWhite
 	layerFall
 )
 
 func (l strobeLayer) String() string {
-	return [...]string{"day", "night", "white", "fall"}[l]
+	return [...]string{"day", "white", "fall"}[l]
 }
 
 // StrobeState is what to draw at one tick.
@@ -55,10 +51,11 @@ type StrobeState struct {
 var flickerFlips = map[int]bool{38: true, 71: true}
 
 // strobeFrames is the order of the frames of the full strobe, three ticks
-// each: the day inverted, the day, the night inverted, the day, ...
+// each. Only the day flashes (normal, inverted): nothing of the night may
+// show before its script opens on black (Alejo: the leak bug).
 var strobeFrames = []StrobeState{
-	{layerDay, 1, 0}, {layerDay, 0, 0}, {layerNight, 1, 0}, {layerDay, 0, 0},
-	{layerDay, 1, 0}, {layerNight, 0, 0}, {layerDay, 1, 0}, {layerNight, 1, 0},
+	{layerDay, 1, 0}, {layerDay, 0, 0}, {layerDay, 1, 0}, {layerDay, 0, 0},
+	{layerDay, 1, 0}, {layerDay, 0, 0}, {layerDay, 1, 0}, {layerDay, 1, 0},
 }
 
 const ticksPerStrobeFrame = 3
@@ -99,7 +96,6 @@ type strobeScene struct {
 	night int    // 1 to 3
 	next  string // the night scene it ends in
 	art   *DeskArt
-	nart  *night.Art // the night frame that flashes through
 	ticks int
 }
 
@@ -109,14 +105,16 @@ func (s *strobeScene) Enter(env *Env) error {
 	if s.art, err = env.Art(); err != nil {
 		return err
 	}
-	if s.nart, err = env.NightArt(); err != nil {
+	// The shift ends inside the strobe: stop its goroutines and save the
+	// score without showing the top-10 (it comes once, at the end of the run).
+	if err := env.EndShiftSilently(); err != nil {
 		return err
 	}
-	// The shift is over: stop its goroutines, as the top-10 does.
-	if err := env.StopShift(); err != nil {
-		return fmt.Errorf("the shift ended with an error: %w", err)
-	}
 	env.SkipStrobe = false
+	// Coming from the live day, the strobe goes on where it was.
+	if env.StrobeNight == s.night {
+		s.ticks = env.StrobeTick
+	}
 	return nil
 }
 
@@ -148,29 +146,61 @@ func (s *strobeScene) Draw(screen *ebiten.Image) {
 		p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
 		p.room(nil, DefaultCameraX)
 		p.glass()
-	case layerNight:
-		screen.Fill(paletteInk)
-		s.nart.DrawStationFrame(screen, 0)
 	case layerWhite:
 		screen.Fill(colPaper)
 	case layerFall:
-		screen.Fill(colPaper)
-		s.nart.DrawStationFrame(screen, int(24*(1-st.Fall)))
+		screen.Fill(paletteInk) // the fall ends on solid black
 		s.whiteOver(screen, st)
 	}
 }
 
-// whiteOver lays the over-exposed white on the rising night: it thins out
-// as the fall goes on, and three short afterimage flashes come back.
-func (s *strobeScene) whiteOver(screen *ebiten.Image, st StrobeState) {
-	alpha := (1 - st.Fall) * (1 - st.Fall)
-	t := int(st.Fall * fallTicks)
+// fallWhite is how much white lies over the black at a moment of the fall
+// (0 to 1): it thins out to nothing, and three short afterimage flashes
+// come back on the way. At the end of the fall it is exactly 0.
+func fallWhite(fall float64) float64 {
+	alpha := (1 - fall) * (1 - fall)
+	t := int(fall * fallTicks)
 	for _, at := range afterimageTicks {
 		if t >= at && t < at+4 {
-			alpha = max(alpha, 0.35)
+			alpha = max(alpha, 0.35*(1-fall))
 		}
 	}
+	return alpha
+}
+
+// whiteOver lays that white on the black.
+func (s *strobeScene) whiteOver(screen *ebiten.Image, st StrobeState) {
+	alpha := fallWhite(st.Fall)
 	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0xec, 0xec, 0xe6, uint8(alpha * 255)}, false)
 }
 
 func (s *strobeScene) Exit() { s.env.Invert, s.env.StrobeNight, s.env.StrobeTick = 0, 0, 0 }
+
+// UpdateLiveStrobe runs the strobe over the live day (Alejo: it starts while
+// you finish the last patient). The flicker begins when the last guest is at
+// the desk and repeats until their stamp lands; then the full strobe takes
+// over, and when it reaches the white the strobe scene carries on and the
+// shift ends inside it. It returns true at that hand-over. Only days that
+// lead into a night have one (day 1 for now; nights 2 and 3 come in M6).
+func (e *Env) UpdateLiveStrobe(sh *Shift) (handOver bool) {
+	if _, ok := strobeTicks[e.Day]; !ok || e.Day != 1 {
+		return false
+	}
+	last := sh.Served() == sh.Total() || sh.Over() // the last stamp has landed
+	if e.StrobeNight == 0 {
+		if !last && !sh.LastGuestAtDesk() {
+			return false
+		}
+		e.StrobeNight, e.StrobeTick = e.Day, 0
+	}
+	e.StrobeTick++
+	if !last && e.StrobeTick >= flickerTicks {
+		e.StrobeTick = 0 // still stamping: keep flickering
+	}
+	if last && e.StrobeTick < flickerTicks {
+		e.StrobeTick = flickerTicks // the stamp landed: the full strobe takes over
+	}
+	st := StrobeAt(e.StrobeNight, e.StrobeTick, e.ReduceFlashing)
+	e.Invert = st.Invert
+	return st.Layer == layerWhite
+}

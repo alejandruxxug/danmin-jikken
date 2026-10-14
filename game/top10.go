@@ -55,13 +55,9 @@ func (s *top10Scene) Enter(env *Env) error {
 	rows := before
 	// A shift that was played (or a score the backdoor set) is saved.
 	if ranShift || s.score > 0 {
-		row := ScoreRow{Name: Username(), Score: s.score, Time: time.Now().Format("15:04")}
-		if env.ScoresPath != "" {
-			if err := AppendScore(env.ScoresPath, row); err != nil {
-				return err
-			}
-		} else {
-			env.MemScores = append(env.MemScores, row)
+		row, err := env.saveScore(s.score)
+		if err != nil {
+			return err
 		}
 		s.saved = true
 		rows = append(append([]ScoreRow(nil), rows...), row)
@@ -72,6 +68,35 @@ func (s *top10Scene) Enter(env *Env) error {
 }
 
 func (s *top10Scene) Exit() {}
+
+// saveScore writes today's score to the scores file (or keeps it in memory
+// in test mode) and returns the row.
+func (e *Env) saveScore(score int) (ScoreRow, error) {
+	row := ScoreRow{Name: Username(), Score: score, Time: time.Now().Format("15:04")}
+	if e.ScoresPath != "" {
+		if err := AppendScore(e.ScoresPath, row); err != nil {
+			return row, err
+		}
+	} else {
+		e.MemScores = append(e.MemScores, row)
+	}
+	return row, nil
+}
+
+// EndShiftSilently stops the shift's goroutines and saves its score without
+// showing the top-10: that table comes once, at the end of the run. A scene
+// entered with no shift and no score (the backdoor) saves nothing.
+func (e *Env) EndShiftSilently() error {
+	ran := e.Shift() != nil
+	if err := e.StopShift(); err != nil {
+		return fmt.Errorf("the shift ended with an error: %w", err)
+	}
+	if score := e.Scores[fmt.Sprintf("day%d", e.Day)]; ran || score > 0 {
+		_, err := e.saveScore(score)
+		return err
+	}
+	return nil
+}
 
 func (s *top10Scene) Update() error {
 	if s.drawErr != nil {
@@ -84,14 +109,8 @@ func (s *top10Scene) Update() error {
 	return nil
 }
 
-// next goes on after the top-10. Day 1 ends in the strobe into night 1; the
-// other nights are not built yet (M6), so the next day follows at once, and
-// after the last day comes the title.
+// next goes on after the top-10: the next day, or the title after the last.
 func (s *top10Scene) next() {
-	if s.env.Day == 1 {
-		s.env.SwitchTo(SceneStrobe1)
-		return
-	}
 	if s.env.Day >= LastDay() {
 		s.env.Day = 1
 		s.env.SwitchTo(SceneTitle)

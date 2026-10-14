@@ -21,14 +21,6 @@ func TestNightEndGoesToTheNextDay(t *testing.T) {
 	}
 }
 
-func TestDayOneEndsInTheStrobe(t *testing.T) {
-	env := &Env{Day: 1}
-	(&top10Scene{env: env}).next()
-	if env.nextScene != SceneStrobe1 {
-		t.Errorf("after the day 1 top-10 comes %q, want %q", env.nextScene, SceneStrobe1)
-	}
-}
-
 func TestNightScenesAreRegistered(t *testing.T) {
 	g, err := New(Options{Enabled: true, Scene: SceneNight1, Line: 1})
 	if err != nil {

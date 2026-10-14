@@ -1,6 +1,10 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"danmingame/night"
+)
 
 func TestStrobePhases(t *testing.T) {
 	for n := 1; n <= 3; n++ {
@@ -18,21 +22,21 @@ func TestStrobePhases(t *testing.T) {
 		if flips < 1 || flips > 2 {
 			t.Errorf("night %d: %d inverted frames in the flicker, want one or two", n, flips)
 		}
-		// Strobe: both normal and inverted frames, and at least one night frame.
-		var normal, inverted, nightFrames int
+		// Strobe: normal and inverted day frames only. The night must not leak.
+		var normal, inverted int
 		for tick := flickerTicks; tick < flickerTicks+strobe; tick++ {
 			st := StrobeAt(n, tick, false)
+			if st.Layer != layerDay {
+				t.Errorf("night %d tick %d shows %v, want only the day", n, tick, st.Layer)
+			}
 			if st.Invert == 1 {
 				inverted++
 			} else {
 				normal++
 			}
-			if st.Layer == layerNight {
-				nightFrames++
-			}
 		}
-		if normal == 0 || inverted == 0 || nightFrames == 0 {
-			t.Errorf("night %d strobe: %d normal, %d inverted, %d night frames", n, normal, inverted, nightFrames)
+		if normal == 0 || inverted == 0 {
+			t.Errorf("night %d strobe: %d normal, %d inverted frames", n, normal, inverted)
 		}
 		// White, then the fall that ends at progress 1.
 		if st := StrobeAt(n, flickerTicks+strobe, false); st.Layer != layerWhite {
@@ -88,5 +92,82 @@ func TestStrobeFlashRate(t *testing.T) {
 			last, run = st, 0
 		}
 		run++
+	}
+}
+
+// The leak bug: the strobe must end on solid black, and the night script
+// must open on black with no girl and no station.
+func TestStrobeEndsOnBlackAndTheNightOpensOnBlack(t *testing.T) {
+	for n := 1; n <= 3; n++ {
+		end := StrobeAt(n, StrobeLength(n)-1, false)
+		if end.Layer != layerFall || fallWhite(end.Fall) > 1.0/255 {
+			t.Errorf("night %d ends with layer %v, white %v: want solid black", n, end.Layer, fallWhite(end.Fall))
+		}
+		if fallWhite(1) != 0 {
+			t.Error("the white over the fall must be exactly 0 at its end")
+		}
+	}
+	script, err := night.LoadScript(night.Night1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := night.NewEngine(script, night.Flags{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := e.Snapshot()
+	if st.BG == "station" || st.BG == "ceiling" || st.BG == "white" || st.Visible != "" || len(st.Props) != 0 {
+		t.Errorf("night 1 opens on %+v: want black with nobody and no props", st)
+	}
+}
+
+// The strobe starts while the last guest is at the desk, flickers until the
+// stamp lands, then the full strobe takes over and hands over at the white.
+func TestLiveStrobeFollowsTheLastGuest(t *testing.T) {
+	sh := newTestShift(t, 1)
+	env := &Env{Day: 1}
+	started := false
+	for guest := 0; guest < sh.Total(); guest++ {
+		for i := 0; i < 3000 && sh.desk.guest == nil; i++ {
+			sh.Update()
+			env.UpdateLiveStrobe(sh)
+		}
+		if sh.desk.guest == nil {
+			t.Fatalf("guest %d never reached the desk", guest)
+		}
+		last := guest == sh.Total()-1
+		if last {
+			sh.Update()
+			env.UpdateLiveStrobe(sh)
+			if env.StrobeNight != 1 {
+				t.Fatal("the flicker must start when the last guest is at the desk")
+			}
+			// Still not stamped: the flicker repeats and never reaches the strobe.
+			for range 3 * flickerTicks {
+				if env.UpdateLiveStrobe(sh) || env.StrobeTick >= flickerTicks {
+					t.Fatal("the strobe must wait for the last stamp")
+				}
+			}
+			started = true
+		} else if env.StrobeNight != 0 {
+			t.Fatalf("the strobe started with %d guests still to come", sh.Total()-guest)
+		}
+		if err := sh.Stamp(StampAdmit); err != nil {
+			t.Fatal(err)
+		}
+		sh.Update()
+	}
+	if !started {
+		t.Fatal("no last guest")
+	}
+	handOver := false
+	for range StrobeLength(1) {
+		if env.UpdateLiveStrobe(sh) {
+			handOver = true
+			break
+		}
+	}
+	if !handOver || env.StrobeTick < flickerTicks+strobeTicks[1] {
+		t.Errorf("hand over %v at tick %d: want it at the white", handOver, env.StrobeTick)
 	}
 }
