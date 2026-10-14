@@ -68,7 +68,12 @@ func New(opts Options) (*Game, error) {
 	g.scenes.Register(SceneScenes, func() Scene { return &galleryScene{} })
 	for _, card := range sceneCards {
 		// "replay.<card id>": the card's stretch of the story, back to the gallery at its end.
-		g.scenes.Register("replay."+card.ID, func() Scene { return &nightScene{script: card.Script, replay: &card} })
+		g.scenes.Register("replay."+card.ID, func() Scene {
+			if name := endingOf(card); name != "" { // an ending plays on to its title
+				return &endingScene{name: name, replay: &card}
+			}
+			return &nightScene{script: card.Script, replay: &card}
+		})
 	}
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })

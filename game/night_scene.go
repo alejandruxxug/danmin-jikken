@@ -84,7 +84,8 @@ func (s *nightScene) Update() error {
 	in := s.env.Input
 	e := s.engine
 	if s.replay != nil && in.KeyPressed(ebiten.KeyEscape) {
-		return s.finish("") // Esc leaves a replay at any time
+		s.env.SwitchTo(SceneScenes) // Esc leaves a replay at any time
+		return nil
 	}
 	if s.script == night.Prologue && s.env.SeenPrologue && s.engine.Ticks() > 0 {
 		// A later launch: Esc skips the Prologue. Clicks, Space and Enter
@@ -218,7 +219,9 @@ func (s *nightScene) updateMenu(n int) {
 // finish leaves the night: the script's "end" says which day comes next.
 // The next day starts at the reception, as it did before the nights existed.
 func (s *nightScene) finish(to string) error {
-	if s.replay != nil { // the end of a replay: back to the gallery, nothing else changes
+	// The end of a replay: back to the gallery, nothing else changes. An
+	// ending's replay has an onEnd: the ending scene plays on to its title.
+	if s.replay != nil && s.onEnd == nil {
 		s.env.SwitchTo(SceneScenes)
 		return nil
 	}

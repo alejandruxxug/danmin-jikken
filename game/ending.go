@@ -41,9 +41,16 @@ const (
 
 // endingScene plays one ending (ending.sleep, ending.wake, ending.forever,
 // ending.317).
+//
+// A gallery replay (replay.sleep ...) plays the same scene: the script, the
+// cut, the silence, the rock and the title, glitch and stain included. It
+// differs only at the edges: no credits and no top-10 (it goes back to the
+// gallery once the title has been up its time, or on a click, or on Esc), and
+// no side effects (no sleep_log, no 3:17 quit, nothing saved).
 type endingScene struct {
 	env    *Env
 	name   string
+	replay *sceneCard // set when the SCENES gallery replays this ending (see below)
 	script *nightScene
 	font   *Font
 	phase  endingPhase
@@ -72,14 +79,14 @@ func (s *endingScene) Enter(env *Env) error {
 	}
 	s.cards = CreditCards()
 	env.Ending = s.name
-	s.script = &nightScene{script: night.EndingScript(s.name), onEnd: s.scriptEnded}
+	s.script = &nightScene{script: night.EndingScript(s.name), onEnd: s.scriptEnded, replay: s.replay}
 	return s.script.Enter(env)
 }
 
 // scriptEnded is the ending script's "end card". The secret ending leaves its
 // file behind here, once, when the game has "fallen asleep".
 func (s *endingScene) scriptEnded(string) error {
-	if s.name == night.Ending317 {
+	if s.name == night.Ending317 && s.replay == nil {
 		path, err := WriteSleepLog(s.env.ScoresPath)
 		if err != nil {
 			s.env.SleepLogError = err.Error() // the ending still plays; the dump shows why
@@ -122,6 +129,10 @@ func (s *endingScene) Update() error {
 		}
 		return s.script.Update()
 	}
+	if s.replay != nil && s.env.Input.KeyPressed(ebiten.KeyEscape) {
+		s.env.SwitchTo(SceneScenes) // Esc leaves a replay at any time
+		return nil
+	}
 	s.ticks++
 	s.env.EndingGlitch = 0
 	if s.glitch != nil && s.phase >= phaseTitle {
@@ -145,6 +156,10 @@ func (s *endingScene) Update() error {
 		}
 	case phaseTitle:
 		if s.ticks >= s.titleLength() || skip {
+			if s.replay != nil { // a replay ends with the title: no credits, no top-10
+				s.env.SwitchTo(SceneScenes)
+				return nil
+			}
 			s.setPhase(phaseCredits)
 		}
 	case phaseCredits:
@@ -263,3 +278,13 @@ var (
 	colPaperRGBA = color.RGBA{0xec, 0xec, 0xe6, 0xff}
 	colMidRGBA   = color.RGBA{0x6b, 0x6b, 0x70, 0xff}
 )
+
+// endingOf gives the ending a gallery card replays ("" if it is not one).
+func endingOf(c sceneCard) string {
+	for _, name := range night.Endings {
+		if c.Script == night.EndingScript(name) {
+			return name
+		}
+	}
+	return ""
+}

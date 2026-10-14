@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -473,5 +474,85 @@ func TestGalleryPicks(t *testing.T) {
 	s.Update()
 	if env.nextScene != SceneTitle {
 		t.Errorf("Esc went to %q, want the title", env.nextScene)
+	}
+}
+
+// An ending's replay plays on to its title (cut, silence, rock, title) and
+// then goes back to the gallery: no credits, no top-10, and none of the
+// ending's side effects (the 3:17 sleep log and quit).
+func TestEndingReplayStopsAtTheTitle(t *testing.T) {
+	for _, id := range []string{"sleep", "wake", "forever", "317"} {
+		env := testEnv(t)
+		env.ScoresPath = filepath.Join(t.TempDir(), "scores.json")
+		env.SavedFlags = []string{"route_hana", "find_hana"}
+		c := sceneCards[cardIndex(id)]
+		s := &endingScene{name: endingOf(c), replay: &c}
+		if err := s.Enter(env); err != nil {
+			t.Fatal(err)
+		}
+		if env.Replaying != id {
+			t.Errorf("%s: Replaying = %q", id, env.Replaying)
+		}
+		env.SkipToCard = true // the backdoor's jump to the end of the script
+		var phases []string
+		for i := 0; i < 2000 && env.nextScene == ""; i++ {
+			if err := s.Update(); err != nil {
+				t.Fatal(err)
+			}
+			if n := len(phases); n == 0 || phases[n-1] != s.phase.String() {
+				phases = append(phases, s.phase.String())
+			}
+			env.Input.endFrame()
+		}
+		if got := strings.Join(phases, ","); got != "silence,title" {
+			t.Errorf("%s: phases %s, want silence,title", id, got)
+		}
+		if env.nextScene != SceneScenes {
+			t.Errorf("%s: the replay ended in %q, want the gallery", id, env.nextScene)
+		}
+		if env.SleepLogPath != "" || env.QuitAfterTop10 {
+			t.Errorf("%s: a replay must not write the sleep log or quit the game", id)
+		}
+		s.Exit()
+		if env.Replaying != "" {
+			t.Errorf("%s: Replaying must be empty after the replay", id)
+		}
+	}
+}
+
+// A click during the title, and Esc at any time, also go back to the gallery.
+func TestEndingReplayClickAndEsc(t *testing.T) {
+	c := sceneCards[cardIndex("forever")]
+	for _, key := range []ebiten.Key{ebiten.KeySpace, ebiten.KeyEscape} {
+		env := testEnv(t)
+		s := &endingScene{name: endingOf(c), replay: &c}
+		if err := s.Enter(env); err != nil {
+			t.Fatal(err)
+		}
+		env.SkipToCard = true
+		for i := 0; i < silenceTicks+creditsSkipAfter+10 && env.nextScene == ""; i++ {
+			if s.phase == phaseTitle && s.ticks > creditsSkipAfter {
+				env.Input.InjectKey(key)
+			}
+			if err := s.Update(); err != nil {
+				t.Fatal(err)
+			}
+			env.Input.endFrame()
+		}
+		if s.phase != phaseTitle || env.nextScene != SceneScenes {
+			t.Errorf("key %v: phase %v, next %q, want the title and then the gallery", key, s.phase, env.nextScene)
+		}
+	}
+}
+
+func TestEndingOf(t *testing.T) {
+	for _, c := range sceneCards {
+		want := ""
+		if slices.Contains([]string{"sleep", "wake", "forever", "317"}, c.ID) {
+			want = c.ID
+		}
+		if got := endingOf(c); got != want {
+			t.Errorf("endingOf(%s) = %q, want %q", c.ID, got, want)
+		}
 	}
 }
