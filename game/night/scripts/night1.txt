@@ -20,14 +20,21 @@ show mayu
 Mayu (bright): Oh! Look who's up!
 Mayu (smile): Off home already? You always say that.
 ~ Always? It's my first day.
+bg cg_coffee
+layer +face_smile
 Mayu (smile): Here. Coffee. It's terrible, but it's warm.
+layer +fx_shake
 ~ She holds the cup with both hands when she gives it to me. Her fingers are shaking.
+layer -face_smile +face_laugh
 Mayu (laugh): Don't look at my hands! Long shift. Long… lots of shifts.
 
+layer -fx_shake -face_laugh +face_watch +prop_can +prop_syringe
 prop can
 prop syringe
 ~ Next to the coffee pot there's a pale can. PALE MSTR. And a syringe.
+layer -face_watch +face_smile
 Mayu (smile): Oh, that? Nurse stuff! Coffee stopped working weeks ago.
+bg station
 Mayu (soft): You know, it's nice. Having someone new. Someone who stays.
 Mayu (blank): If you ever left, I'd…
 Mayu (laugh): Ha! I'd be so bored. Kidding. You should see your face.

@@ -63,8 +63,9 @@ type Engine struct {
 	// What the screen shows.
 	bg      string
 	props   map[string]bool
-	visible string // the character on screen ("" for none)
-	faces   bool   // the Prologue's two upside-down faces
+	layers  map[string]bool // a CG background: the layers switched on by "layer"
+	visible string          // the character on screen ("" for none)
+	faces   bool            // the Prologue's two upside-down faces
 	poses   map[string]Pose
 	fx      map[string]int // effect name -> ticks since it started
 
@@ -122,7 +123,7 @@ func NewEngine(s *Script, flags Flags) (*Engine, error) {
 func NewEngineFor(s *Script, flags Flags, player string) (*Engine, error) {
 	e := &Engine{Player: player,
 		script: s, flags: flags,
-		bg: "black", props: map[string]bool{},
+		bg: "black", props: map[string]bool{}, layers: map[string]bool{},
 		poses: map[string]Pose{"mayu": startPose("mayu"), "hana": startPose("hana")},
 		fx:    map[string]int{}, speed: DefaultSpeed, hopStart: -1,
 	}
@@ -184,6 +185,15 @@ func (e *Engine) exec(n Node) {
 	case OpBG:
 		e.hopFor = ""
 		e.bg = n.Name
+		e.layers = map[string]bool{} // a new picture starts with its layers off
+	case OpLayer:
+		for _, p := range n.Parts {
+			if p.Key == "+" {
+				e.layers[p.Value] = true
+			} else {
+				delete(e.layers, p.Value)
+			}
+		}
 	case OpProp:
 		if n.Name == "clear" {
 			e.props = map[string]bool{}
@@ -540,6 +550,9 @@ func (e *Engine) Line() int {
 // Ticks is how many frames the engine has run.
 func (e *Engine) Ticks() int { return e.ticks }
 
+// HasLayer says whether a CG layer is switched on by the script.
+func (e *Engine) HasLayer(name string) bool { return e.layers[name] }
+
 // Flags is the shared store.
 func (e *Engine) Flags() Flags { return e.flags }
 
@@ -561,6 +574,7 @@ type State struct {
 	Faces     bool     `json:"faces"`
 	Layers    []string `json:"poseLayers"`
 	Props     []string `json:"props"`
+	CGLayers  []string `json:"cgLayers"`
 	Effects   []string `json:"effects"`
 	Ended     bool     `json:"ended"`
 	EndsTo    string   `json:"endsTo"`
@@ -576,7 +590,7 @@ func (e *Engine) Snapshot() State {
 		Script: e.script.Name, Line: e.Line(), Speaker: e.speaker,
 		Text: e.Shown(), Thinking: e.thinking, LineDone: e.LineDone(),
 		Options: []string{}, Hover: e.hover, BG: e.bg, Visible: e.visible,
-		Faces: e.faces, Layers: []string{}, Props: []string{}, Effects: []string{},
+		Faces: e.faces, Layers: []string{}, Props: []string{}, CGLayers: []string{}, Effects: []string{},
 		Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, Holding: e.holding, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
 	}
 	for _, o := range e.options {
@@ -590,6 +604,10 @@ func (e *Engine) Snapshot() State {
 			st.Props = append(st.Props, name)
 		}
 	}
+	for name := range e.layers {
+		st.CGLayers = append(st.CGLayers, name)
+	}
+	sort.Strings(st.CGLayers)
 	for name := range e.fx {
 		st.Effects = append(st.Effects, name)
 	}

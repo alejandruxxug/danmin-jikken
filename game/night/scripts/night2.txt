@@ -76,7 +76,8 @@ jump kanashibari
 # ---- Hana route ----
 label hana_route
 hide
-bg supply_room
+bg cg_supply
+layer +face_down
 ifnot find_hana jump hana_heard
 Hana (flat): You're not supposed to be out of bed, Four.
 jump hana_sit
@@ -90,13 +91,17 @@ Hana (flat): Pale MSTR. Driftwell's. It keeps the white place away. For a while.
 Hana (tired): I've been awake fourteen days. Do you know why?
 Hana (tired): Because when I sleep, I go where you are. The white place. And it's lovely there. And something in it wants to keep me.
 Hana (soft): You've been there since the gurney. Every night you come up for air a little less.
+layer -face_down +face_look
 ~ She finally looks at me.
 Hana (soft): I don't want you to go back under.
+layer -face_look +face_soft
 Hana (blush): Because I'd miss you.
 ~ That's all. Hana doesn't say things twice.
 sfx floorboard
+layer +door_crack
 ~ Behind her, the door is open a crack.
 hide
+layer +mayu_gap
 ~ Mayu's face is in the gap. She's smiling.
 sfx door_close_soft
 jump kanashibari
@@ -120,7 +125,7 @@ jump kanashibari
 label kanashibari
 prop clear
 hide
-bg ward_c_dark
+bg cg_kanashibari
 music off
 ~ Later. I'm in bed. I don't remember lying down.
 ~ I can't move.
@@ -145,6 +150,7 @@ Mayu (whisper): I saw.
 label k_end
 fx figure_gone
 sfx breathe_again
+bg ward_c_dark
 
 # ---- Back to sleep ----
 if route_mayu jump s_mayu

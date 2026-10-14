@@ -29,6 +29,8 @@ import (
 //	~ Cold.                       your thought (no name plate)
 //	choice                        a menu; the lines under it start with "option"
 //	option Text | set flag | jump name
+//	layer +face_look -face_down   CG only: switch layers of the CG background on (+) or
+//	                              off (-); a new bg switches them all off again
 //	fx eyes_close                 a screen effect (see knownFX)
 //	sfx name / music name         sound cues (the sound comes in M7: only logged)
 //	speed 12                      typewriter speed in letters per second
@@ -68,6 +70,7 @@ const (
 	OpLock
 	OpAuto
 	OpRoute
+	OpLayer
 )
 
 // Part is one "key=value" change to a pose.
@@ -86,7 +89,7 @@ type Node struct {
 	Line    int    // the line of the file, for errors and the backdoor
 	Name    string // say/pose/show: the speaker; bg, prop, fx, sfx, music, end: the name; set, if: the flag
 	Expr    string // say/pose: the expression ("" = keep the pose)
-	Parts   []Part // say/pose: parts changed after the expression
+	Parts   []Part // say/pose: parts changed after the expression; layer: {"+", name} or {"-", name}
 	Text    string // say/think: the words; jump, if: the label
 	Options []Option
 	Not     bool    // if: jump when the flag is OFF
@@ -344,6 +347,9 @@ func parseCommand(n *Node, word, rest string) error {
 		if n.Name, err = one(); err == nil && !knownProps[n.Name] {
 			err = fmt.Errorf("unknown prop %q", n.Name)
 		}
+	case "layer":
+		n.Op = OpLayer
+		err = parseLayers(n, args)
 	case "show":
 		n.Op = OpShow
 		if n.Name, err = one(); err == nil && !IsCharacter(n.Name) {
@@ -416,6 +422,22 @@ func parseCommand(n *Node, word, rest string) error {
 		err = fmt.Errorf("unknown command %q", word)
 	}
 	return err
+}
+
+// parseLayers reads `layer +name -name ...`: each word is a sign and a
+// layer name. The names are checked against the sheets by a test, as the
+// parser does not know which background is up.
+func parseLayers(n *Node, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("layer is `layer +name -name ...`")
+	}
+	for _, a := range args {
+		if len(a) < 2 || (a[0] != '+' && a[0] != '-') {
+			return fmt.Errorf("layer %q: want +name or -name", a)
+		}
+		n.Parts = append(n.Parts, Part{a[:1], a[1:]})
+	}
+	return nil
 }
 
 // BGNames lists the backgrounds the script uses, once each, in order.

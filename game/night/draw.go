@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"io/fs"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -106,26 +107,34 @@ type Art struct {
 type bgDef struct {
 	sheet  string
 	layers []string
+	// A CG is a full-screen picture whose layers the script switches with
+	// "layer": layers lists only the ones that are always on, and the sheet's
+	// own layer order is the draw order. A CG boils (frame from the "boil" tag).
+	cg bool
 }
 
 var bgTable = map[string]bgDef{
-	"ward_c":      {"ward_c", []string{"room", "sleepers", "blanket"}},
-	"corridor":    {"corridor", []string{"corridor", "sign_station"}},
-	"hana_far":    {"corridor", []string{"corridor", "sign_station", "hana_far"}},
-	"hana_door":   {"corridor", []string{"corridor", "sign_quarters", "door_crack"}},
-	"supply_room": {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}},
-	"hana_room":   {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}},
-	"note":        {"note", []string{"backdrop", "paper_note", "text_note", "hands_note"}},
-	"letter":      {"note", []string{"backdrop", "paper_letter", "hands_letter"}},
-	"ward_c_dark": {"ward_c", []string{"room", "sleepers", "blanket", "dark"}},
-	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}},
+	"ward_c":      {"ward_c", []string{"room", "sleepers", "blanket"}, false},
+	"corridor":    {"corridor", []string{"corridor", "sign_station"}, false},
+	"hana_far":    {"corridor", []string{"corridor", "sign_station", "hana_far"}, false},
+	"hana_door":   {"corridor", []string{"corridor", "sign_quarters", "door_crack"}, false},
+	"supply_room": {"supply", []string{"wall", "bulb_glow", "table", "prop_cans", "prop_syringe"}, false},
+	"hana_room":   {"hana_room", []string{"room", "fx_blood", "cans", "hana_silhouette"}, false},
+	"note":        {"note", []string{"backdrop", "paper_note", "text_note", "hands_note"}, false},
+	"letter":      {"note", []string{"backdrop", "paper_letter", "hands_letter"}, false},
+	"ward_c_dark": {"ward_c", []string{"room", "sleepers", "blanket", "dark"}, false},
+	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}, false},
 	// Night 3: Dr. Barrow smiling at the foot of the procedure table.
-	"procedure_room": {"procedure", []string{"room", "lamp_glow", "barrow", "barrow_smile", "rail"}},
+	"procedure_room": {"procedure", []string{"room", "lamp_glow", "barrow", "barrow_smile", "rail"}, false},
 	// Forever: Mayu on the chair, seen through the gap of your eyelids.
-	"mayu_chair": {"forever", []string{"room", "mayu_chair", "mayu_smile"}},
+	"mayu_chair": {"forever", []string{"room", "mayu_chair", "mayu_smile"}, false},
 	// Sleep ending: the reception desk by day. drawDeskDay adds Mayu (or
 	// the empty desk) between "room" and the front of the next desk.
-	"desk_day": {"desk_day", []string{"room", "next_desk_front"}},
+	"desk_day": {"desk_day", []string{"room", "next_desk_front"}, false},
+	// CGs (Art log 2026-10-14): the script adds the rest with "layer".
+	"cg_coffee":      {"cg_coffee", []string{"backdrop", "mayu", "counter", "prop_pot", "hands_cup", "steam"}, true},
+	"cg_supply":      {"cg_supply", []string{"wall", "bulb_glow", "hana", "table", "prop_cans", "arms"}, true},
+	"cg_kanashibari": {"cg_kanashibari", []string{"room", "bed", "hand"}, true},
 }
 
 func bgTableDefs() []bgDef {
@@ -266,6 +275,8 @@ func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 	switch {
 	case e.Faces():
 		a.drawFaces(dst, e)
+	case a.isCG(e.BG()):
+		// A CG replaces the background and the girl in one picture.
 	case e.BG() == "desk_day":
 		// A day scene: no night portrait, Mayu is part of the background.
 	case e.Visible() != "":
@@ -328,6 +339,10 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 			if bg == "hana_room" && e.Prop("clipboard") { // Hana's route: the clipboard is snapped
 				layers = append(append([]string(nil), layers...), "clipboard_snapped")
 			}
+			if def.cg {
+				a.drawCG(dst, e, def, tick)
+				return
+			}
 			if bg == "desk_day" {
 				a.drawDeskDay(dst, e)
 				return
@@ -340,6 +355,44 @@ func (a *Art) drawBackground(dst *ebiten.Image, e *Engine, tick int) {
 		label := "PLACEHOLDER: " + strings.ToUpper(strings.ReplaceAll(bg, "_", " "))
 		a.font.Draw(dst, label, 8, 8, colLight)
 	}
+}
+
+// isCG says whether a background name is a CG.
+func (a *Art) isCG(bg string) bool {
+	def, ok := bgTable[bg]
+	return ok && def.cg && a.bgs[def.sheet] != nil
+}
+
+// figureSuffix says which doorway figure the "figure" effect shows: with a
+// clipboard and cap (Hana, Mayu's route), head tilted (Mayu, Hana's route),
+// or plain (nobody's route).
+func figureSuffix(e *Engine) string {
+	switch {
+	case e.Flags().Has("route_mayu"):
+		return "_board"
+	case e.Flags().Has("route_hana"):
+		return "_tilt"
+	}
+	return ""
+}
+
+// drawCG paints a CG: the sheet's layers in the sheet's own order (back to
+// front), those that are always on, those the script switched on, and the
+// kanashibari figure when the "figure" effect runs. The frame boils.
+func (a *Art) drawCG(dst *ebiten.Image, e *Engine, def bgDef, tick int) {
+	sheet := a.bgs[def.sheet]
+	figure := ""
+	if _, on := e.FxTicks("figure"); on && def.sheet == "cg_kanashibari" {
+		figure = "figure" + figureSuffix(e)
+	}
+	var layers []string
+	for _, l := range sheet.Layers {
+		if slices.Contains(def.layers, l) || e.HasLayer(l) || l == figure {
+			layers = append(layers, l)
+		}
+	}
+	frame := sheet.FrameAt(sprites.BoilTag, time.Duration(tick)*time.Second/TicksPerSecond)
+	_ = sheet.Draw(dst, layers, frame, 0, 0)
 }
 
 // Where Mayu's day sprite (96x128) sits at the next desk in desk_day.
@@ -483,13 +536,7 @@ func (a *Art) drawEffects(dst *ebiten.Image, e *Engine) {
 	if _, ok := e.FxTicks("figure"); ok {
 		// The faceless figure in the doorway: with a clipboard (Hana, Mayu's
 		// route), head tilted (Mayu, Hana's route), or plain (nobody's route).
-		layer := "doorway_figure"
-		switch {
-		case e.Flags().Has("route_mayu"):
-			layer = "doorway_figure_board"
-		case e.Flags().Has("route_hana"):
-			layer = "doorway_figure_tilt"
-		}
+		layer := "doorway_figure" + figureSuffix(e)
 		if sheet := a.bgs["ward_c"]; sheet != nil {
 			_ = sheet.Draw(dst, []string{layer}, 0, 0, 0)
 		}

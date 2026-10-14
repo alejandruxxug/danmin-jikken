@@ -60,6 +60,8 @@ func TestParseErrorsNameTheLine(t *testing.T) {
 		{"hold with a number", "hold 2", "hold takes no argument"},
 		{"no sprites", "Note (angry): x", "has no sprites"},
 		{"empty line", "Mayu:", "line 1"},
+		{"layer without a sign", "layer face_look", "want +name or -name"},
+		{"layer alone", "layer", "layer is `layer +name -name ...`"},
 	}
 	for _, tt := range tests {
 		_, err := Parse("t.txt", strings.NewReader(tt.src))
