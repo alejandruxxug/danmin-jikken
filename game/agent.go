@@ -34,6 +34,7 @@ type Options struct {
 	Clock   string
 	Seed    int64
 	Flags   string // story flags, comma separated
+	Auto    bool   // the VN's AUTO play starts on
 	Line    int    // night scenes: start at this line of the script file
 	Speed   float64
 	Input   string // path of the input script
@@ -70,6 +71,7 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Clock, "clock", "", "in-game time, HH:MM")
 	fs.Int64Var(&o.Seed, "seed", 0, "random seed (0 = random)")
 	fs.StringVar(&o.Flags, "flags", "", "story flags, comma separated")
+	fs.BoolVar(&o.Auto, "auto", false, "night scenes: start with AUTO play on")
 	fs.IntVar(&o.Line, "line", 0, "night scenes: start at this line of the script file")
 	fs.Float64Var(&o.Speed, "speed", 1, "game time multiplier")
 	fs.StringVar(&o.Input, "input", "", "input script file")
@@ -125,6 +127,7 @@ type Command struct {
 //	up              let the button go
 //	drag 318 213 200 213   down, move, up: drag the page corner left
 //	next            advance the night text (the Space key: first shows the whole line, then goes on)
+//	auto [on|off]   night: flip AUTO play (the A key) or set it
 //	skipstrobe      end the day-to-night strobe at once
 //	choose 2        pick option 2 of the open night menu
 //	pan 0           put the camera at x = 0 (0 to 240)
@@ -308,6 +311,17 @@ func parseCommand(words []string) (Command, error) {
 		default:
 			return cmd, fmt.Errorf("page %q: want referral, sleeplog or wristband", args[0])
 		}
+	case "auto": // auto, auto on, auto off
+		switch {
+		case len(args) == 0:
+			cmd.N = -1 // toggle
+		case len(args) == 1 && args[0] == "on":
+			cmd.N = 1
+		case len(args) == 1 && args[0] == "off":
+			cmd.N = 0
+		default:
+			return cmd, fmt.Errorf("auto takes nothing, on or off")
+		}
 	case "next", "skipstrobe":
 		if len(args) != 0 {
 			return cmd, fmt.Errorf("%s takes no argument", cmd.Op)
@@ -395,6 +409,7 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 		}
 	}
 	env.NightLine = opts.Line
+	env.Auto = opts.Auto
 	env.CRT = !opts.NoCRT
 	if opts.PowerOn {
 		env.StartPowerOn()
@@ -485,6 +500,15 @@ func (a *Agent) runCommands(env *Env) {
 		case "next": // the same Space press a player would make
 			env.Input.InjectKey(ebiten.KeySpace)
 			return
+		case "auto": // the AUTO toggle, as the A key does
+			if cmd.N < 0 {
+				env.Input.InjectKey(ebiten.KeyA)
+				return
+			}
+			env.Auto = cmd.N == 1
+			if env.Night != nil {
+				env.Night.AutoPlay = env.Auto
+			}
 		case "skipstrobe": // the strobe scene ends on its next frame
 			env.SkipStrobe = true
 		case "choose":

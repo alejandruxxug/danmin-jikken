@@ -106,6 +106,11 @@ type bgDef struct {
 
 var bgTable = map[string]bgDef{
 	"ward_c":      {"ward_c", []string{"room", "sleepers", "blanket"}},
+	"corridor":    {"corridor", []string{"corridor", "sign_station"}},
+	"hana_far":    {"corridor", []string{"corridor", "sign_station", "hana_far"}},
+	"hana_door":   {"corridor", []string{"corridor", "sign_quarters", "door_crack"}},
+	"note":        {"note", []string{"backdrop", "paper_note", "text_note", "hands_note"}},
+	"letter":      {"note", []string{"backdrop", "paper_letter", "hands_letter"}},
 	"ward_c_dark": {"ward_c", []string{"room", "sleepers", "blanket", "dark"}},
 	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}},
 }
@@ -186,6 +191,10 @@ func LoadArt(fsys fs.FS, font TextDrawer) (*Art, error) {
 	a.handMayu, a.handHana = a.handMayu.Remapped(onPlate), a.handHana.Remapped(onPlate)
 	return a, nil
 }
+
+// AutoRect is the AUTO toggle on the text box, for the mouse (the pixels of
+// the auto_off / auto_on layers, with a little room around them).
+var AutoRect = image.Rect(386, 246, 432, 264)
 
 // ChoiceRects are the buttons of a menu with n options, for the mouse.
 func ChoiceRects(n int) []image.Rectangle {
@@ -446,6 +455,11 @@ func (a *Art) drawTextBox(dst *ebiten.Image, e *Engine) {
 		a.font.Draw(dst, string(runes[:n]), textX, textCapTop-capTopOffset+i*lineStep, colour)
 		reveal -= len(runes) + 1 // the space the wrap dropped
 	}
+	autoLayer := "auto_off"
+	if e.AutoPlay {
+		autoLayer = "auto_on"
+	}
+	_ = a.ui.Draw(dst, []string{autoLayer}, a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond), 0, 0)
 	if e.LineDone() && len(e.Options()) == 0 {
 		frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
 		_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)

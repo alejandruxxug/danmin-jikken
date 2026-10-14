@@ -75,6 +75,8 @@ type Env struct {
 	Ranked     []ScoreRow // the top-10 as the last top-10 scene showed it
 	KeepClock  bool       // test mode: the next shift starts at Clock, not 09:00
 
+	Auto bool // the VN's AUTO toggle (Settings -> Auto-play)
+
 	// The end of the run.
 	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)
 	EndingPhase    string // script, silence, card or credits

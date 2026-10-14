@@ -237,3 +237,51 @@ func TestNightsOpenOnBlackThoughts(t *testing.T) {
 		}
 	}
 }
+
+func TestAutoDelay(t *testing.T) {
+	tests := []struct{ chars, want int }{
+		{0, 72},    // 1.2 s
+		{10, 102},  // 1.2 + 0.5 = 1.7 s
+		{40, 192},  // 1.2 + 2.0 = 3.2 s
+		{96, 360},  // 1.2 + 4.8 = 6 s: the cap is reached
+		{500, 360}, // a very long line still waits 6 s at most
+	}
+	for _, tt := range tests {
+		if got := AutoDelay(tt.chars); got != tt.want {
+			t.Errorf("AutoDelay(%d) = %d ticks, want %d", tt.chars, got, tt.want)
+		}
+	}
+}
+
+func TestAutoPlayAdvancesAFinishedLine(t *testing.T) {
+	e := newEngine(t, "speed 600\n~ Hi.\n~ Second.\n", Flags{})
+	e.AutoPlay = true
+	for range AutoDelay(len("Hi.")) + 5 {
+		_ = e.Tick()
+	}
+	if e.FullText() != "Second." {
+		t.Errorf("after the delay the line is %q, want Second.", e.FullText())
+	}
+}
+
+func TestAutoPlayNeverPicksAChoice(t *testing.T) {
+	e := newEngine(t, "speed 600\n~ Pick.\nchoice\noption A | set a\noption B | set b\n~ After.\n", Flags{})
+	e.AutoPlay = true
+	for range 2000 {
+		_ = e.Tick()
+	}
+	if len(e.Options()) != 2 || e.Flags().Has("a") || e.Flags().Has("b") {
+		t.Errorf("AUTO answered the menu: options %d, flags %v", len(e.Options()), e.Flags().Names())
+	}
+}
+
+func TestAutoPlayWaitsForAnEffect(t *testing.T) {
+	e := newEngine(t, "speed 600\nfx eyes_close\n~ Eyes.\n~ Next.\n", Flags{})
+	e.AutoPlay = true
+	for range 30 { // the line is done, the eyelids (72 ticks) are not
+		_ = e.Tick()
+	}
+	if e.autoWait != 0 {
+		t.Errorf("AUTO started counting at tick 30 while the effect runs: %d", e.autoWait)
+	}
+}

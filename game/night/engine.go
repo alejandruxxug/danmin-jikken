@@ -77,6 +77,11 @@ type Engine struct {
 	autoLine bool // ... this one does
 	doneFor  int  // ticks the auto line has been fully typed
 
+	// AutoPlay is the AUTO toggle on the text box: a finished line goes on by
+	// itself after autoDelay. It never answers a menu.
+	AutoPlay bool
+	autoWait int // ticks the finished line has been on screen
+
 	// Player is the name {player} stands for in the words (the OS username).
 	Player string
 
@@ -227,7 +232,7 @@ func (e *Engine) setPose(n Node) {
 func (e *Engine) startLine(n Node) {
 	e.speaker, e.thinking = "", n.Op == OpThink
 	e.text, e.shown = []rune(strings.ReplaceAll(n.Text, "{player}", e.Player)), 0
-	e.autoLine, e.autoNext, e.doneFor = e.autoNext, false, 0
+	e.autoLine, e.autoNext, e.doneFor, e.autoWait = e.autoNext, false, 0, 0
 	if n.Op == OpThink {
 		e.hopFor = "" // never a hop on a thought; the next spoken line hops again
 		return
@@ -258,6 +263,12 @@ func (e *Engine) Tick() error {
 		}
 		return nil
 	}
+	if e.AutoPlay && e.HasLine() && e.LineDone() && len(e.options) == 0 && !e.locked && !e.fxRunning() {
+		if e.autoWait++; e.autoWait >= AutoDelay(len(e.text)) {
+			return e.Advance()
+		}
+		return nil
+	}
 	if e.waiting {
 		e.waitLeft--
 		if e.waitLeft <= 0 {
@@ -269,6 +280,24 @@ func (e *Engine) Tick() error {
 		e.shown = min(e.shown+e.speed/TicksPerSecond, float64(len(e.text)))
 	}
 	return nil
+}
+
+// AutoDelay is how many ticks a finished line waits in AUTO mode: 1.2 s plus
+// 0.05 s for every character, never more than 6 s.
+func AutoDelay(chars int) int {
+	seconds := min(1.2+0.05*float64(chars), 6)
+	return int(seconds * TicksPerSecond)
+}
+
+// fxRunning says whether a timed effect is still playing: AUTO waits for
+// the beat to finish instead of skipping it.
+func (e *Engine) fxRunning() bool {
+	for name, ticks := range e.fx {
+		if length, timed := fxLength[name]; timed && ticks < length {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *Engine) leaveWait() error {
@@ -339,6 +368,7 @@ func (e *Engine) SetHover(i int) {
 func (e *Engine) FastForward(line int) error {
 	for step := 0; step < maxSteps; step++ {
 		if e.ended || e.script.Nodes[e.pc].Line >= line {
+			e.finishEffects()
 			return nil
 		}
 		var err error
@@ -356,6 +386,17 @@ func (e *Engine) FastForward(line int) error {
 		}
 	}
 	return fmt.Errorf("%s: -line %d did not stop", e.script.Name, line)
+}
+
+// finishEffects lets every timed effect that is running play out at once, so
+// a backdoor jump lands on the settled picture (open eyes, risen red) and
+// not on the first frame of a fade.
+func (e *Engine) finishEffects() {
+	for name := range e.fx {
+		if length, timed := fxLength[name]; timed {
+			e.fx[name] = length
+		}
+	}
 }
 
 // pickedOption is the option -flags already chose, else the first.
@@ -490,6 +531,7 @@ type State struct {
 	Effects   []string `json:"effects"`
 	Ended     bool     `json:"ended"`
 	EndsTo    string   `json:"endsTo"`
+	Auto      bool     `json:"auto"`
 	LastSFX   string   `json:"sfx"`
 	LastMusic string   `json:"music"`
 }
@@ -501,7 +543,7 @@ func (e *Engine) Snapshot() State {
 		Text: e.Shown(), Thinking: e.thinking, LineDone: e.LineDone(),
 		Options: []string{}, Hover: e.hover, BG: e.bg, Visible: e.visible,
 		Faces: e.faces, Layers: []string{}, Props: []string{}, Effects: []string{},
-		Ended: e.ended, EndsTo: e.endsTo, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
+		Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
 	}
 	for _, o := range e.options {
 		st.Options = append(st.Options, o.Text)

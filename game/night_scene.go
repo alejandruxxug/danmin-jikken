@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -44,6 +45,7 @@ func (s *nightScene) Enter(env *Env) error {
 		}
 		env.NightLine = 0
 	}
+	s.engine.AutoPlay = env.Auto
 	env.Night = s.engine
 	s.lastCursorX, s.lastCursorY = env.Input.Cursor()
 	return nil
@@ -52,9 +54,20 @@ func (s *nightScene) Enter(env *Env) error {
 func (s *nightScene) Update() error {
 	in := s.env.Input
 	e := s.engine
+	if in.KeyPressed(ebiten.KeyA) {
+		s.toggleAuto()
+	}
+	storyClick := false // a click that is for the story, not for the AUTO toggle
+	if x, y, ok := in.Click(); ok {
+		if image.Pt(x, y).In(night.AutoRect) {
+			s.toggleAuto()
+		} else {
+			storyClick = true
+		}
+	}
 	if n := len(e.Options()); n > 0 {
 		s.updateMenu(n)
-	} else if _, _, clicked := in.Click(); clicked || in.KeyPressed(ebiten.KeySpace) || in.KeyPressed(ebiten.KeyEnter) {
+	} else if storyClick || in.KeyPressed(ebiten.KeySpace) || in.KeyPressed(ebiten.KeyEnter) {
 		if err := e.Advance(); err != nil {
 			return err
 		}
@@ -66,6 +79,13 @@ func (s *nightScene) Update() error {
 		return s.finish(to)
 	}
 	return nil
+}
+
+// toggleAuto flips AUTO (the A key or a click on the toggle). The choice is
+// kept in Env so the next night starts with it.
+func (s *nightScene) toggleAuto() {
+	s.engine.AutoPlay = !s.engine.AutoPlay
+	s.env.Auto = s.engine.AutoPlay
 }
 
 // updateMenu moves the highlight (mouse or arrow keys) and picks an option

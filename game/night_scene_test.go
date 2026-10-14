@@ -50,3 +50,66 @@ func TestNightBackdoorCommands(t *testing.T) {
 		}
 	}
 }
+
+func TestNight3GoesToTheEndingTheFlagsPick(t *testing.T) {
+	tests := []struct {
+		flags []string
+		want  string
+	}{
+		{[]string{"route_mayu", "closed_eyes"}, "ending.sleep"},
+		{[]string{"route_nobody"}, "ending.wake"},
+		{[]string{"route_hana"}, "ending.forever"},
+		{[]string{"route_nobody", "read_letter", "stamped_discharge"}, "ending.317"},
+	}
+	for _, tt := range tests {
+		env := &Env{Day: 3, Flags: night.Flags{}}
+		for _, f := range tt.flags {
+			env.Flags.Set(f)
+		}
+		s := &nightScene{env: env, script: night.Night3}
+		if err := s.finish("ending"); err != nil || env.nextScene != tt.want {
+			t.Errorf("%v: next scene %q, %v; want %q", tt.flags, env.nextScene, err, tt.want)
+		}
+	}
+}
+
+func TestEveryNightAndEndingSceneRuns(t *testing.T) {
+	g, err := New(Options{Enabled: true, Scene: SceneNight1, Line: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{SceneNight2, SceneNight3, SceneStrobe2, SceneStrobe3}
+	for _, e := range night.Endings {
+		ids = append(ids, endingSceneID(e))
+	}
+	for _, id := range ids {
+		if err := g.scenes.Switch(id); err != nil {
+			t.Errorf("scene %q: %v", id, err)
+		}
+	}
+}
+
+func TestEndingPhasesInOrder(t *testing.T) {
+	g, err := New(Options{Enabled: true, Scene: "ending.wake", Line: 1 << 20})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := g.scenes.Current().(*endingScene)
+	seen := []string{}
+	for i := 0; i < 400 && g.env.nextScene == ""; i++ {
+		if err := s.Update(); err != nil {
+			t.Fatal(err)
+		}
+		if n := len(seen); n == 0 || seen[n-1] != s.phase.String() {
+			seen = append(seen, s.phase.String())
+		}
+		g.env.Input.endFrame()
+	}
+	want := []string{"silence", "card"}
+	if len(seen) < 2 || seen[0] != want[0] || seen[1] != want[1] {
+		t.Errorf("phases = %v, want to start with %v", seen, want)
+	}
+	if g.env.MusicCue != "ending_rock_wake" {
+		t.Errorf("music cue = %q: the rock starts with the card", g.env.MusicCue)
+	}
+}

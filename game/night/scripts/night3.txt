@@ -51,6 +51,7 @@ option Read the letter | set read_letter | jump letter
 option Leave it | jump leave_it
 
 label letter
+bg letter
 if route_mayu jump letter_mayu
 if route_hana jump letter_hana
 Letter: Four. You didn't read my note. That's okay.
@@ -73,6 +74,7 @@ Letter: - Hana
 ~ The loops on the letters. Round, happy loops.
 ~ I've been reading this handwriting on Hana's reports all day.
 label letter_done
+bg hana_room
 jump gurney
 
 label leave_it
