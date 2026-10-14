@@ -150,6 +150,7 @@ type painter struct {
 	screen *ebiten.Image
 	day    int           // which day's memo the desk shows
 	elapse time.Duration // time since the scene started, for the boil
+	dark   int           // palette steps darker the next sheets are drawn (a Severe patient)
 	err    error
 }
 
@@ -161,13 +162,14 @@ func (p *painter) keep(err error) {
 
 // sheet draws layers of a sheet; the boil frame follows the sheet's own speed.
 func (p *painter) sheet(s *sprites.Sheet, layers []string, x, y int) {
-	p.keep(s.Draw(p.screen, layers, s.FrameAt(sprites.BoilTag, p.elapse), x, y))
+	p.keep(s.DrawDarker(p.screen, layers, s.FrameAt(sprites.BoilTag, p.elapse), x, y, p.dark))
 }
 
 // room draws the reception: the room, the guests and the desk, as the
 // camera at cam sees them. sh may be nil.
 func (p *painter) room(sh *Shift, cam int) {
 	p.sheet(p.art.room, roomLayers, -cam, 0)
+	p.sheet(p.art.room, []string{p.callLayer(sh)}, -cam, 0)
 	// Guests stand between the room and the desk, so the counter hides the
 	// window patient's body below its top edge. With no shift (the top-10
 	// after the day ended) the room is empty.
@@ -199,8 +201,22 @@ func (p *painter) sheetIn(clip rect, s *sprites.Sheet, layers []string, x, y int
 	p.screen = full
 }
 
+// callBlink is how long the nurse call light stays lit, then dark.
+const callBlink = 500 * time.Millisecond
+
+// callLayer is the nurse call light over the ward doors: lit every other
+// half second while a Severe patient sleeps with nobody attending.
+func (p *painter) callLayer(sh *Shift) string {
+	if sh != nil && sh.SevereCalling() && (p.elapse/callBlink)%2 == 0 {
+		return "call_on"
+	}
+	return "call_off"
+}
+
 // guest draws one guest as the shift says they look.
 func (p *painter) guest(sh *Shift, g *Guest, cam int) {
+	p.dark = sh.Darkness(g) // a Severe patient is darker for every episode
+	defer func() { p.dark = 0 }()
 	x, y := int(g.x)-cam, int(g.y)+WalkBob(g.steps)
 	switch sh.LookOf(g) {
 	case LookStanding:

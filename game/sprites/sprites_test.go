@@ -1,6 +1,7 @@
 package sprites
 
 import (
+	"image/color"
 	"os"
 	"testing"
 	"time"
@@ -126,5 +127,23 @@ func TestParseLayerOpacity(t *testing.T) {
 	}
 	if got := m.Opacity("missing"); got != 1 {
 		t.Errorf("an unknown layer should be opaque, got %v", got)
+	}
+}
+
+func TestDarkerStaysOnThePalette(t *testing.T) {
+	ramp := []color.RGBA{
+		{0xec, 0xec, 0xe6, 0xff}, {0xdd, 0xe5, 0xd9, 0xff}, {0xc3, 0xd1, 0xc0, 0xff}, {0x9f, 0xb1, 0x9f, 0xff},
+	}
+	black := color.RGBA{0x0b, 0x0b, 0x0c, 0xff}
+	for i, c := range ramp {
+		for steps := 0; steps <= 4; steps++ {
+			want := ramp[min(i+steps, 3)]
+			if got := Darker(c, steps); got != want {
+				t.Errorf("Darker(ramp[%d], %d) = %v, want %v", i, steps, got, want)
+			}
+		}
+	}
+	if got := Darker(black, 3); got != black {
+		t.Errorf("outline colour changed to %v", got)
 	}
 }

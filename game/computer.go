@@ -185,6 +185,23 @@ func (p *painter) icon(name string, x, y int) {
 	p.keep(p.art.icons.Draw(p.screen, []string{name}, p.art.icons.FrameAt(sprites.BoilTag, p.elapse), x, y))
 }
 
+// pips draws the severity dots (Mild 1, Moderate 2, Severe 3) with their
+// top-left corner at (x, y). ink is true on paper (black dots) and false on
+// the terminal (light dots).
+func (p *painter) pips(l hospital.NarcolepsyLevel, x, y int, ink bool) {
+	name := fmt.Sprintf("sev_%d", Pips(l))
+	if ink {
+		name += "_ink"
+	}
+	p.icon(name, x, y)
+}
+
+// pipsAfter draws the pips 4 px after a text that starts at textX and whose
+// capitals start at capsY (the Art log's rule: 2 px below the caps).
+func (p *painter) pipsAfter(l hospital.NarcolepsyLevel, text string, textX, capsY int, ink bool) {
+	p.pips(l, textX+p.art.font.Width(text)+4, capsY+2, ink)
+}
+
 // offline is the placeholder of the tabs that M4 builds.
 func (p *painter) offline(tab string) {
 	p.text(strings.ToUpper(tab)+": MODULE OFFLINE", textLeft, 75, colPaper)
@@ -209,7 +226,9 @@ func (p *painter) beds(sh *Shift) {
 		p.icon("fx_z", card.x+6, 70)
 		p.text("ASLEEP", card.x+38, 85, colPaper)
 		if g := sh.GuestByPatient(room.Occupants[0]); g != nil {
-			p.text(g.Name+"  "+levelName(g.Level), card.x+6, 97, colPaper)
+			label := g.Name + "  " + levelName(g.Level)
+			p.text(label, card.x+6, 97, colPaper)
+			p.pipsAfter(g.Level, label, card.x+6, 97, false)
 		}
 	}
 

@@ -141,8 +141,10 @@ func TestDispatchAndNoRoom(t *testing.T) {
 		}
 		sh.Update()
 	}
-	if sh.Score() != 3*pointsAttend {
-		t.Errorf("score = %d, want %d", sh.Score(), 3*pointsAttend)
+	// Old Cecily is Severe and was answered at once, so she earns the quick bonus too.
+	score := 3*pointsAttend + pointsSevereQuick
+	if sh.Score() != score {
+		t.Errorf("score = %d, want %d", sh.Score(), score)
 	}
 	if sh.Alert() == nil || sh.Alert().Guest != guests[2] {
 		t.Fatal("the third sleeper should have opened the no-room alert")
@@ -163,7 +165,7 @@ func TestDispatchAndNoRoom(t *testing.T) {
 	if err != nil || !att.NoRoom || att.Attender != "" {
 		t.Errorf("retry = %+v, %v; want no room and no new attender", att, err)
 	}
-	if sh.Score() != 3*pointsAttend {
+	if sh.Score() != score {
 		t.Errorf("score changed to %d on a retry", sh.Score())
 	}
 

@@ -97,6 +97,7 @@ type Attendance struct {
 	Attender string // "" when the patient had been attended before
 	Room     int    // 0 when there is no bed
 	NoRoom   bool
+	Bonus    int // the extra points for a quick answer to a Severe patient
 }
 
 // Shift is one day at the desk: the queue, the ward, the score. It has no
@@ -113,6 +114,9 @@ type Shift struct {
 	scores map[string]int // Env.Scores, written under the key "day<N>"
 	ticks  int
 	snap   hospital.Snapshot
+
+	episodes    map[string]int // episodes the hospital has recorded, by patient id
+	severeToday map[string]int // the same for Severe patients, from SevereReport
 
 	sleepers  map[string]*Sleeper // by patient id
 	busyUntil map[string]float64  // by staff name
@@ -221,6 +225,7 @@ func (s *Shift) Update() {
 		}
 	}
 	s.snap = s.ward.Snapshot()
+	s.episodes, s.severeToday = s.ward.Episodes(), s.ward.SevereToday()
 
 	now := s.Seconds()
 	for i, g := range s.Guests {
@@ -548,6 +553,8 @@ func (s *Shift) Dispatch(g *Guest) (Attendance, error) {
 		// still scores the 50 points; getting them staff is the right call
 		// whether or not there was a bed.
 		s.addScore(pointsAttend)
+		a.Bonus = s.quickBonus(g, sl) // a Severe patient answered in time
+		s.addScore(a.Bonus)
 	}
 	// RegisterEpisode already gave a room if one was free; AssignRoom tells
 	// us which one, or that there is none (hospital.ErrNoRoomAvailable).
@@ -564,6 +571,9 @@ func (s *Shift) Dispatch(g *Guest) (Attendance, error) {
 	case a.NoRoom:
 		s.alert = &Alert{Guest: g}
 		s.say("NO ROOM FOR %s", g.Name)
+	case a.Bonus > 0:
+		s.alert = nil
+		s.say("%s attends %s: QUICK +%d", a.Attender, g.Name, a.Bonus)
 	case a.Attender != "":
 		s.alert = nil
 		s.say("%s attends %s", a.Attender, g.Name)

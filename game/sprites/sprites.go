@@ -176,7 +176,9 @@ func (m *Meta) durationOf(n int) time.Duration {
 // Sheet is a loaded spritesheet: the picture plus its Meta.
 type Sheet struct {
 	*Meta
-	img *ebiten.Image
+	img  *ebiten.Image
+	pic  image.Image               // the same picture on the CPU, for the darker copies
+	dark map[darkKey]*ebiten.Image // see darker.go
 }
 
 // Load reads <name>.json and <name>.png from fsys (the game passes its
@@ -199,7 +201,7 @@ func Load(fsys fs.FS, name string) (*Sheet, error) {
 	if err != nil {
 		return nil, fmt.Errorf("sprites: sheet %s: %w", name, err)
 	}
-	return &Sheet{Meta: meta, img: ebiten.NewImageFromImage(pic)}, nil
+	return &Sheet{Meta: meta, img: ebiten.NewImageFromImage(pic), pic: pic}, nil
 }
 
 // Frame cuts one layer's frame out of the sheet. The result shares pixels
@@ -216,15 +218,5 @@ func (s *Sheet) Frame(layer string, frame int) (*ebiten.Image, error) {
 // the sprite's top-left corner at (x, y). Each layer keeps the opacity it
 // has in the Aseprite file (the screen glass layers are faint on purpose).
 func (s *Sheet) Draw(dst *ebiten.Image, layers []string, frame, x, y int) error {
-	for _, layer := range layers {
-		img, err := s.Frame(layer, frame)
-		if err != nil {
-			return err
-		}
-		var op ebiten.DrawImageOptions
-		op.GeoM.Translate(float64(x), float64(y))
-		op.ColorScale.ScaleAlpha(s.Opacity(layer))
-		dst.DrawImage(img, &op)
-	}
-	return nil
+	return s.DrawDarker(dst, layers, frame, x, y, 0)
 }
