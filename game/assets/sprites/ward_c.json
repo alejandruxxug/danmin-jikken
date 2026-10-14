@@ -28,7 +28,7 @@
    },
    {
     "filename": "red_eyes#0",
-    "frame": { "x": 0, "y": 270, "w": 480, "h": 270 },
+    "frame": { "x": 1440, "y": 0, "w": 480, "h": 270 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
@@ -37,7 +37,7 @@
    },
    {
     "filename": "clock_315#0",
-    "frame": { "x": 480, "y": 270, "w": 480, "h": 270 },
+    "frame": { "x": 0, "y": 270, "w": 480, "h": 270 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
@@ -46,7 +46,7 @@
    },
    {
     "filename": "clock_317#0",
-    "frame": { "x": 960, "y": 270, "w": 480, "h": 270 },
+    "frame": { "x": 480, "y": 270, "w": 480, "h": 270 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
@@ -55,7 +55,7 @@
    },
    {
     "filename": "dark#0",
-    "frame": { "x": 0, "y": 540, "w": 480, "h": 270 },
+    "frame": { "x": 960, "y": 270, "w": 480, "h": 270 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
@@ -64,6 +64,24 @@
    },
    {
     "filename": "doorway_figure#0",
+    "frame": { "x": 1440, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "doorway_figure_board#0",
+    "frame": { "x": 0, "y": 540, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "doorway_figure_tilt#0",
     "frame": { "x": 480, "y": 540, "w": 480, "h": 270 },
     "rotated": false,
     "trimmed": false,
@@ -86,7 +104,7 @@
   "version": "1.3.18.6-dev",
   "image": "ward_c.png",
   "format": "RGBA8888",
-  "size": { "w": 1440, "h": 810 },
+  "size": { "w": 1920, "h": 810 },
   "scale": "1",
   "frameTags": [
   ],
@@ -99,6 +117,8 @@
    { "name": "clock_317", "opacity": 255, "blendMode": "normal" },
    { "name": "dark", "opacity": 255, "blendMode": "normal" },
    { "name": "doorway_figure", "opacity": 255, "blendMode": "normal" },
+   { "name": "doorway_figure_board", "opacity": 255, "blendMode": "normal" },
+   { "name": "doorway_figure_tilt", "opacity": 255, "blendMode": "normal" },
    { "name": "blanket", "opacity": 255, "blendMode": "normal" }
   ]
  }
