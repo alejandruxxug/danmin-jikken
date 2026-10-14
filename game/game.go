@@ -138,6 +138,21 @@ func New(opts Options) (*Game, error) {
 		if err := EnsureGhost(path, Username()); err != nil {
 			return nil, err
 		}
+		if opts.Play != "" { // the rock audition: straight to a scene, sound on (audition.go)
+			first = opts.Play
+			env.Audition = true
+			env.NightLine = opts.Line
+			for _, name := range strings.Split(opts.Flags, ",") {
+				if name = strings.TrimSpace(name); name != "" {
+					env.Flags[name] = true
+				}
+			}
+			if opts.Rock != "" {
+				if err := env.applyRock(opts.Play, opts.Rock); err != nil {
+					return nil, err
+				}
+			}
+		}
 	}
 	if err := g.scenes.Switch(first); err != nil {
 		return nil, err

@@ -14,7 +14,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -49,6 +51,7 @@ type Player struct {
 	fadeLeft, fadeTotal int
 	fadeEased           bool // the fade follows a smooth S curve (FadeOutEased)
 
+	files   map[string]string // cue -> file on disk that stands in for the embedded one (Override)
 	missing map[string]bool
 	Log     []string // every request, like "sfx stamp_thunk" or "music title"
 }
@@ -97,8 +100,25 @@ func (p *Player) Missing() []string {
 	return names
 }
 
+// Override makes a cue play the file at diskPath instead of its embedded
+// file. The ending audition (-play ending.forever -rock <name>) uses it to
+// hear other rock tracks without baking them into the game.
+func (p *Player) Override(name, diskPath string) {
+	if p.files == nil {
+		p.files = map[string]string{}
+	}
+	p.files[name] = diskPath
+}
+
 // find reads the file of a cue, trying each extension.
 func (p *Player) find(name string) (data []byte, ext string, ok bool) {
+	if diskPath, over := p.files[name]; over {
+		data, err := os.ReadFile(diskPath)
+		if err != nil {
+			return nil, "", false
+		}
+		return data, filepath.Ext(diskPath), true
+	}
 	for _, ext := range extensions {
 		data, err := fs.ReadFile(p.fsys, name+ext)
 		if err == nil {

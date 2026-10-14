@@ -15,6 +15,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "danmin:", err)
 		os.Exit(2)
 	}
+	if opts.Rock == "list" { // the rock audition: print the choices and stop
+		if err := game.ListRocks(os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "danmin:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := game.Run(opts); err != nil {
 		fmt.Fprintln(os.Stderr, "danmin:", err)
 		os.Exit(1)

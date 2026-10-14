@@ -9,3 +9,7 @@ docs/brief.pdf
 .obsidian/
 assets/preview/
 .idea/
+
+# Rock audition tracks (listening only, never committed or embedded); the README stays
+game/assets/sound/audition/*
+!game/assets/sound/audition/README.txt

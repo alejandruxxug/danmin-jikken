@@ -53,9 +53,11 @@ func LoadSheet(fsys fs.FS, name string) (*sprites.Sheet, error) {
 }
 
 // The sound files (ogg, mp3 or wav) are baked in too. The folder always has a
-// README, so the embed works before the first sound is added.
+// README, so the embed works before the first sound is added. The pattern
+// matches files only, so the audition/ folder (tracks to listen to, never
+// shipped) is not baked in.
 //
-//go:embed all:assets/sound
+//go:embed assets/sound/*.*
 var soundFiles embed.FS
 
 // SoundFS is the assets/sound folder as a file system root.

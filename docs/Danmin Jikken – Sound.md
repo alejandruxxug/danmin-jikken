@@ -41,6 +41,46 @@ Three flavours, like you asked: **G** = gothic (Evanescence: strings or piano ag
 
 Honorable mentions, not in the main eight: **Alt Rock Song** (CC-BY 3.0, 2:55, loud from 0:00, plain alt-rock, probably too cheerful), **Tell us Green Man** (CC0, 8:42, gothic doom metal, sad and somber tags but I can't tell if it has vocals, too long unless trimmed), **Grunge Rock** by SigmaMusicArt (Pixabay, 3:05, "aggressive, atmospheric", not measured), **Post-Rock Crescendo** by alex-morgan (Pixabay, 3:25, a slow build, labelled AI generated, not measured).
 
+### 🎧 Auditioning the Forever rock
+
+Added 2026-10-14 (builder). I can't hear audio, so this is for **your ears**: the Forever ending can play any of the tracks below, from disk, in the real game (sound on). Nothing here is baked into the game or committed (the folder is gitignored; only its `README.txt` is in git).
+
+Run these **from the `game/` folder**:
+
+```bash
+go run ./cmd/danmin -rock list                                    # the names below
+go run ./cmd/danmin -play ending.forever -rock ironbound          # the whole ending, from the first line
+go run ./cmd/danmin -play ending.forever -rock ironbound -line 23 # land right before the drop
+```
+
+`-line 23` is the same flag as the backdoor's; add `-flags route_hana` if you want the route flags on. Quick listening **without the game**: every track has a 30 s clip, `preview_<name>` (the first 30 s of the 80 s file, so the slam is the first beat):
+
+```bash
+cd game/assets/sound/audition
+for f in preview_*; do echo "$f"; afplay "$f"; done      # Ctrl+C skips to the next
+afplay ironbound.mp3                                     # or one full 80 s cut
+```
+
+In the game the ending plays the title over the rock, then the credits, then the game closes (an audition never saves anything). Esc/close the window any time.
+
+| `-rock` name | Track | Flavour | Licence | Cut (original) | Format |
+|---|---|---|---|---|---|
+| `ironbound` | Ironbound, Zander Noriega (the one in the game now) | C + S | CC-BY 3.0 | 1:24.7 | mp3 |
+| `sad_orchestral` | Sad orchestral theme, Gichco | G | CC0 | 2:22.5 | mp3 |
+| `ending_scene` | Ending Scene, nene (the "Ending.wav" version, not checked to be V1) | G | CC0 | 0:00 | wav (only a wav exists) |
+| `unholy_surge` | Unholy Surge, Vitalezzz | S | CC0 | 0:00 | mp3 |
+| `realm_of_torment` | Realm of Torment, Vitalezzz | S | CC0 | 0:00 | mp3 |
+| `shadows_awaken` | Shadows Awaken Within, Vitalezzz | S | CC0 | 0:09 | mp3 |
+| `aggressor` | Aggressor, Kevin MacLeod | S | CC-BY 4.0 | 0:01 | mp3 |
+
+Not in the folder: **Credits (Slow Heavy Rock)** (Pixabay blocks automated downloads, I did not work around it) and the honourable mentions (no measured cut). Each file is 80 s, cut at an mp3 frame boundary with no re-encoding (the wav at the sample). The CC-BY ones need a credit line if you pick them. Sources and licence notes: `game/assets/sound/audition/README.txt`.
+
+**Alejo's pick:** 
+
+To use a pick: replace `game/assets/sound/ending_rock_forever.mp3` with the audition file (copy it with that name) and add the credit if it is CC-BY. Say the word and the builder does it.
+
+---
+
 ### Preview clips (so you can hear the cut)
 
 Each clip is **1.5 s of silence, then 30 s of the track from the cut.** No ffmpeg on this Mac, so they are `.m4a` (AAC), not mp3. Double-click to play in QuickTime.

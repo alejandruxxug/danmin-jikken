@@ -116,7 +116,7 @@ func (s *nightScene) Update() error {
 		return err
 	}
 	s.playCues()
-	if s.replay == nil { // reaching a gallery card unlocks it (a replay never does)
+	if s.replay == nil && !s.env.Audition { // reaching a gallery card unlocks it (a replay or an audition never does)
 		if err := s.env.NoteScene(s.script, e.Line()); err != nil {
 			return err
 		}

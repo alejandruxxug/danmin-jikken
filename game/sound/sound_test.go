@@ -3,8 +3,11 @@ package sound
 import (
 	"bytes"
 	"encoding/binary"
+	"os"
+	"path/filepath"
 	"testing"
 	"testing/fstest"
+	"time"
 )
 
 // wavBytes builds a tiny 16-bit mono wav of n samples of silence.
@@ -145,5 +148,24 @@ func TestEasedFadeGain(t *testing.T) {
 			t.Fatalf("left %d: %v after %v", left, g, prev)
 		}
 		prev = g
+	}
+}
+
+// Override plays a file from disk in place of the embedded one.
+func TestOverrideReadsADiskFile(t *testing.T) {
+	embedded := fstest.MapFS{"rock.wav": {Data: wavBytes(44100)}} // 1 s
+	p := New(embedded, true)
+	path := filepath.Join(t.TempDir(), "other.wav")
+	if err := os.WriteFile(path, wavBytes(44100*3), 0o644); err != nil { // 3 s
+		t.Fatal(err)
+	}
+	p.Override("rock", path)
+	d, err := p.Length("rock")
+	if err != nil || d != 3*time.Second {
+		t.Errorf("Length = %v, %v; want 3s from the disk file", d, err)
+	}
+	p.Override("rock", filepath.Join(t.TempDir(), "missing.wav"))
+	if _, err := p.Length("rock"); err == nil {
+		t.Error("a missing override file must not fall back silently")
 	}
 }

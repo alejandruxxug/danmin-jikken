@@ -107,6 +107,7 @@ type Env struct {
 	SleepLogError  string
 	EndingGlitch   float64          // the secret ending's glitch strength now (0 to 1), for the dump
 	SkipToCard     bool             // test mode: an ending scene jumps from its script to its card
+	Audition       bool             // -play: a scene opened to listen to; it leaves no trace (no unlocks, no sleep log) and ends the game after the credits
 	QuitAfterTop10 bool             // the 3:17 ending closes the game after the top-10
 	savedRows      map[int]ScoreRow // the score row of each day already saved, so a day is saved once
 

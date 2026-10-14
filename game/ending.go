@@ -86,7 +86,7 @@ func (s *endingScene) Enter(env *Env) error {
 // scriptEnded is the ending script's "end card". The secret ending leaves its
 // file behind here, once, when the game has "fallen asleep".
 func (s *endingScene) scriptEnded(string) error {
-	if s.name == night.Ending317 && s.replay == nil {
+	if s.name == night.Ending317 && s.replay == nil && !s.env.Audition {
 		path, err := WriteSleepLog(s.env.ScoresPath)
 		if err != nil {
 			s.env.SleepLogError = err.Error() // the ending still plays; the dump shows why
@@ -165,6 +165,9 @@ func (s *endingScene) Update() error {
 	case phaseCredits:
 		if s.ticks == CreditsTicks(s.cards)-creditsFadeTicks && s.env.Sound != nil {
 			s.env.Sound.FadeOut(creditsFadeTicks) // the rock fades in the last seconds
+		}
+		if (s.creditsDone() || skip) && s.env.Audition {
+			return ebiten.Termination // an audition ends with the credits: no top-10, nothing saved
 		}
 		if s.creditsDone() || skip {
 			s.env.SwitchTo(SceneDayTop10)

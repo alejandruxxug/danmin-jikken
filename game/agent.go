@@ -61,6 +61,12 @@ type Options struct {
 	// Fullscreen is an ordinary option for players, so it also works
 	// without -agent.
 	Fullscreen bool
+
+	// The rock audition (audition.go) is not test mode: -play opens a scene
+	// with sound on, -rock swaps the ending's rock for a file from the
+	// audition folder, and -line and -flags go with them.
+	Play string
+	Rock string
 }
 
 // ParseOptions reads the flags. Every flag except -agent, -fullscreen, -nocrt and -reduce-flashing is
@@ -94,6 +100,8 @@ func ParseOptions(args []string) (Options, error) {
 	fs.IntVar(&o.Dark, "dark", -1, "draw every guest N palette steps darker, 0-3 (to judge the Severe darkening)")
 	fs.BoolVar(&o.Sleepy, "sleepy", false, "patients fall asleep fast and sleep long")
 	fs.BoolVar(&o.Fullscreen, "fullscreen", false, "start in fullscreen (F11 or Alt+Enter toggles it)")
+	fs.StringVar(&o.Play, "play", "", "audition: open this scene with sound on (e.g. ending.forever), no -agent needed")
+	fs.StringVar(&o.Rock, "rock", "", "audition: the rock track for the ending of -play (-rock list shows the choices)")
 	if err := fs.Parse(args); err != nil {
 		return Options{}, err
 	}
@@ -102,8 +110,18 @@ func ParseOptions(args []string) (Options, error) {
 			o.PanSet = true
 		}
 	})
+	if o.Enabled && (o.Play != "" || o.Rock != "") {
+		return Options{}, errors.New("-play and -rock are for listening with sound; with -agent use -scene")
+	}
+	if o.Rock != "" && o.Rock != "list" && o.Play == "" {
+		return Options{}, errors.New("-rock needs -play (for example -play ending.forever -rock ironbound)")
+	}
 	if !o.Enabled {
-		return Options{Fullscreen: o.Fullscreen, NoCRT: o.NoCRT, ReduceFlashing: o.ReduceFlashing}, nil
+		plain := Options{Fullscreen: o.Fullscreen, NoCRT: o.NoCRT, ReduceFlashing: o.ReduceFlashing}
+		if o.Play != "" || o.Rock == "list" { // the audition also takes the line to start at and the story flags
+			plain.Play, plain.Rock, plain.Line, plain.Flags = o.Play, o.Rock, o.Line, o.Flags
+		}
+		return plain, nil
 	}
 	return o, nil
 }
