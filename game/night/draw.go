@@ -121,6 +121,8 @@ var bgTable = map[string]bgDef{
 	"ward_c_up":   {"ward_c", []string{"room", "sitters", "red_eyes", "clock_317"}},
 	// Night 3: Dr. Barrow smiling at the foot of the procedure table.
 	"procedure_room": {"procedure", []string{"room", "lamp_glow", "barrow", "barrow_smile", "rail"}},
+	// Forever: Mayu on the chair, seen through the gap of your eyelids.
+	"mayu_chair": {"forever", []string{"room", "mayu_chair", "mayu_smile"}},
 }
 
 func bgTableDefs() []bgDef {
