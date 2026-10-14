@@ -145,6 +145,7 @@ func (g *Game) Update() error {
 	g.ticks++
 	if g.env.Sound != nil {
 		g.env.Sound.Update() // runs a music fade-out
+		g.env.tickMusicFade()
 	}
 	g.env.tickPowerOn()
 	if g.env.Input.KeyPressed(ebiten.KeyF10) {

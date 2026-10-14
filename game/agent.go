@@ -762,6 +762,7 @@ type Dump struct {
 	SleepLogPath string   `json:"sleepLogPath"`
 	SleepLogErr  string   `json:"sleepLogError"`
 	Placeholders []string `json:"placeholders"`
+	MusicGain    float64  `json:"musicGain"`    // how loud the music plays right now (0 to 1), to see a fade
 	SoundLog     []string `json:"soundLog"`     // the last 30 sound requests (muted in test mode)
 	SoundMissing []string `json:"soundMissing"` // cues asked for that have no file (real playback only)
 	// SoundFiles maps each cue in SoundLog to the file the game would play
@@ -936,6 +937,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	d.Placeholders = []string{}
 	d.SoundLog, d.SoundMissing, d.SoundFiles = []string{}, []string{}, map[string]string{}
 	if env.Sound != nil {
+		d.MusicGain = env.Sound.MusicGain()
 		d.SoundLog = append(d.SoundLog, env.Sound.Log[max(0, len(env.Sound.Log)-30):]...)
 		d.SoundMissing = append(d.SoundMissing, env.Sound.Missing()...)
 		for _, entry := range d.SoundLog {

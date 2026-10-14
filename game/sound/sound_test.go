@@ -129,3 +129,21 @@ func TestSFXGainIsClampedAndLogged(t *testing.T) {
 		t.Errorf("log = %v", p.Log)
 	}
 }
+
+// The eased fade has no corner at either end and never jumps.
+func TestEasedFadeGain(t *testing.T) {
+	if EasedFadeGain(10, 10) != 1 || EasedFadeGain(0, 10) != 0 || EasedFadeGain(5, 10) != 0.5 {
+		t.Errorf("ends %v %v, middle %v", EasedFadeGain(10, 10), EasedFadeGain(0, 10), EasedFadeGain(5, 10))
+	}
+	if EasedFadeGain(9, 10) <= FadeGain(9, 10) { // slower than linear at the start
+		t.Error("an eased fade should leave 1 more slowly than a linear one")
+	}
+	prev := 1.0
+	for left := 71; left >= 0; left-- {
+		g := EasedFadeGain(left, 72)
+		if g > prev || prev-g > 0.1 {
+			t.Fatalf("left %d: %v after %v", left, g, prev)
+		}
+		prev = g
+	}
+}

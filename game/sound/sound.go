@@ -47,6 +47,7 @@ type Player struct {
 
 	// A fade-out in progress (FadeOut): fadeLeft counts ticks down to 0.
 	fadeLeft, fadeTotal int
+	fadeEased           bool // the fade follows a smooth S curve (FadeOutEased)
 
 	missing map[string]bool
 	Log     []string // every request, like "sfx stamp_thunk" or "music title"
@@ -76,7 +77,7 @@ func (p *Player) SFXVolume() float64   { return p.sfxVol }
 func (p *Player) SetMusicVolume(v float64) {
 	p.musicVol = min(max(v, 0), 1)
 	if p.music != nil {
-		p.music.SetVolume(p.musicVol * FadeGain(p.fadeLeft, p.fadeTotal))
+		p.music.SetVolume(p.musicVol * p.fadeGain())
 	}
 }
 
@@ -234,7 +235,31 @@ func (p *Player) Preload(name string) {
 // per frame) and then stops it. Update must be called every frame for it to run.
 func (p *Player) FadeOut(ticks int) {
 	p.Log = append(p.Log, "music fade")
-	p.fadeLeft, p.fadeTotal = ticks, ticks
+	p.fadeLeft, p.fadeTotal, p.fadeEased = ticks, ticks, false
+}
+
+// FadeOutEased is FadeOut with a smooth start and end (EasedFadeGain), for the
+// music that gives way to the next scene.
+func (p *Player) FadeOutEased(ticks int) {
+	p.FadeOut(ticks)
+	p.fadeEased = true
+}
+
+// fadeGain is the fade's multiplier on the music volume right now.
+func (p *Player) fadeGain() float64 {
+	if p.fadeEased {
+		return EasedFadeGain(p.fadeLeft, p.fadeTotal)
+	}
+	return FadeGain(p.fadeLeft, p.fadeTotal)
+}
+
+// MusicGain is how loud the music plays right now: the volume times the fade.
+// The test dump shows it.
+func (p *Player) MusicGain() float64 {
+	if p.current == "" {
+		return 0
+	}
+	return p.musicVol * p.fadeGain()
 }
 
 // Fading reports whether a fade-out is in progress.
@@ -249,6 +274,14 @@ func FadeGain(left, total int) float64 {
 	return min(max(float64(left)/float64(total), 0), 1)
 }
 
+// EasedFadeGain is FadeGain with smoothstep applied: it leaves 1 slowly,
+// drops fastest in the middle and lands softly on 0, so there is no corner at
+// either end of the fade.
+func EasedFadeGain(left, total int) float64 {
+	x := FadeGain(left, total)
+	return x * x * (3 - 2*x)
+}
+
 // Update moves a fade-out one tick forward. Call it once per frame.
 func (p *Player) Update() {
 	if p.fadeLeft <= 0 {
@@ -256,7 +289,7 @@ func (p *Player) Update() {
 	}
 	p.fadeLeft--
 	if p.music != nil {
-		p.music.SetVolume(p.musicVol * FadeGain(p.fadeLeft, p.fadeTotal))
+		p.music.SetVolume(p.musicVol * p.fadeGain())
 	}
 	if p.fadeLeft == 0 {
 		p.stop()
@@ -270,7 +303,7 @@ func (p *Player) StopMusic() {
 }
 
 func (p *Player) stop() {
-	p.fadeLeft, p.fadeTotal = 0, 0
+	p.fadeLeft, p.fadeTotal, p.fadeEased = 0, 0, false
 	if p.music != nil {
 		p.music.Pause()
 		p.music = nil

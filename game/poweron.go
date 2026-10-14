@@ -50,7 +50,10 @@ func PowerOnAt(tick int) (st PowerOnState, ok bool) {
 
 // StartPowerOn begins the turn-on; the day scene that follows a night calls
 // it through the night scene (and -poweron in test mode).
-func (e *Env) StartPowerOn() { e.PoweringOn, e.PowerOnTick = true, 0 }
+func (e *Env) StartPowerOn() {
+	e.PoweringOn, e.PowerOnTick = true, 0
+	e.fadeMusicIntoDay() // the TV does not turn on over a music track that stops dead
+}
 
 // tickPowerOn moves the turn-on one tick on.
 func (e *Env) tickPowerOn() {
