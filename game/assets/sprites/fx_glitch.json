@@ -1,0 +1,65 @@
+{ "frames": [
+   {
+    "filename": "bands#0",
+    "frame": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "blocks#0",
+    "frame": { "x": 480, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "scanlines#0",
+    "frame": { "x": 960, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "glyphs#0",
+    "frame": { "x": 0, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "noise#0",
+    "frame": { "x": 480, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.6-dev",
+  "image": "fx_glitch.png",
+  "format": "RGBA8888",
+  "size": { "w": 1440, "h": 540 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "bands", "opacity": 255, "blendMode": "normal" },
+   { "name": "blocks", "opacity": 255, "blendMode": "normal" },
+   { "name": "scanlines", "opacity": 255, "blendMode": "normal" },
+   { "name": "glyphs", "opacity": 255, "blendMode": "normal" },
+   { "name": "noise", "opacity": 255, "blendMode": "normal" }
+  ]
+ }
+}

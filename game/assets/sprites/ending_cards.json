@@ -1,0 +1,65 @@
+{ "frames": [
+   {
+    "filename": "card_bg#0",
+    "frame": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "emblem_sleep#0",
+    "frame": { "x": 480, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "emblem_wake#0",
+    "frame": { "x": 960, "y": 0, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "emblem_forever#0",
+    "frame": { "x": 0, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   },
+   {
+    "filename": "emblem_317#0",
+    "frame": { "x": 480, "y": 270, "w": 480, "h": 270 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 480, "h": 270 },
+    "sourceSize": { "w": 480, "h": 270 },
+    "duration": 125
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.6-dev",
+  "image": "ending_cards.png",
+  "format": "RGBA8888",
+  "size": { "w": 1440, "h": 540 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "card_bg", "opacity": 255, "blendMode": "normal" },
+   { "name": "emblem_sleep", "opacity": 255, "blendMode": "normal" },
+   { "name": "emblem_wake", "opacity": 255, "blendMode": "normal" },
+   { "name": "emblem_forever", "opacity": 255, "blendMode": "normal" },
+   { "name": "emblem_317", "opacity": 255, "blendMode": "normal" }
+  ]
+ }
+}
