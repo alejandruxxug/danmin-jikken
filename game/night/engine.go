@@ -133,7 +133,11 @@ type Engine struct {
 
 	// Cues for the sound (M7): the last ones the script asked for.
 	LastSFX, LastMusic string
-	ticks              int
+
+	// stopLine, when above 0, ends the script (as if it had said "end") at the
+	// first command on or after that file line. See StopAtLine.
+	stopLine int
+	ticks    int
 
 	hopStart int    // the tick the current hop began; -1 for none
 	hopFor   string // who spoke last ("" after a thought or a scene change): no hop while it stays her
@@ -170,6 +174,10 @@ func (e *Engine) run() error {
 			return nil
 		}
 		n := e.script.Nodes[e.pc]
+		if e.stopLine > 0 && n.Line >= e.stopLine {
+			e.ended, e.endsTo = true, "" // the replay's range is over
+			return nil
+		}
 		switch n.Op {
 		case OpSay, OpThink:
 			e.startLine(n)
@@ -498,6 +506,12 @@ func (e *Engine) FastForward(line int) error {
 	}
 	return fmt.Errorf("%s: -line %d did not stop", e.script.Name, line)
 }
+
+// StopAtLine makes the script end at the first command on or after the given
+// file line, so the SCENES gallery can replay one stretch of a night (see
+// FastForward for where it starts). It only looks at commands the engine
+// reaches from now on, so call it after FastForward.
+func (e *Engine) StopAtLine(line int) { e.stopLine = line }
 
 // finishEffects lets every timed effect that is running play out at once, so
 // a backdoor jump lands on the settled picture (open eyes, risen red) and

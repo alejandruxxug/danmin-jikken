@@ -396,3 +396,27 @@ func TestFastForwardStopsOnAHold(t *testing.T) {
 		t.Errorf("holding %v at line %d, want the hold on line 3", e.Holding(), e.Line())
 	}
 }
+
+// StopAtLine ends the script before the first command on or after that line:
+// the SCENES gallery replays one stretch of a night with it.
+func TestStopAtLine(t *testing.T) {
+	e := newEngine(t, "~ One.\n~ Two.\n~ Three.\n~ Four.\n", Flags{})
+	if err := e.FastForward(2); err != nil {
+		t.Fatal(err)
+	}
+	e.StopAtLine(4) // "Three." is line 3, "Four." (line 4) must never show
+	if e.Line() != 2 {
+		t.Fatalf("at line %d, want 2", e.Line())
+	}
+	for i := 0; i < 2; i++ { // Two -> Three -> past the range
+		if err := e.Advance(); err != nil { // finish typing
+			t.Fatal(err)
+		}
+		if err := e.Advance(); err != nil { // next line
+			t.Fatal(err)
+		}
+	}
+	if to, ended := e.Ended(); !ended || to != "" {
+		t.Errorf("ended %v to %q, want the script ended with no next scene", ended, to)
+	}
+}
