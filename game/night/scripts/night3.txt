@@ -20,30 +20,51 @@ sfx monitor_beep
 ~ Hana didn't come in today. But somebody filed her reports.
 
 # ---- Hana's room ----
+# Cinematic mode from the door to the choice (Art Direction -> Cinematic pass):
+# bars, subtitles, a close-up of the door, the dark, the red rising, a slow
+# push-in, a punch on her, a pan across the floor, the envelope.
 prop clear
 bg hana_door
+bars on
+wait 1.5
+bg door_closeup
 ~ Her name is on the door, in her small, neat letters.
 sfx door_creak
 bg hana_room
 music off
+fx dark
 ~ It's dark. It smells like copper.
+fx light
 fx redscale
 sfx drip
 wait 1.2
 ~ Red.
+push 1.1 250 130 6
 ~ The floor. The walls. The sheets. The ceiling, somehow.
 ~ So much of it that the room stops looking like a room.
+push off
+punch 2 282 165
 ~ Hana is there.
+punch off
+bg hana_floor
+pan 0
 ~ She isn't asleep. I know before I touch her hand. It's cold, and it's wet.
+pan 140 4
 ~ Fourteen days awake, and now she'll never have to fight it again.
 ~ The pale cans are all over the floor, standing in it. Dozens.
 ~ The newest ones are still sealed. She stopped.
 ifnot route_hana jump envelope
 prop clipboard
+pan 240 2
 ~ Her clipboard is on the floor, snapped in half. Her nails are broken.
 ~ Nobody does this much to themselves.
 label envelope
+bg hana_room
 prop envelope
+fx dusk
+wait 1.2
+bg hana_desk
+fx light
 ~ On the desk there's an envelope. It's the only clean thing in here. It says Four.
 
 # Choice 4
@@ -52,6 +73,7 @@ option Read the letter | set read_letter | jump letter
 option Leave it | jump leave_it
 
 label letter
+bars off
 bg letter
 if route_mayu jump letter_mayu
 if route_hana jump letter_hana
@@ -86,6 +108,7 @@ fx sting
 wait 0.8
 punch off
 label letter_done
+bars on
 bg hana_room
 jump gurney
 
