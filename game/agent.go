@@ -218,6 +218,29 @@ func parseXY(cmd Command, args []string) (Command, error) {
 	return cmd, nil
 }
 
+// scriptKeys are the keys the game listens to, by the name a script uses.
+// Ebitengine accepts more names (and aliases like "Down"), but a name that
+// no scene reads would do nothing, so the script parser rejects it.
+var scriptKeys = map[string]ebiten.Key{
+	"A": ebiten.KeyA, "B": ebiten.KeyB, "F": ebiten.KeyF,
+	"Alt": ebiten.KeyAlt, "Meta": ebiten.KeyMeta,
+	"ArrowUp": ebiten.KeyArrowUp, "ArrowDown": ebiten.KeyArrowDown,
+	"ArrowLeft": ebiten.KeyArrowLeft, "ArrowRight": ebiten.KeyArrowRight,
+	"Backspace": ebiten.KeyBackspace, "Enter": ebiten.KeyEnter,
+	"Escape": ebiten.KeyEscape, "Space": ebiten.KeySpace, "Tab": ebiten.KeyTab,
+	"F10": ebiten.KeyF10, "F11": ebiten.KeyF11,
+}
+
+// scriptKeyNames lists the valid key names, sorted, for the error message.
+func scriptKeyNames() string {
+	names := make([]string, 0, len(scriptKeys))
+	for name := range scriptKeys {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
+}
+
 func parseCommand(words []string) (Command, error) {
 	cmd := Command{Op: words[0]}
 	args := words[1:]
@@ -235,9 +258,11 @@ func parseCommand(words []string) (Command, error) {
 		if len(args) != 1 {
 			return cmd, fmt.Errorf("key needs one key name, like Space")
 		}
-		if err := cmd.Key.UnmarshalText([]byte(args[0])); err != nil {
-			return cmd, fmt.Errorf("key %q: %w", args[0], err)
+		k, ok := scriptKeys[args[0]]
+		if !ok {
+			return cmd, fmt.Errorf("key %q: unknown key name, want one of %s", args[0], scriptKeyNames())
 		}
+		cmd.Key = k
 	case "down":
 		return parseXY(cmd, args)
 	case "up":

@@ -207,3 +207,20 @@ func TestScaleUp(t *testing.T) {
 		t.Error("pixels were not repeated 4 times each way")
 	}
 }
+
+// A key name that no scene reads is rejected with its line number and the
+// list of valid names, even when Ebitengine knows it ("Down" is its alias).
+func TestParseScriptRejectsUnknownKey(t *testing.T) {
+	_, err := ParseScript(strings.NewReader("wait 1\nkey Down\n"))
+	if err == nil {
+		t.Fatal("key Down should fail")
+	}
+	for _, want := range []string{"script line 2", `"Down"`, "ArrowDown", "Space"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q should mention %q", err, want)
+		}
+	}
+	if _, err := ParseScript(strings.NewReader("key ArrowDown\nkey Escape\n")); err != nil {
+		t.Errorf("valid names failed: %v", err)
+	}
+}
