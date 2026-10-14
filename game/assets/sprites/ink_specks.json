@@ -1,0 +1,35 @@
+{ "frames": [
+   {
+    "filename": "ink_specks#0",
+    "frame": { "x": 0, "y": 0, "w": 64, "h": 34 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 34 },
+    "sourceSize": { "w": 64, "h": 34 },
+    "duration": 100
+   },
+   {
+    "filename": "ink_specks_red#0",
+    "frame": { "x": 64, "y": 0, "w": 64, "h": 34 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 34 },
+    "sourceSize": { "w": 64, "h": 34 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.18.6-dev",
+  "image": "ink_specks.png",
+  "format": "RGBA8888",
+  "size": { "w": 128, "h": 34 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "ink_specks", "opacity": 255, "blendMode": "normal" },
+   { "name": "ink_specks_red", "opacity": 255, "blendMode": "normal" }
+  ]
+ }
+}
