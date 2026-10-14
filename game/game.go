@@ -19,7 +19,10 @@ type Game struct {
 	scenes *SceneManager
 	agent  *Agent // nil unless -agent was passed
 
-	canvas *ebiten.Image // the 480x270 picture every scene draws on
+	canvas  *ebiten.Image // the 480x270 picture every scene draws on
+	crt     *CRT          // the day filter, drawn to the screen
+	shotCRT *CRT          // the same shader for the x4 screenshots (a buffer of its own)
+	ticks   int           // frames updated so far: the shader's clock
 }
 
 // New builds the game from the command-line options and enters the first
@@ -44,7 +47,11 @@ func New(opts Options) (*Game, error) {
 
 		ClockRate: 1,
 	}
-	g := &Game{env: env, scenes: NewSceneManager(env)}
+	crt, err := NewCRT()
+	if err != nil {
+		return nil, err
+	}
+	g := &Game{env: env, scenes: NewSceneManager(env), crt: crt, shotCRT: &CRT{shader: crt.shader}}
 	g.scenes.Register(SceneTitle, func() Scene { return &titleScene{} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
@@ -74,6 +81,7 @@ func New(opts Options) (*Game, error) {
 		g.agent = agent
 		first = opts.Scene
 	} else {
+		env.CRT = !opts.NoCRT // a player option, like -fullscreen
 		// A real player: the scores live next to the executable, and the
 		// ghost row may appear between runs. Test mode keeps its hands off
 		// that file unless -scores names another one.
@@ -98,6 +106,10 @@ func (g *Game) Update() error {
 		if err := g.agent.Update(g); err != nil {
 			return err
 		}
+	}
+	g.ticks++
+	if g.env.Input.KeyPressed(ebiten.KeyF10) {
+		g.env.CRT = !g.env.CRT // Settings -> CRT effect: some players find the curved, flickering text hard to read
 	}
 	if g.env.Input.FullscreenPressed() {
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
@@ -131,11 +143,29 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	scale, offX, offY := fitScreen(screen.Bounds().Dx(), screen.Bounds().Dy())
 	var op ebiten.DrawImageOptions
+	op.GeoM.Translate(float64(offX), float64(offY))
+	screen.Fill(color.Black) // the bars around the picture
+	if g.crtOn() {
+		// The shader scales the picture itself, so it is drawn at 1:1.
+		screen.DrawImage(g.crt.Apply(g.canvas, scale, g.crtParams()), &op)
+		return
+	}
+	op.GeoM.Reset()
 	op.GeoM.Scale(float64(scale), float64(scale))
 	op.GeoM.Translate(float64(offX), float64(offY))
 	op.Filter = ebiten.FilterNearest // whole-number scale + nearest = crisp pixels
-	screen.Fill(color.Black)         // the bars around the picture
 	screen.DrawImage(g.canvas, &op)
+}
+
+// crtOn says whether this frame goes through the CRT: the setting is on and
+// the scene is a day scene (the night never has it).
+func (g *Game) crtOn() bool {
+	return g.env.CRT && usesCRT(g.scenes.ID(), g.scenes.Current())
+}
+
+// crtParams are the shader's numbers for this frame.
+func (g *Game) crtParams() CRTParams {
+	return DefaultCRT(g.env.Day, float64(g.ticks)/60, g.env.Invert)
 }
 
 // fitScreen says how to show the 480x270 picture on a screen of w x h real

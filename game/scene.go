@@ -40,7 +40,8 @@ type Env struct {
 	Seed    int64
 	Day     int
 	Speed   float64
-	CRT     bool // the day CRT filter; no filter exists yet, so nothing reads it
+	CRT     bool    // the day CRT filter (Settings -> CRT effect); the night never has it
+	Invert  float64 // 1 while the strobe shows its inverted frames (the CRT shader swaps black and white)
 	Clock   *Clock
 	Flags   night.Flags    // story flags the nights set and the day will read
 	Scores  map[string]int // points of each shift, keyed "day1", "day2", ...
@@ -185,6 +186,9 @@ func (m *SceneManager) Update() error {
 	}
 	return nil
 }
+
+// Current is the active scene (nil before the first Switch).
+func (m *SceneManager) Current() Scene { return m.current }
 
 // Draw draws the active scene.
 func (m *SceneManager) Draw(screen *ebiten.Image) {

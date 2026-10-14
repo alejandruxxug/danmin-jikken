@@ -55,7 +55,7 @@ type Options struct {
 	Fullscreen bool
 }
 
-// ParseOptions reads the flags. Every flag except -agent and -fullscreen is
+// ParseOptions reads the flags. Every flag except -agent, -fullscreen and -nocrt is
 // ignored (and reset) when -agent is missing, so a player can't trip the backdoor.
 func ParseOptions(args []string) (Options, error) {
 	var o Options
@@ -90,7 +90,7 @@ func ParseOptions(args []string) (Options, error) {
 		}
 	})
 	if !o.Enabled {
-		return Options{Fullscreen: o.Fullscreen}, nil
+		return Options{Fullscreen: o.Fullscreen, NoCRT: o.NoCRT}, nil
 	}
 	return o, nil
 }
@@ -594,7 +594,13 @@ func (a *Agent) AfterDraw(g *Game, screen *ebiten.Image) {
 		case "shot":
 			err = writePNG(out.path, readScreen(screen), 1)
 		case "shot4":
-			err = writePNG(out.path, readScreen(screen), 4)
+			// With the CRT on the shot is the filtered picture, so the
+			// shader can be checked; -nocrt gives the plain picture.
+			if g.crtOn() {
+				err = writePNG(out.path, readScreen(g.shotCRT.Apply(screen, 4, g.crtParams())), 1)
+			} else {
+				err = writePNG(out.path, readScreen(screen), 4)
+			}
 		case "dump":
 			err = writeDump(out.path, BuildDump(g.env, g.scenes.ID(), a.frame))
 		}

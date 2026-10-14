@@ -1,0 +1,83 @@
+//kage:unit pixels
+
+package main
+
+// The day's CRT screen (Art Direction -> Day screen CRT). It runs on the
+// whole picture, only in day scenes. Seven numbers come in from the game.
+var Scanline float // how much darker the scanline rows are (0.15)
+var Vignette float // how much darker the corners are (0.35)
+var Curve float    // the barrel bend of the glass (small)
+var Day float      // 1, 2 or 3: the screen breaks down more each day
+var Invert float   // 1 swaps black and white (the strobe), 0 leaves the picture
+var Time float     // seconds, for the flicker, the band, the moire and the grain
+var Filmed float   // how strong the "camera filming a CRT" look is (0 to 1)
+
+// hash is a cheap random number from 0 to 1 for the grain.
+func hash(p vec2) float {
+	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453)
+}
+
+func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
+	size := imageDstSize()
+	uv := (dstPos.xy - imageDstOrigin()) / size // 0..1 over the picture
+	c := uv*2 - 1                               // -1..1, the middle is 0
+	edge := dot(c, c) / 2                       // 0 in the middle, 1 in the corners
+
+	// Fisheye: push the picture outwards a little more the further from the middle.
+	bent := c * (1 + Curve*dot(c, c))
+	p := (bent + 1) / 2
+	if p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1 {
+		return vec4(0, 0, 0, 1) // outside the bent glass
+	}
+
+	// Day 3: tracking errors. Now and then a strip of the picture slips sideways.
+	if Day >= 3 {
+		step := floor(Time * 6)
+		if mod(step, 17) == 0 && abs(uv.y-fract(step*0.37)) < 0.04 {
+			p.x = fract(p.x + 0.015)
+		}
+	}
+
+	srcSize := imageSrc0Size()
+	at := p*srcSize + imageSrc0Origin()
+	col := imageSrc0At(at).rgb
+
+	// Phosphor glow: the bright parts bleed a little into their neighbours.
+	near := (imageSrc0At(at+vec2(1, 0)).rgb + imageSrc0At(at-vec2(1, 0)).rgb +
+		imageSrc0At(at+vec2(0, 1)).rgb + imageSrc0At(at-vec2(0, 1)).rgb) / 4
+	col += max(near-0.7, 0) * 0.5
+
+	// Scanlines: the lower part of every game-pixel row is a little darker.
+	row := fract(p.y * srcSize.y)
+	if row > 0.75 {
+		col *= 1 - Scanline
+	}
+
+	// Vignette: the corners are darker, the middle is untouched.
+	col *= 1 - Vignette*pow(edge, 1.5)
+
+	// Flicker: now and then the brightness wobbles by 2 %.
+	col *= 1 + 0.02*sin(Time*53)*step(0.7, sin(Time*1.7))
+
+	// Filmed look 1, the rolling band: the camera and the screen refresh out of
+	// step, so a darker band crawls down the picture. Faster and stronger each day.
+	speed := 1 + 0.5*(Day-1)
+	d := fract(uv.y - Time*speed/6) // 0 at the band's leading edge, up to 1
+	if d < 0.25 {
+		col *= 1 - Filmed*0.1*speed*(1-d/0.25)
+	}
+	if d > 0.99 {
+		col += Filmed * 0.06 // the thin bright edge in front of it
+	}
+
+	// Filmed look 2, moire: ripples where the camera grid beats against the scanlines.
+	ripple := sin(p.y*srcSize.y*6.2832*0.93 + p.x*3 + Time*0.6)
+	col *= 1 + Filmed*0.04*ripple*mix(0.4, 1, edge)
+
+	// Filmed look 3, exposure pumping and grain.
+	col *= 1 + Filmed*0.03*sin(Time*1.1)
+	col += (hash(floor(dstPos.xy)+floor(Time*24)) - 0.5) * 0.06 * Filmed
+
+	col = mix(col, vec3(1)-col, Invert)
+	return vec4(clamp(col, 0, 1), 1)
+}
