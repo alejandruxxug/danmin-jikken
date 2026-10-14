@@ -291,6 +291,11 @@ func (a *Art) drawScene(dst *ebiten.Image, e *Engine) {
 	if e.HasLine() {
 		a.drawTextBox(dst, e)
 	}
+	if e.Holding() {
+		// A shot held for a click has no text box, only the arrow.
+		frame := a.ui.FrameAt("bob", time.Duration(e.Ticks())*time.Second/TicksPerSecond)
+		_ = a.ui.Draw(dst, []string{"continue"}, frame, 0, 0)
+	}
 	if len(e.Options()) > 0 {
 		a.drawChoices(dst, e)
 	}

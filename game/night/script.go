@@ -33,6 +33,8 @@ import (
 //	sfx name / music name         sound cues (the sound comes in M7: only logged)
 //	speed 12                      typewriter speed in letters per second
 //	wait 1.5                      pause, in seconds (a click cuts it short)
+//	hold                          a shot with no line: stays up until a click (AUTO
+//	                              goes on after 2 s, the continue arrow shows)
 //	lock 5                        pause that clicks cannot cut short
 //	auto                          the next line goes on by itself when typed
 //	route                         set route_mayu / route_hana / route_nobody from the flags
@@ -61,6 +63,7 @@ const (
 	OpMusic
 	OpSpeed
 	OpWait
+	OpHold
 	OpEnd
 	OpLock
 	OpAuto
@@ -400,6 +403,11 @@ func parseCommand(n *Node, word, rest string) error {
 			if n.Number, err = strconv.ParseFloat(v, 64); err != nil || n.Number <= 0 {
 				err = fmt.Errorf("%s %q: want a positive number", word, v)
 			}
+		}
+	case "hold":
+		n.Op = OpHold
+		if len(args) != 0 {
+			err = fmt.Errorf("hold takes no argument")
 		}
 	case "end":
 		n.Op = OpEnd

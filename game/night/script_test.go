@@ -57,6 +57,7 @@ func TestParseErrorsNameTheLine(t *testing.T) {
 		{"one option", "choice\noption only\nbg black", "line 1: a choice needs at least two options"},
 		{"unknown fx", "fx explode", "unknown fx"},
 		{"bad wait", "wait soon", "want a positive number"},
+		{"hold with a number", "hold 2", "hold takes no argument"},
 		{"no sprites", "Note (angry): x", "has no sprites"},
 		{"empty line", "Mayu:", "line 1"},
 	}

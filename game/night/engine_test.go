@@ -330,3 +330,43 @@ func TestFaceHopGoesDown(t *testing.T) {
 		t.Errorf("hana %d mayu %d: only the speaker hops, downward", e.FaceHop("hana"), e.FaceHop("mayu"))
 	}
 }
+
+func TestHoldEndsOnlyOnAClick(t *testing.T) {
+	e := newEngine(t, "bg corridor\nhold\nbg station\n~ after\n", Flags{})
+	if !e.Holding() || e.HasLine() || e.BG() != "corridor" {
+		t.Fatalf("a hold shows its shot with no line: holding=%v bg=%q", e.Holding(), e.BG())
+	}
+	for range 600 { // ten seconds: no timer ends a hold
+		if err := e.Tick(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !e.Holding() || e.BG() != "corridor" {
+		t.Fatal("ticks must not end a hold")
+	}
+	if !e.Snapshot().Holding {
+		t.Error("the dump should say holding")
+	}
+	if err := e.Advance(); err != nil || e.Holding() || e.FullText() != "after" || e.BG() != "station" {
+		t.Fatalf("a click should end the hold, got %q bg=%q (%v)", e.FullText(), e.BG(), err)
+	}
+}
+
+func TestHoldAutoAndFastForward(t *testing.T) {
+	e := newEngine(t, "hold\n~ after\n", Flags{})
+	e.AutoPlay = true
+	for range holdAutoTicks - 1 {
+		_ = e.Tick()
+	}
+	if !e.Holding() {
+		t.Fatal("AUTO should wait the full 2 s")
+	}
+	_ = e.Tick()
+	if e.Holding() || e.FullText() != "after" {
+		t.Error("AUTO should end the hold after 2 s")
+	}
+	e = newEngine(t, "hold\n~ after\n~ third\n", Flags{})
+	if err := e.FastForward(3); err != nil || e.FullText() != "third" {
+		t.Errorf("fast-forward should pass a hold, got %q (%v)", e.FullText(), err)
+	}
+}

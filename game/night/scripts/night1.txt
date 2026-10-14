@@ -14,7 +14,7 @@ sfx monitor_far
 wait 1
 
 bg corridor
-wait 1
+hold
 bg station
 show mayu
 Mayu (bright): Oh! Look who's up!

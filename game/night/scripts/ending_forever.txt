@@ -16,7 +16,7 @@ hide
 ~ She's standing on the chair.
 ~ She's smiling at me.
 bg mayu_chair
-wait 2
+hold
 # The drop: a hard cut to black, no body, no aftermath. Blood splashes on the
 # camera on the cut frame (3 splash frames over the last image), then the
 # picture is black and the stain stays; the ending scene keeps drawing it.

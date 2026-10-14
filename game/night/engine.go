@@ -81,6 +81,8 @@ type Engine struct {
 
 	waitLeft int // ticks left of a wait command
 	waiting  bool
+	holding  bool // the wait is a hold: only a click (or AUTO) ends it
+	holdTick int  // ticks the hold has been on screen
 	locked   bool // the wait ignores clicks (the game "falls asleep")
 
 	autoNext bool // the next line goes on by itself
@@ -149,6 +151,9 @@ func (e *Engine) run() error {
 		case OpWait, OpLock:
 			e.waiting, e.waitLeft = true, int(n.Number*TicksPerSecond)
 			e.locked = n.Op == OpLock
+			return nil
+		case OpHold:
+			e.waiting, e.holding, e.holdTick = true, true, 0
 			return nil
 		case OpEnd:
 			e.ended, e.endsTo = true, n.Name
@@ -283,6 +288,13 @@ func (e *Engine) Tick() error {
 		}
 		return nil
 	}
+	if e.holding {
+		// A hold has no timer: only AUTO ends it, after holdAutoTicks.
+		if e.holdTick++; e.AutoPlay && e.holdTick >= holdAutoTicks {
+			return e.leaveWait()
+		}
+		return nil
+	}
 	if e.waiting {
 		e.waitLeft--
 		if e.waitLeft <= 0 {
@@ -295,6 +307,13 @@ func (e *Engine) Tick() error {
 	}
 	return nil
 }
+
+// holdAutoTicks is how long AUTO leaves a hold (a line-less shot) up: 2 s.
+const holdAutoTicks = 2 * TicksPerSecond
+
+// Holding says whether a hold is up: a shot with no line that waits for a
+// click. The painter shows the continue arrow for it.
+func (e *Engine) Holding() bool { return e.holding }
 
 // AutoDelay is how many ticks a finished line waits in AUTO mode: 1.2 s plus
 // 0.05 s for every character, never more than 6 s.
@@ -315,7 +334,7 @@ func (e *Engine) fxRunning() bool {
 }
 
 func (e *Engine) leaveWait() error {
-	e.waiting, e.locked = false, false
+	e.waiting, e.locked, e.holding = false, false, false
 	e.pc++
 	return e.run()
 }
@@ -546,6 +565,7 @@ type State struct {
 	Ended     bool     `json:"ended"`
 	EndsTo    string   `json:"endsTo"`
 	Auto      bool     `json:"auto"`
+	Holding   bool     `json:"holding"`
 	LastSFX   string   `json:"sfx"`
 	LastMusic string   `json:"music"`
 }
@@ -557,7 +577,7 @@ func (e *Engine) Snapshot() State {
 		Text: e.Shown(), Thinking: e.thinking, LineDone: e.LineDone(),
 		Options: []string{}, Hover: e.hover, BG: e.bg, Visible: e.visible,
 		Faces: e.faces, Layers: []string{}, Props: []string{}, Effects: []string{},
-		Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
+		Ended: e.ended, EndsTo: e.endsTo, Auto: e.AutoPlay, Holding: e.holding, LastSFX: e.LastSFX, LastMusic: e.LastMusic,
 	}
 	for _, o := range e.options {
 		st.Options = append(st.Options, o.Text)
