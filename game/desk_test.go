@@ -142,7 +142,7 @@ func TestWrongStampBringsACitation(t *testing.T) {
 		t.Errorf("score = %d after a wrong stamp", sh.Score())
 	}
 	l1, l2 := citationLines(stamped, right)
-	if l1 != "STAMPED: REFER" || l2 != "RIGHT CALL: ADMIT" {
+	if l1 != "YOU: REFER" || l2 != "RIGHT: ADMIT" {
 		t.Errorf("lines %q, %q", l1, l2)
 	}
 	runTicks(sh, citationTicks+1)
@@ -553,5 +553,24 @@ func TestScorePopupAfterTheStamp(t *testing.T) {
 	}
 	if since, ok := sh.SinceImpact(); !ok || since != hitStopTicks {
 		t.Errorf("since impact %d %v", since, ok)
+	}
+}
+
+// Every citation line fits the lines printed on the slip.
+func TestCitationLinesFit(t *testing.T) {
+	font, err := LoadFont()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stamps := []Stamp{StampAdmit, StampRefer, StampDischarge}
+	for _, stamped := range stamps {
+		for _, right := range stamps {
+			l1, l2 := citationLines(stamped, right)
+			for _, l := range []string{l1, l2} {
+				if w := font.Width(l); w > citationLineWidth {
+					t.Errorf("%q is %d px wide, the slip line is %d", l, w, citationLineWidth)
+				}
+			}
+		}
 	}
 }

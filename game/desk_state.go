@@ -461,9 +461,14 @@ func (s *Shift) Slip() (stamped, right Stamp, ok bool) {
 	return 0, 0, false
 }
 
+// citationLineWidth is how wide a line written on the slip may be: the lines
+// of the doc_citation sheet are 86 px.
+const citationLineWidth = 86
+
 // citationLines are the two lines written on the slip; the rest is printed.
+// "YOU:" and "RIGHT:" are short so that "DISCHARGE" still fits the line.
 func citationLines(stamped, right Stamp) (string, string) {
-	return "STAMPED: " + strings.ToUpper(stamped.String()), "RIGHT CALL: " + strings.ToUpper(right.String())
+	return "YOU: " + strings.ToUpper(stamped.String()), "RIGHT: " + strings.ToUpper(right.String())
 }
 
 // SinceImpact is how many ticks ago a stamp hit the page, while the effects
