@@ -265,20 +265,8 @@ func (p *painter) settlerID(g *Guest, dy int) {
 // one turns, the old page bending away over the new one.
 func (p *painter) pages(sh *Shift, g *Guest, pose folderPose, dy int) {
 	x, y := pagePos.X, pagePos.Y+dy
-	if progress, turning := sh.Turning(); turning && pose.guest == sh.Desk().FolderGuest() {
-		// The next page lies under; the top page curls off its right edge,
-		// which follows the cursor: it narrows toward the spine and its far
-		// edge lifts toward us, so it is a little shorter. It stays on the
-		// page, so the Settler ID on the left is never covered.
-		under := nextPage(g, pose.page)
-		p.shadow(p.pageSheet(under), "fill", x, y, 1, 1)
-		p.pageAt(g, under, x, y)
-		p.into(p.art.page, func(q *painter) { q.pageAt(g, pose.page, 0, 0) })
-		w := float32(pageW) * float32(1-progress)
-		lift := float32(10 * progress)
-		drawWarped(p.screen, p.art.page, image.Rect(0, 0, pageW, pageH),
-			point{float32(x), float32(y)}, point{float32(x) + w, float32(y) + lift},
-			point{float32(x), float32(y + pageH)}, point{float32(x) + w, float32(y+pageH) - lift}, 14, 1)
+	if _, turning := sh.Turning(); turning && pose.guest == sh.Desk().FolderGuest() {
+		p.curledPage(sh, g, pose.page, x, y)
 		return
 	}
 	p.shadow(p.pageSheet(pose.page), "fill", x, y, 1, 1)
@@ -344,4 +332,83 @@ func (p *painter) pageAt(g *Guest, pg Page, x, y int) {
 		p.text(g.Notes[0], x+8, y+89, colInk)
 		p.text(g.Notes[1], x+8, y+98, colInk)
 	}
+}
+
+// backOfPage is the colour of the reverse of a page: mint, so it reads as
+// the other side (no mirrored writing needed).
+var backOfPage = color.RGBA{0xdd, 0xe5, 0xd9, 0xff}
+
+// curledPage draws the top page being turned like a real page (curl.go): the
+// grabbed corner follows the cursor, the part still flat shows the page, the
+// part peeled away shows the next page underneath with a thin shadow along the
+// fold, and the peeled part is mirrored across the fold as the back of the
+// page, with a drop shadow under it. When the turn is finished the page fades
+// down to the back of the stack.
+func (p *painter) curledPage(sh *Shift, g *Guest, top Page, x, y int) {
+	under := nextPage(g, top)
+	p.shadow(p.pageSheet(under), "fill", x, y, 1, 1)
+	p.pageAt(g, under, x, y)
+	p.into(p.art.page, func(q *painter) { q.pageAt(g, top, 0, 0) })
+
+	corner, tuck := sh.Curl()
+	flat, peeled, flap, f, ok := curl(pageW, pageH, corner)
+	origin := point{float32(x), float32(y) + float32(8*tuck)} // the tucked page sinks a little
+	alpha := float32(1 - tuck)
+	if ok {
+		// A thin shadow along the fold, on the page underneath: the strip of
+		// the peeled part within 3 px of the fold.
+		near := fold{m: point{f.m.x - 3*f.n.x, f.m.y - 3*f.n.y}, n: f.n}
+		p.poly(near.clip(peeled, true), origin, nil, colDim, 1)
+	}
+	p.poly(flat, origin, p.art.page, color.RGBA{0xff, 0xff, 0xff, 0xff}, alpha)
+	if ok {
+		flap = clipToPage(flap)
+		shade := make([]point, len(flap))
+		for i, v := range flap {
+			shade[i] = point{v.x + 1, v.y + 2} // the usual drop shadow, a little bigger
+		}
+		p.poly(clipToPage(shade), origin, nil, colDim, alpha)
+		p.poly(flap, origin, nil, backOfPage, alpha)
+	}
+}
+
+// clipToPage keeps the part of a polygon inside the page rectangle, so a
+// flap or a shadow never leaves the page (and never covers the Settler ID).
+func clipToPage(poly []point) []point {
+	for _, edge := range []fold{
+		{point{0, 0}, point{1, 0}}, {point{0, 0}, point{0, 1}},
+		{point{pageW, pageH}, point{-1, 0}}, {point{pageW, pageH}, point{0, -1}},
+	} {
+		if len(poly) == 0 {
+			return nil
+		}
+		poly = edge.clip(poly, true)
+	}
+	return poly
+}
+
+// poly draws a convex polygon (page pixels, at origin on the screen) as a
+// fan of triangles. With src it is textured from that picture (the polygon's
+// own coordinates are the picture's); with nil src it is one flat colour.
+func (p *painter) poly(pts []point, origin point, src *ebiten.Image, c color.RGBA, alpha float32) {
+	if len(pts) < 3 {
+		return
+	}
+	img := src
+	if img == nil {
+		img = p.art.white
+	}
+	r, g, b := float32(c.R)/255*alpha, float32(c.G)/255*alpha, float32(c.B)/255*alpha // premultiplied
+	vertices := make([]ebiten.Vertex, len(pts))
+	for i, v := range pts {
+		vertices[i] = ebiten.Vertex{DstX: origin.x + v.x, DstY: origin.y + v.y, SrcX: v.x, SrcY: v.y, ColorR: r, ColorG: g, ColorB: b, ColorA: alpha}
+		if src == nil {
+			vertices[i].SrcX, vertices[i].SrcY = 0.5, 0.5
+		}
+	}
+	var indices []uint16
+	for i := 1; i < len(pts)-1; i++ {
+		indices = append(indices, 0, uint16(i), uint16(i+1))
+	}
+	p.screen.DrawTriangles(vertices, indices, img, &ebiten.DrawTrianglesOptions{Filter: ebiten.FilterNearest})
 }

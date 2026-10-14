@@ -114,6 +114,7 @@ type DeskArt struct {
 
 	// Scratch pictures the look-down desk draws into before bending them.
 	back, top, closed, open, page *ebiten.Image
+	white                         *ebiten.Image // one white pixel, the source of flat-coloured triangles
 }
 
 // LoadDeskArt loads the sheets and the font.
@@ -146,6 +147,8 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 	a.back, a.top = ebiten.NewImage(ScreenW, ScreenH), ebiten.NewImage(ScreenW, ScreenH)
 	a.closed, a.open = ebiten.NewImage(folderW, folderH), ebiten.NewImage(folderW, folderH)
 	a.page = ebiten.NewImage(pageW, pageH)
+	a.white = ebiten.NewImage(1, 1)
+	a.white.Fill(color.White)
 	var err error
 	if a.font, err = LoadFont(); err != nil {
 		return nil, err

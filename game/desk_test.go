@@ -49,7 +49,7 @@ func TestOpenAndTurnPages(t *testing.T) {
 		if err := sh.TurnPage(); err != nil {
 			t.Fatal(err)
 		}
-		runTicks(sh, turnTicks)
+		runTicks(sh, flipTestTicks)
 	}
 	want := []Page{PageReferral, PageSleepLog, PageWristband}
 	for i := range want {
@@ -291,16 +291,16 @@ func TestReleaseFinishesOrSpringsBack(t *testing.T) {
 		sh := folderOnDesk(t, 2)
 		_ = sh.GoToPage(PageReferral)
 		runTicks(sh, openTicks)
-		if err := sh.BeginFlipDrag(318); err != nil {
+		if err := sh.BeginFlipDrag(318, 213); err != nil {
 			t.Fatal(err)
 		}
-		sh.DragFlipTo(318 - c.drag)
+		sh.DragFlipTo(318-c.drag, 213)
 		runTicks(sh, 5)
 		if sh.Desk().Page() != PageReferral {
 			t.Fatal("the page must not change while it is held")
 		}
 		sh.EndFlipDrag()
-		runTicks(sh, turnTicks+2)
+		runTicks(sh, flipTestTicks)
 		if got := sh.Desk().Page(); got != c.wantPage {
 			t.Errorf("released after %d px: page %v, want %v", c.drag, got, c.wantPage)
 		}
@@ -352,8 +352,31 @@ func TestDeskSceneDragFlipsThePage(t *testing.T) {
 	if sh.Dragging() {
 		t.Error("the button is up: the page should be let go")
 	}
-	runTicks(sh, turnTicks+2)
+	runTicks(sh, flipTestTicks)
 	if sh.Desk().Page() != PageSleepLog {
 		t.Errorf("page = %v, want the sleep log", sh.Desk().Page())
+	}
+}
+
+// flipTestTicks is long enough for any released flip to finish: the curl
+// sweeps (about half a second at worst) and the page tucks to the back.
+const flipTestTicks = 60
+
+// A released flip takes a fraction of a second, not much more, in both
+// directions.
+func TestFlipAnimationIsQuick(t *testing.T) {
+	for _, target := range []float64{0, 1} {
+		f := pageFlip{active: true, progress: 0.5, target: target}
+		ticks := 0
+		for f.active && !f.done && ticks < 100 {
+			f.step()
+			ticks++
+		}
+		if target == 1 && !f.done || target == 0 && f.active {
+			t.Fatalf("target %v never finished", target)
+		}
+		if ticks > 24 { // 0.4 s at most from the middle
+			t.Errorf("target %v took %d ticks", target, ticks)
+		}
 	}
 }

@@ -185,18 +185,27 @@ func dragProgress(startX, x int) float64 {
 	return min(max(float64(startX-x)/flipTravel, 0), 1)
 }
 
-// pageFlip is the top page being turned, by a drag or by TurnPage.
+// pageFlip is the top page being turned, by a drag or by TurnPage. The
+// grabbed corner is at progress along the way to the spine and dy pixels
+// above or below the corner's own height (the cursor's up-and-down), which
+// curl.go turns into the fold.
 type pageFlip struct {
 	active   bool
-	dragging bool    // the player is holding the corner
-	startX   int     // where the corner was pressed
+	dragging bool // the player is holding the corner
+	startX   int  // where the corner was pressed
+	startY   int
 	progress float64 // 0 to 1
+	dy       float64 // the cursor's height above the grab point, pixels
 	target   float64 // after letting go: 1 finishes the flip, 0 springs back
+	tuck     float64 // 0 to 1: the turned page slides to the back of the stack
 	done     bool    // the flip finished this tick: the next page is on top
 }
 
 // finishAt is the progress at which letting go finishes the flip.
 const finishAt = 0.5
+
+// tuckTicks is how long the turned page takes to slide to the back.
+const tuckTicks = 6
 
 // release lets go of the corner: past the middle the page finishes its
 // turn, before the middle it springs back.
@@ -208,25 +217,35 @@ func (f *pageFlip) release() {
 	}
 }
 
-// step moves a released flip toward its target, one turnTicks-th of the
-// way a tick, and ends it there.
+// step moves a released flip toward its target: quickly at first, then
+// slowing down (a fifth of what is left each tick, but never slower than 1/40),
+// and the corner's height settles back too. Once a flip has turned all the
+// way the page tucks to the back; once it is flat again the flip is over.
 func (f *pageFlip) step() {
 	if !f.active || f.dragging {
 		return
 	}
-	d := 1.0 / turnTicks
+	left := f.target - f.progress
+	move := math.Max(math.Abs(left)*0.2, 1.0/40)
 	switch {
-	case f.progress < f.target:
-		f.progress = min(f.progress+d, f.target)
-	case f.progress > f.target:
-		f.progress = max(f.progress-d, f.target)
-	}
-	if math.Abs(f.progress-f.target) < 1e-9 { // sums of 1/14 are not exact
+	case math.Abs(left) <= move:
 		f.progress = f.target
-		f.done = f.target == 1
-		if !f.done {
-			*f = pageFlip{}
-		}
+	case left > 0:
+		f.progress += move
+	default:
+		f.progress -= move
+	}
+	f.dy *= 0.8
+	if f.progress != f.target {
+		return
+	}
+	if f.target == 0 {
+		*f = pageFlip{}
+		return
+	}
+	f.tuck += 1.0 / tuckTicks
+	if f.tuck >= 1-1e-9 {
+		f.done = true
 	}
 }
 
@@ -248,19 +267,20 @@ func (s *Shift) flipReady() error {
 	return nil
 }
 
-// BeginFlipDrag takes the corner of the top page at screen column x.
-func (s *Shift) BeginFlipDrag(x int) error {
+// BeginFlipDrag takes the corner of the top page at screen point (x, y).
+func (s *Shift) BeginFlipDrag(x, y int) error {
 	if err := s.flipReady(); err != nil {
 		return err
 	}
-	s.desk.flip = pageFlip{active: true, dragging: true, startX: x}
+	s.desk.flip = pageFlip{active: true, dragging: true, startX: x, startY: y}
 	return nil
 }
 
-// DragFlipTo moves the held corner to screen column x.
-func (s *Shift) DragFlipTo(x int) {
+// DragFlipTo moves the held corner to the screen point (x, y).
+func (s *Shift) DragFlipTo(x, y int) {
 	if f := &s.desk.flip; f.active && f.dragging {
 		f.progress = dragProgress(f.startX, x)
+		f.dy = min(max(float64(y-f.startY), -70), 10) // the corner may rise, hardly sink
 	}
 }
 
@@ -280,7 +300,7 @@ func (s *Shift) TurnPage() error {
 	if err := s.flipReady(); err != nil {
 		return err
 	}
-	s.desk.flip = pageFlip{active: true, target: 1}
+	s.desk.flip = pageFlip{active: true, target: 1, dy: -30} // a slanted curl looks best
 	return nil
 }
 
@@ -304,6 +324,14 @@ func (s *Shift) GoToPage(p Page) error {
 // Turning says whether the top page is turning and how far (0 to 1).
 func (s *Shift) Turning() (progress float64, ok bool) {
 	return s.desk.flip.progress, s.desk.flip.active
+}
+
+// Curl is where the held corner is, in the page's own pixels (the page's
+// bottom-right corner is (pageW, pageH)), and how far the turned page has
+// tucked to the back (0 to 1).
+func (s *Shift) Curl() (corner point, tuck float64) {
+	f := s.desk.flip
+	return point{float32(pageW - f.progress*flipTravel), float32(pageH + f.dy)}, f.tuck
 }
 
 // LiftStamp takes a stamp off the desk into the hand.

@@ -78,8 +78,8 @@ func (s *deskScene) Update() error {
 // letting go finishes the turn or springs the page back.
 func (s *deskScene) drag() {
 	in := s.env.Input
-	x, _ := in.Cursor()
-	s.shift.DragFlipTo(x)
+	x, y := in.Cursor()
+	s.shift.DragFlipTo(x, y)
 	if in.Released() || !in.Held() {
 		s.shift.EndFlipDrag()
 	}
@@ -118,7 +118,7 @@ func (s *deskScene) click(x, y int) {
 			_ = sh.OpenFolder() // still sliding in: nothing happens yet
 		}
 	case cornerRect.has(x, y):
-		_ = sh.BeginFlipDrag(x) // the corner is taken; drag() follows the mouse
+		_ = sh.BeginFlipDrag(x, y) // the corner is taken; drag() follows the mouse
 	}
 }
 
