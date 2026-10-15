@@ -187,7 +187,7 @@ func (g *Game) Update() error {
 	// The clock stops on the top-10: the shift is over, so it must not run
 	// on past midnight while the scores are on the screen.
 	if g.scenes.ID() != SceneDayTop10 {
-		g.env.Clock.Advance(g.env.ClockRate * g.env.Speed / 60)
+		g.env.tickClock()
 	}
 	if sh := g.env.Shift(); sh != nil {
 		sh.Update()

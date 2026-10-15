@@ -356,3 +356,34 @@ func TestClickingThroughTheSteps(t *testing.T) {
 		t.Errorf("after the stamp step %d still shows", h.Step)
 	}
 }
+
+// The HUD clock stands still with the shift while the steps hold it.
+func TestGuidedStepsHoldTheHUDClock(t *testing.T) {
+	env := testEnv(t)
+	env.TutorialHints = true
+	if err := env.StartShift(); err != nil {
+		t.Fatal(err)
+	}
+	defer env.StopShift()
+	sh := env.Shift()
+	if err := deskSetup(true, PageOrientation)(sh); err != nil {
+		t.Fatal(err)
+	}
+	sh.tut.Dismiss(hintFiles)
+	start := env.Clock.String()
+	for range 600 {
+		env.tickClock()
+		sh.Update()
+	}
+	if env.Clock.String() != start {
+		t.Errorf("HUD clock went %s -> %s while paused", start, env.Clock)
+	}
+	sh.SkipTutorial()
+	for range 600 {
+		env.tickClock()
+		sh.Update()
+	}
+	if env.Clock.String() == start {
+		t.Error("HUD clock should run again after Esc")
+	}
+}

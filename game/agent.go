@@ -682,7 +682,7 @@ func advance(env *Env, seconds int) {
 		return
 	}
 	for range seconds * 60 {
-		env.Clock.Advance(env.ClockRate * env.Speed / 60)
+		env.tickClock()
 		sh.Update()
 	}
 }

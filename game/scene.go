@@ -206,6 +206,16 @@ func (e *Env) StartShift() error {
 	return nil
 }
 
+// tickClock moves the HUD clock one frame on. It stands still while the day 1
+// steps hold the shift (tutorial.go), so it stays in step with the shift's own
+// seconds.
+func (e *Env) tickClock() {
+	if sh := e.Shift(); sh != nil && sh.Paused() {
+		return
+	}
+	e.Clock.Advance(e.ClockRate * e.Speed / 60)
+}
+
 // StopShift stops the patients' goroutines and forgets the shift. The
 // points stay in Scores.
 func (e *Env) StopShift() error {

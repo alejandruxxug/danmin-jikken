@@ -35,7 +35,7 @@ func (e *Env) jumpToReveal(name string) error {
 		if g := sh.window(); g != nil && !g.Self && sh.atWindow(g) {
 			_ = sh.Stamp(StampRefer)
 		}
-		e.Clock.Advance(e.ClockRate * e.Speed / 60)
+		e.tickClock()
 		sh.Update()
 		e.UpdateReveal(sh)
 		if g := e.Reveal.Guest; g != nil && sh.atWindow(g) {
