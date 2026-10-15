@@ -69,4 +69,28 @@ The three prompts that really shaped the game, out of about 190. The quotes are 
 | 2026-10-14 | The AI wrote in the trailer note that the dagger slam is "title tick 21" and built the sync plan (Ironbound's drop on frame 3261) on that number | The builder measured the recorded title frames: the dagger starts 14 ticks after the logo and falls for 16 ticks, so it lands on frame 30 | The plan starts the title shot at its frame 9, so the real slam (frame 30) is on 3261; a test and the render log check drop frame = slam frame |
 
 ## What I learned
-*TODO (Alejo, before the defense): write this section yourself, in your own words. It is not filled in on purpose.*
+### OOP in Go
+Go has no classes and no inheritance, and that was the first thing I had to get over.
+- **Composition, not inheritance.** `Doctor`, `Nurse`, `Orderly` and `Patient` all embed `Person` by value. A doctor isn't a "subclass" of a person, it *has* a person inside, and Go promotes `ID()` and `Name()` so it reads the same.
+- **Interfaces are implicit.** `Attender` is just three methods (`ID`, `Name`, `Attend`). Nobody writes "implements"; if the type has the methods, it is one. The hospital keeps its staff in a `[]Attender` and sends whoever is next without knowing if it's a doctor or a nurse. That's why adding the Nurse in M1 didn't touch the dispatch code at all. The `var _ Attender = (*Nurse)(nil)` lines make the compiler check it for me.
+- **Encapsulation is per package.** Lowercase fields can't be touched from outside `hospital/`, so the game can only go through methods. That's what let me freeze the model after M1 and build the whole GUI on top without changing it, like the brief asks.
+- **Typed constants.** `PatientState` with `iota` and a `String()` method instead of loose strings, so a typo is a compile error, not a bug.
+- **Errors are values.** No exceptions and no `panic` for normal stuff: `ErrNoRoomAvailable` and friends, wrapped with `%w` to say which patient, and checked with `errors.Is`. "No room" is just something that happens in a hospital, not a crash.
+- **Goroutines need locks.** Every patient is a goroutine that falls asleep on its own, so the hospital has a mutex and the tests run with `-race`. The AI's first version read the episode history without a lock, which was fine with one goroutine and a data race with many (it's in the table). That one taught me the race detector isn't optional.
+
+### Game design
+- **I can picture my ideas now.** The Forever ending I described beat by beat (the rope, the railing breaking, the blood on the camera) came out *literally* how I imagined it. Seeing it in my head and then on screen is the skill I'm proudest of.
+- **References are a tool.** Almost every decision was "like X, but…": FNAF 2 but at a reception, DDLC's meta stuff, Slay the Princess at night. Mixing things you know is how you get something new.
+- **Playtesting beats theory.** My best changes came after playing: the strobe leaking the night, the endings not being cinematic enough, not knowing the rules on day 1 (that became the tutorial).
+- **Design moments, not features.** The music starting quiet and dropping right on the title, the pause on the face before the stun. Timing is what makes people feel something.
+- **Turn the constraint into the game.** "A hospital in Go with OOP" became the day shift you actually play, instead of a box I had to tick.
+- **Cutting is design too.** The scope board and going from more endings down to four (Sleep, Wake, Forever, 3:17).
+
+### Working with AI
+- **I direct, it builds.** I decided how it looks and feels, the AI wrote most of the code, and nothing got coded until I approved the screen. Splitting it into agents (Opus draws, Sonnet builds and tests) worked like running a tiny studio, and I turned that into the pixel-game-studio skill.
+- **The AI is confidently wrong sometimes.** Everything in the table above looked fine until a test, a screenshot or me playing it said otherwise. You need a way to check, not just trust.
+- **Understanding is still on me.** The AI writing a line doesn't mean I can explain it. Going through the code for the defense is part of the project, not extra.
+
+### For me
+- **Finishing.** Builds for three systems, a trailer, and the class loved it. Lots of people start games, this one is done.
+- **Pacing myself.** The "DONE by morning" 4 a.m. sprints worked this time, but next time I want to plan it better.
