@@ -332,6 +332,23 @@ func (s *endingScene) drawTitle(dst *ebiten.Image) {
 	s.centered(dst, strings.ToUpper(endingSubtitle), subtitleTop-capTop, small)
 }
 
+// UsesCRT says whether this frame goes through the day's CRT. The Sleep
+// ending ends in a day (Alejo, 2026-10-14: "on the endings that are about
+// going to sleep (ending up in day) can you make the crt like the day?"):
+// from the white of the Driftwell reel on, the picture is the day reception
+// desk, so the whole frame (bars, title and finale included, as the day
+// scenes' own UI is) is shown on the glass. The other endings stay night.
+func (s *endingScene) UsesCRT() bool {
+	if s.name != night.EndingSleep || s.script == nil || s.script.engine == nil {
+		return false
+	}
+	switch s.script.engine.BG() {
+	case "white", "desk_day":
+		return true
+	}
+	return false
+}
+
 func (s *endingScene) centered(screen *ebiten.Image, text string, y int, c color.Color) {
 	s.font.Draw(screen, text, (ScreenW-s.font.Width(text))/2, y, c)
 }

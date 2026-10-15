@@ -249,3 +249,34 @@ func TestFinaleDrawsEveryStage(t *testing.T) {
 		}
 	}
 }
+
+// The Sleep ending is shown through the day CRT from the white reel on (the
+// day desk), and its night shots are not. The other endings never are.
+func TestSleepEndingUsesTheDayCRT(t *testing.T) {
+	for _, ending := range night.Endings {
+		env := testEnv(t)
+		s := &endingScene{name: ending}
+		if err := s.Enter(env); err != nil {
+			t.Fatal(err)
+		}
+		day, nightShots := 0, 0
+		for i := 0; i < 1400 && s.phase == phaseScript; i++ {
+			if err := s.Update(); err != nil {
+				t.Fatal(err)
+			}
+			bg := s.script.engine.BG()
+			want := ending == night.EndingSleep && (bg == "white" || bg == "desk_day")
+			if got := s.UsesCRT(); got != want {
+				t.Fatalf("%s: UsesCRT = %v on bg %q, want %v", ending, got, bg, want)
+			}
+			if want {
+				day++
+			} else {
+				nightShots++
+			}
+		}
+		if nightShots == 0 || (ending == night.EndingSleep) != (day > 0) {
+			t.Errorf("%s: %d day frames, %d night frames", ending, day, nightShots)
+		}
+	}
+}
