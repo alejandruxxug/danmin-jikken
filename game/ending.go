@@ -263,6 +263,12 @@ func (s *endingScene) updateFinale() error {
 	if s.env.Audition {
 		return ebiten.Termination
 	}
+	// The run has reached its top-10, whichever ending it was: later runs
+	// start without the hints (a replay never gets here, an audition left above).
+	s.env.TutorialHints = false
+	if err := s.env.SaveSettings(); err != nil {
+		return err
+	}
 	s.env.StartPowerOn()
 	s.env.SwitchTo(SceneDayTop10)
 	return nil

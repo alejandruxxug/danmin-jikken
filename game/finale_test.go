@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -279,5 +280,38 @@ func TestSleepEndingUsesTheDayCRT(t *testing.T) {
 		if nightShots == 0 || (ending == night.EndingSleep) != (day > 0) {
 			t.Errorf("%s: %d day frames, %d night frames", ending, day, nightShots)
 		}
+	}
+}
+
+// The first run that reaches its top-10 turns the hints off for good, for
+// every ending, and saves that (bug found by the tester: only endShift did).
+func TestReachingTheTop10TurnsHintsOff(t *testing.T) {
+	for _, ending := range night.Endings {
+		path := filepath.Join(t.TempDir(), SettingsFile)
+		s, env := enterFinale(t, ending, FinaleTicks()-3)
+		env.SettingsPath = path
+		env.TutorialHints = true
+		for i := 0; i < 5 && env.nextScene == ""; i++ {
+			if err := s.Update(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		saved, err := LoadSettings(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if env.TutorialHints || saved.TutorialHints {
+			t.Errorf("%s: hints still on after the top-10 (env %v, saved %v)", ending, env.TutorialHints, saved.TutorialHints)
+		}
+	}
+}
+
+// An audition never touches the hints setting.
+func TestAuditionKeepsTheHints(t *testing.T) {
+	s, env := enterFinale(t, night.EndingWake, FinaleTicks()-1)
+	env.Audition, env.TutorialHints = true, true
+	_ = s.Update()
+	if !env.TutorialHints {
+		t.Error("an audition turned the hints off")
 	}
 }
