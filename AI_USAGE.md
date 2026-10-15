@@ -24,7 +24,13 @@ A Claude Code skill Alejo and Claude made on 2026-10-14 from the way this game w
 Why it matters here: it writes down the method used for the GUI and the night (who decides, who draws, who codes, who tests), so the workflow is something Alejo can explain, not something hidden in old chats. The game's credits name it ("Made with: the pixel-game-studio skill").
 
 ## Decisive prompts
-*TODO (Alejo, before the defense): 2-3 prompts that shaped the project, in your own words.*
+The three prompts that really shaped the game, out of about 190. The quotes are exactly what I typed, typos included.
+
+1. **Turning the homework into a game.** The assignment is a hospital in Go with OOP, and the professor likes worked-up mini games, so on day one I wrote: *"The teacher is calling for an oop in go but i can haggle the programming lang if it includes the assginment tasks"*. A bit later came the line that is basically the whole game: *"separate the day and night since day is full trabajo and night is full visual novel"* (trabajo = the assignment). The day is the assignment, playable: every click, stamp and query calls the real `hospital` package. The night is the visual novel and it's worth 0 points, it's just for me. That split is also why `hospital/` could be frozen after M1 and the GUI only uses `Hospital`'s methods, like the brief asks.
+
+2. **The day is false.** While reading the first story draft I said: *"the time we're really awake would be at night. And then uh, the day would be like a, like a false."* That changed everything. The game opens on a gurney, you close your eyes and wake up in a white day. The day has a CRT on it because you're kind of watching it through a screen, the strobe throws you into the night, and on day 3 the last patient at the window is you. Before that prompt we just had a day and a night. After it, they had a reason.
+
+3. **How I worked with the agents.** *"tell the sonnet agent if somehting looks fishy and out of place tell opus, confirm it and opus fixes that exact thing."* That became the method: Opus draws in Aseprite and mocks the screens in Figma, Sonnet builds and tests, nothing gets coded until I approve the screen, and every milestone starts with fresh agents. I decide how it looks and feels, the AI builds it, and the tester catches what I'd miss. Most of the mistakes in the table above were caught that way. Later we turned the method into the pixel-game-studio skill (above).
 
 ## Cases where the AI was wrong or not idiomatic
 
