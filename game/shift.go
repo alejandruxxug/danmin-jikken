@@ -136,10 +136,12 @@ type Shift struct {
 	message   string
 	messageAt float64
 	alert     *Alert
-	dozing    *Guest  // the day 1 tutorial guest while they are asleep at the window
-	windowAt  float64 // when the first guest reached the window, 0 = not yet
-	tutorial  bool    // the nod-off has happened (it only happens once)
-	allDoneAt float64 // seconds when the last guest was served, 0 = not yet
+	dozing    *Guest    // the day 1 tutorial guest while they are asleep at the window
+	windowAt  float64   // when the first guest reached the window, 0 = not yet
+	tutorial  bool      // the nod-off has happened (it only happens once)
+	tut       *Tutorial // the hint box (tutorial.go)
+	paused    int       // ticks the tutorial held the shift's clock
+	allDoneAt float64   // seconds when the last guest was served, 0 = not yet
 	over      bool
 }
 
@@ -166,6 +168,7 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 		busyUntil: make(map[string]float64),
 		trace:     make(map[string][]bool),
 		forceDark: -1,
+		tut:       newTutorial(false), // the game turns it on (Env.StartShift)
 	}
 	for i, v := range rules.Visitors {
 		if v.Self {
@@ -178,6 +181,7 @@ func NewShift(day int, seed int64, speed float64, sleepy bool, scores map[string
 		})
 	}
 	s.scores[s.scoreKey()] = 0
+	s.EnableTutorial(false) // no hints until the game asks for them
 	return s, nil
 }
 
@@ -189,7 +193,7 @@ func (s *Shift) Score() int { return s.scores[s.scoreKey()] }
 func (s *Shift) addScore(n int) { s.scores[s.scoreKey()] += n }
 
 // Seconds is how long the shift has run, in game seconds.
-func (s *Shift) Seconds() float64 { return float64(s.ticks) / 60 * s.speed }
+func (s *Shift) Seconds() float64 { return float64(s.ticks-s.paused) / 60 * s.speed }
 
 // Served is how many guests have been stamped; Total how many there are.
 func (s *Shift) Served() int { return s.served }
@@ -232,6 +236,9 @@ func (s *Shift) Stop() error { return s.ward.Stop() }
 // Update moves the shift one tick forward. Call it once per frame.
 func (s *Shift) Update() {
 	s.ticks++
+	if s.tutorialPaused() {
+		s.paused++ // the day 1 steps hold the shift's clock (tutorial.go)
+	}
 	s.snoreStep() // the ward keeps snoring while someone sleeps
 	if o := s.desk.out; o != nil && o.points >= pointsRightStamp && s.ticks == o.at {
 		playSFX("chime_right") // the +100 floats up: a right call chimes
@@ -261,6 +268,7 @@ func (s *Shift) Update() {
 	s.layout()
 	s.updateDesk()
 	s.tutorialStep(now)
+	s.tut.Observe(s.tutFacts())
 
 	if s.alert != nil && s.stateOf(s.alert.Guest) != hospital.AsleepInHallway {
 		s.alert = nil // they woke up or got a bed: nothing left to warn about

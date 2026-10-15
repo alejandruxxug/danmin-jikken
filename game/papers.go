@@ -115,6 +115,51 @@ func (v Visitor) Problem() string {
 	return ""
 }
 
+// Reasons written on the citation slip (Game Design -> design log: "Day 1
+// is a real tutorial"). Each fits the 86 px line of the slip.
+const (
+	reasonExpired     = "ID EXPIRED"
+	reasonName        = "NAME MISMATCH"
+	reasonNoBarrow    = "NO DR. BARROW"
+	reasonDiagnosis   = "WRONG DIAGNOSIS"
+	reasonPapersOK    = "PAPERS OK"
+	reasonWristband   = "HAS WRISTBAND"
+	reasonNoWristband = "NO WRISTBAND"
+)
+
+// problemReasons turns what Problem says into the words of the slip, so the
+// checks are written once, in Problem.
+var problemReasons = map[string]string{
+	"Settler ID expired":                reasonExpired,
+	"name does not match the ID":        reasonName,
+	"no stamp from Dr. Barrow":          reasonNoBarrow,
+	"diagnosis is not a sleep disorder": reasonDiagnosis,
+}
+
+// Reason says why the right stamp is the right one, in the words of the
+// slip: the first failed check of Problem, or for valid papers whether the
+// visitor wears a wristband. The hints read it too, to know what a patient
+// teaches.
+func (v Visitor) Reason() string {
+	switch p := v.Problem(); {
+	case p != "":
+		return problemReasons[p]
+	case v.Returning:
+		return reasonWristband
+	}
+	return reasonPapersOK
+}
+
+// CitationReason is the first line of the slip for a wrong stamp: the
+// visitor's Reason, except that a DISCHARGE for somebody with valid papers
+// and no wristband says so.
+func CitationReason(v Visitor, stamped Stamp) string {
+	if r := v.Reason(); r != reasonPapersOK || stamped != StampDischarge {
+		return r
+	}
+	return reasonNoWristband
+}
+
 // ReferralOK is true when the referral is valid.
 func (v Visitor) ReferralOK() bool { return v.Problem() == "" }
 

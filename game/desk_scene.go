@@ -68,6 +68,9 @@ func (s *deskScene) Update() error {
 		return s.drawErr
 	}
 	s.ticks++
+	if err := tutorialInput(s.env, s.shift, hintDesk); err != nil {
+		return err
+	}
 	if s.slam != nil {
 		s.stepSlam()
 		return nil
@@ -137,6 +140,9 @@ func (s *deskScene) landing() *slamDraw {
 // click handles a click on the settled desk.
 func (s *deskScene) click(x, y int) {
 	sh := s.shift
+	if hintClicked(sh, hintDesk, x, y) { // the tutorial box takes the click
+		return
+	}
 	if filesRect.has(x, y) { // BACK
 		sh.PutBackStamp()
 		s.dir = -1
@@ -176,7 +182,7 @@ func (s *deskScene) click(x, y int) {
 
 func (s *deskScene) Draw(screen *ebiten.Image) {
 	elapse := time.Duration(s.ticks) * time.Second / 60
-	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: elapse, forged: s.env.Flags.Has("route_hana")}
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: elapse, forged: s.env.Flags.Has("route_hana"), tutTicks: s.shift.TutorialTicks()}
 	cx, cy := s.env.Input.Cursor()
 	if s.t < 1 {
 		// The reception goes into its own picture first, so it can be squashed.
@@ -208,7 +214,11 @@ func (s *deskScene) Draw(screen *ebiten.Image) {
 	} else {
 		p.filesTab(s.shift)
 	}
-	p.deskToast(s.shift.Message())
+	if s.t >= 1 && s.shift.CurrentHint(hintDesk) != nil {
+		p.tutorial(s.shift, hintDesk, 0) // the box shows once the desk has settled; it takes the toast's corner
+	} else {
+		p.deskToast(s.shift.Message())
+	}
 	p.glass()
 	if p.err != nil && s.drawErr == nil {
 		s.drawErr = p.err

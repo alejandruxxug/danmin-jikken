@@ -23,6 +23,9 @@ const (
 	PageSleepLog
 	PageWristband // returning patients only
 	PageReport    // Hana's night report: clipped to the first folder of day 3
+	// PageOrientation is the Driftwell "how to read a referral" sheet: the
+	// last page of every folder, and page 1 of the first folder of day 1.
+	PageOrientation
 )
 
 func (p Page) String() string {
@@ -35,6 +38,8 @@ func (p Page) String() string {
 		return "wristband"
 	case PageReport:
 		return "report"
+	case PageOrientation:
+		return "orientation"
 	}
 	return "unknown page"
 }
@@ -78,6 +83,7 @@ type sent struct {
 // citation is the slip handed out for a wrong stamp (flavour, no penalty).
 type citation struct {
 	stamped, right Stamp
+	reason         string // why the right stamp is right: line 1 of the slip
 	until          int
 }
 
@@ -122,7 +128,8 @@ func pages(g *Guest) int { return len(pageOrder(g)) }
 
 // pageOrder is the order the pages lie in the guest's folder: the referral
 // and the sleep log, then the wristband (returning patients) and Hana's
-// report (the one folder that has it).
+// report (the one folder that has it), and last the orientation sheet. The
+// first folder of the day 1 tutorial has the sheet on top instead.
 func pageOrder(g *Guest) []Page {
 	order := []Page{PageReferral, PageSleepLog}
 	if g.Returning {
@@ -131,7 +138,10 @@ func pageOrder(g *Guest) []Page {
 	if g.Report {
 		order = append(order, PageReport)
 	}
-	return order
+	if g.OrientationFirst {
+		return append([]Page{PageOrientation}, order...)
+	}
+	return append(order, PageOrientation)
 }
 
 // hasPage says whether the guest's folder has the page.
@@ -197,7 +207,7 @@ func (s *Shift) OpenFolder() error {
 	case d.open:
 		return nil
 	}
-	d.open, d.openedAt, d.page = true, s.ticks, PageReferral
+	d.open, d.openedAt, d.page = true, s.ticks, pageOrder(d.guest)[0]
 	playSFX("folder_open")
 	return nil
 }
@@ -431,7 +441,7 @@ func (s *Shift) folderLeaves(g *Guest, st Stamp) {
 		d.guest, d.open, d.flip, d.holding = nil, false, pageFlip{}, false
 	}
 	if right := g.RightStamp(); right != st {
-		d.slip = &citation{stamped: st, right: right, until: s.ticks + citationTicks}
+		d.slip = &citation{stamped: st, right: right, reason: CitationReason(g.Visitor, st), until: s.ticks + citationTicks}
 	}
 }
 
@@ -482,22 +492,23 @@ func (s *Shift) FolderPose() (pose folderPose, ok bool) {
 }
 
 // Slip is the citation slip on the desk: what was stamped, what was right,
-// and whether there is one.
-func (s *Shift) Slip() (stamped, right Stamp, ok bool) {
+// why, and whether there is one.
+func (s *Shift) Slip() (stamped, right Stamp, reason string, ok bool) {
 	if c := s.desk.slip; c != nil {
-		return c.stamped, c.right, true
+		return c.stamped, c.right, c.reason, true
 	}
-	return 0, 0, false
+	return 0, 0, "", false
 }
 
 // citationLineWidth is how wide a line written on the slip may be: the lines
 // of the doc_citation sheet are 86 px.
 const citationLineWidth = 86
 
-// citationLines are the two lines written on the slip; the rest is printed.
-// "YOU:" and "RIGHT:" are short so that "DISCHARGE" still fits the line.
-func citationLines(stamped, right Stamp) (string, string) {
-	return "YOU: " + strings.ToUpper(stamped.String()), "RIGHT: " + strings.ToUpper(right.String())
+// citationLines are the two lines written on the slip (the rest is printed):
+// the reason, then the stamp that was right. "RIGHT:" is short so that
+// "DISCHARGE" still fits the line.
+func citationLines(reason string, right Stamp) (string, string) {
+	return reason, "RIGHT: " + strings.ToUpper(right.String())
 }
 
 // SinceImpact is how many ticks ago a stamp hit the page, while the effects

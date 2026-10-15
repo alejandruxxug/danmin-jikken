@@ -44,14 +44,14 @@ func TestOpenAndTurnPages(t *testing.T) {
 	}
 	runTicks(sh, openTicks)
 	var seen []Page
-	for range 4 {
+	for range 5 {
 		seen = append(seen, sh.Desk().Page())
 		if err := sh.TurnPage(); err != nil {
 			t.Fatal(err)
 		}
 		runTicks(sh, flipTestTicks)
 	}
-	want := []Page{PageReferral, PageSleepLog, PageWristband, PageReport}
+	want := []Page{PageReferral, PageSleepLog, PageWristband, PageReport, PageOrientation}
 	for i := range want {
 		if seen[i] != want[i] {
 			t.Fatalf("pages seen %v, want %v", seen, want)
@@ -60,7 +60,8 @@ func TestOpenAndTurnPages(t *testing.T) {
 	if sh.Desk().Page() != PageReferral {
 		t.Error("after the last page the stack turns back to the referral")
 	}
-	// A visitor without a wristband has two pages only.
+	// A visitor without a wristband has the referral, the sleep log and the
+	// orientation sheet only.
 	two := folderOnDesk(t, 2)
 	if err := two.GoToPage(PageWristband); !errors.Is(err, ErrNoSuchPage) {
 		t.Errorf("wristband page for a new patient: %v, want ErrNoSuchPage", err)
@@ -113,7 +114,7 @@ func TestApplyStampAdmitsAndFolderLeaves(t *testing.T) {
 	if !ok || !pose.ink || pose.open != 1 || pose.stamp != StampAdmit {
 		t.Errorf("after the hit-stop: %+v, want the open folder with the ink mark", pose)
 	}
-	if _, _, slip := sh.Slip(); slip {
+	if _, _, _, slip := sh.Slip(); slip {
 		t.Error("a right stamp must not bring a citation")
 	}
 	runTicks(sh, inkTicks+closeTicks/2)
@@ -134,19 +135,19 @@ func TestWrongStampBringsACitation(t *testing.T) {
 	if err := sh.ApplyStamp(); err != nil {
 		t.Fatal(err)
 	}
-	stamped, right, ok := sh.Slip()
-	if !ok || stamped != StampRefer || right != StampAdmit {
-		t.Errorf("slip = %v %v %v", stamped, right, ok)
+	stamped, right, reason, ok := sh.Slip()
+	if !ok || stamped != StampRefer || right != StampAdmit || reason != "PAPERS OK" {
+		t.Errorf("slip = %v %v %q %v", stamped, right, reason, ok)
 	}
 	if sh.Score() != 0 {
 		t.Errorf("score = %d after a wrong stamp", sh.Score())
 	}
-	l1, l2 := citationLines(stamped, right)
-	if l1 != "YOU: REFER" || l2 != "RIGHT: ADMIT" {
+	l1, l2 := citationLines(reason, right)
+	if l1 != "PAPERS OK" || l2 != "RIGHT: ADMIT" {
 		t.Errorf("lines %q, %q", l1, l2)
 	}
 	runTicks(sh, citationTicks+1)
-	if _, _, ok := sh.Slip(); ok {
+	if _, _, _, ok := sh.Slip(); ok {
 		t.Error("the slip should go away")
 	}
 }
@@ -562,10 +563,10 @@ func TestCitationLinesFit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stamps := []Stamp{StampAdmit, StampRefer, StampDischarge}
-	for _, stamped := range stamps {
-		for _, right := range stamps {
-			l1, l2 := citationLines(stamped, right)
+	reasons := []string{reasonExpired, reasonName, reasonNoBarrow, reasonDiagnosis, reasonPapersOK, reasonWristband, reasonNoWristband}
+	for _, reason := range reasons {
+		for _, right := range []Stamp{StampAdmit, StampRefer, StampDischarge} {
+			l1, l2 := citationLines(reason, right)
 			for _, l := range []string{l1, l2} {
 				if w := font.Width(l); w > citationLineWidth {
 					t.Errorf("%q is %d px wide, the slip line is %d", l, w, citationLineWidth)
@@ -583,7 +584,7 @@ func TestReportPageOnlyInTheFirstFolderOfDay3(t *testing.T) {
 	}
 	first := &Guest{Visitor: d3.Visitors[0]}
 	order := pageOrder(first)
-	want := []Page{PageReferral, PageSleepLog, PageWristband, PageReport}
+	want := []Page{PageReferral, PageSleepLog, PageWristband, PageReport, PageOrientation}
 	if len(order) != len(want) {
 		t.Fatalf("pages = %v, want %v", order, want)
 	}
@@ -592,8 +593,8 @@ func TestReportPageOnlyInTheFirstFolderOfDay3(t *testing.T) {
 			t.Fatalf("pages = %v, want %v", order, want)
 		}
 	}
-	if got := nextPage(first, PageReport); got != PageReferral {
-		t.Errorf("after the report the stack cycles to %v", got)
+	if got := nextPage(first, PageOrientation); got != PageReferral {
+		t.Errorf("after the orientation sheet the stack cycles to %v", got)
 	}
 	if got := nextPage(first, PageWristband); got != PageReport {
 		t.Errorf("after the wristband comes %v", got)

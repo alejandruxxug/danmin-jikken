@@ -44,6 +44,9 @@ func (s *receptionScene) Update() error {
 	}
 	s.ticks++
 	s.pan()
+	if err := tutorialInput(s.env, s.shift, hintReception); err != nil {
+		return err
+	}
 	if x, y, ok := s.env.Input.Click(); ok {
 		s.click(x, y)
 	}
@@ -65,6 +68,9 @@ func (s *receptionScene) pan() {
 
 // click handles a left click at (x, y) in screen pixels.
 func (s *receptionScene) click(x, y int) {
+	if hintClicked(s.shift, hintReception, x, y) { // the tutorial box takes the click
+		return
+	}
 	if alert := s.shift.Alert(); alert != nil { // the alert is a box you must answer
 		s.clickAlert(x, y)
 		return
@@ -145,13 +151,14 @@ func guestRect(sh *Shift, g *Guest) rect {
 }
 
 func (s *receptionScene) Draw(screen *ebiten.Image) {
-	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60, tutTicks: s.shift.TutorialTicks()}
 	p.room(s.shift, int(s.env.CameraX))
 	p.hud(s.shift, s.env.Clock.String(), "^ PATIENT COMPUTER ^")
 	p.toast(s.shift.Banner())
 	if a := s.shift.Alert(); a != nil {
 		p.alert(a)
 	}
+	p.tutorial(s.shift, hintReception, int(s.env.CameraX))
 	// The glass is on the monitor, not in the room: it never pans.
 	p.glass()
 	if p.err != nil && s.drawErr == nil {

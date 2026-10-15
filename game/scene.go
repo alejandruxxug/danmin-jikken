@@ -28,19 +28,22 @@ const (
 	SceneDeskReferral  = "day.desk.referral"
 	SceneDeskSleepLog  = "day.desk.sleeplog"
 	SceneDeskWristband = "day.desk.wristband"
-	SceneDeskReport    = "day.desk.report" // day 3: Hana's night report, the last page of the first folder
-	SceneDayComputer   = "day.computer"    // the BEDS tab
-	SceneRecords       = "day.computer.records"
-	SceneSleepLogs     = "day.computer.sleeplogs"
-	SceneWardFeed      = "day.computer.wardfeed"
-	SceneDayTop10      = "day.top10"
-	SceneNightPrologue = "night.prologue"    // the gurney, before day 1
-	SceneNight1        = "night.1"           // after day 1
-	SceneStrobe1       = "transition.night1" // the day-to-night strobe into night 1
-	SceneNight2        = "night.2"
-	SceneStrobe2       = "transition.night2"
-	SceneNight3        = "night.3"
-	SceneStrobe3       = "transition.night3"
+	SceneDeskReport    = "day.desk.report" // day 3: Hana's night report
+	// The orientation sheet: page 1 of Cecily's day 1 folder (the tutorial's step 2),
+	// the last page of every other folder.
+	SceneDeskOrientation = "day.desk.orientation"
+	SceneDayComputer     = "day.computer" // the BEDS tab
+	SceneRecords         = "day.computer.records"
+	SceneSleepLogs       = "day.computer.sleeplogs"
+	SceneWardFeed        = "day.computer.wardfeed"
+	SceneDayTop10        = "day.top10"
+	SceneNightPrologue   = "night.prologue"    // the gurney, before day 1
+	SceneNight1          = "night.1"           // after day 1
+	SceneStrobe1         = "transition.night1" // the day-to-night strobe into night 1
+	SceneNight2          = "night.2"
+	SceneStrobe2         = "transition.night2"
+	SceneNight3          = "night.3"
+	SceneStrobe3         = "transition.night3"
 )
 
 // Env is what every scene shares: the clock, the shift, the input, the
@@ -85,10 +88,14 @@ type Env struct {
 	Auto         bool    // the VN's AUTO toggle (Settings -> Auto-play)
 	MusicVolume  float64 // Settings: 0 to 1
 	SFXVolume    float64
-	TitleWhite   bool   // the Prologue's white carries into the title drop
-	TitleSettled bool   // the title is entered with its logo already down (coming back from the settings)
-	SeenPrologue bool   // saved: later launches may skip the Prologue with a key
-	SettingsPath string // the settings file ("" in test mode: nothing is saved)
+	TitleWhite   bool // the Prologue's white carries into the title drop
+	TitleSettled bool // the title is entered with its logo already down (coming back from the settings)
+	SeenPrologue bool // saved: later launches may skip the Prologue with a key
+	// The day 1 tutorial (tutorial.go). TutorialHints is saved in the settings;
+	// TutorialStep is test mode's -tutorial-step: the shift starts at that step.
+	TutorialHints bool
+	TutorialStep  int
+	SettingsPath  string // the settings file ("" in test mode: nothing is saved)
 
 	// The SCENES gallery (gallery_cards.go). Unlocked and SavedFlags are saved
 	// in the settings file.
@@ -179,6 +186,12 @@ func (e *Env) StartShift() error {
 	e.SetMusic("day_hum") // the fluorescent hum under the desk
 	sh.Flags = e.Flags
 	sh.forceDark = e.Dark
+	sh.EnableTutorial(e.TutorialHints)
+	if e.TutorialStep > 0 {
+		if err := sh.jumpToTutorialStep(e.TutorialStep); err != nil {
+			return err
+		}
+	}
 	e.ClockRate = shiftMinutes / float64(sh.Rules.ShiftSeconds)
 	if !e.KeepClock {
 		e.Clock = NewClock(9, 0)

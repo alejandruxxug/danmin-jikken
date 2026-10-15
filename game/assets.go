@@ -25,18 +25,20 @@ func SpriteFS() (fs.FS, error) {
 // slower, a sheet that is not listed plays at the normal speed.
 // The rule is "everything that is not a character is slow".
 var boilScales = map[string]float64{
-	"reception_bg":   3,
-	"desk":           3,
-	"computer":       3,
-	"ui_icons":       3,
-	"ui_icons_m4":    3,
-	"desk_top":       3,
-	"folder":         3,
-	"doc_settler_id": 3,
-	"doc_referral":   3,
-	"doc_sleep_log":  3,
-	"doc_wristband":  3,
-	"doc_citation":   3,
+	"reception_bg":    3,
+	"desk":            3,
+	"computer":        3,
+	"ui_icons":        3,
+	"ui_icons_m4":     3,
+	"desk_top":        3,
+	"folder":          3,
+	"doc_settler_id":  3,
+	"doc_referral":    3,
+	"doc_sleep_log":   3,
+	"doc_wristband":   3,
+	"doc_citation":    3,
+	"doc_orientation": 3,
+	"ui_tutorial":     3,
 	// cecily, waiting_fisher and hallway_sleeper are characters: normal speed.
 	// screen_glass has one frame and never boils.
 }

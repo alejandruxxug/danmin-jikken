@@ -84,7 +84,7 @@ func New(opts Options) (*Game, error) {
 	}{
 		SceneDeskClosed: {false, PageReferral}, SceneDeskReferral: {true, PageReferral},
 		SceneDeskSleepLog: {true, PageSleepLog}, SceneDeskWristband: {true, PageWristband},
-		SceneDeskReport: {true, PageReport},
+		SceneDeskReport: {true, PageReport}, SceneDeskOrientation: {true, PageOrientation},
 	} {
 		g.scenes.Register(id, func() Scene { return &deskScene{setup: deskSetup(open.open, open.page)} })
 	}
@@ -204,6 +204,10 @@ func (g *Game) Update() error {
 // comes once, after the last day, the other days save their score silently.
 func (g *Game) endShift() error {
 	if g.env.Day >= LastDay() {
+		g.env.TutorialHints = false // the run is over: later runs start without hints
+		if err := g.env.SaveSettings(); err != nil {
+			return err
+		}
 		g.env.SwitchTo(SceneDayTop10)
 		return nil
 	}

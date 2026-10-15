@@ -22,6 +22,10 @@ type Settings struct {
 	Music          float64 `json:"music"`          // 0 to 1
 	SFX            float64 `json:"sfx"`            // 0 to 1
 	SeenPrologue   bool    `json:"seenPrologue"`   // later launches may skip the Prologue with a key
+	// The day 1 tutorial's hint boxes. They start on, and turn off when the
+	// player skips them (Esc) or finishes the run; an older settings file
+	// has no such field and so keeps the default, on.
+	TutorialHints bool `json:"tutorialHints"`
 	// The SCENES gallery. An older settings file has neither: nothing unlocked.
 	Scenes     []string `json:"scenes"`     // ids of the unlocked cards
 	SceneFlags []string `json:"sceneFlags"` // flags of the run seen most recently
@@ -29,7 +33,7 @@ type Settings struct {
 
 // DefaultSettings are the settings of a first launch.
 func DefaultSettings() Settings {
-	return Settings{CRT: true, Music: 0.8, SFX: 0.8}
+	return Settings{CRT: true, Music: 0.8, SFX: 0.8, TutorialHints: true}
 }
 
 // SettingsPathFor is where the settings file goes: next to the scores file.
@@ -82,7 +86,7 @@ func SaveSettings(path string, s Settings) error {
 func (e *Env) Settings() Settings {
 	return Settings{CRT: e.CRT, ReduceFlashing: e.ReduceFlashing, Auto: e.Auto,
 		Music: e.MusicVolume, SFX: e.SFXVolume, SeenPrologue: e.SeenPrologue,
-		Scenes: e.Unlocked, SceneFlags: e.SavedFlags}
+		Scenes: e.Unlocked, SceneFlags: e.SavedFlags, TutorialHints: e.TutorialHints}
 }
 
 // Apply puts settings into the running game: the flags, and the two volumes
@@ -91,6 +95,7 @@ func (e *Env) Apply(s Settings) {
 	e.CRT, e.ReduceFlashing, e.Auto = s.CRT, s.ReduceFlashing, s.Auto
 	e.MusicVolume, e.SFXVolume, e.SeenPrologue = s.Music, s.SFX, s.SeenPrologue
 	e.Unlocked, e.SavedFlags = s.Scenes, s.SceneFlags
+	e.TutorialHints = s.TutorialHints
 	if e.Sound != nil {
 		e.Sound.SetMusicVolume(s.Music)
 		e.Sound.SetSFXVolume(s.SFX)
@@ -99,3 +104,13 @@ func (e *Env) Apply(s Settings) {
 
 // SaveSettings writes the settings to the settings file (nothing in test mode).
 func (e *Env) SaveSettings() error { return SaveSettings(e.SettingsPath, e.Settings()) }
+
+// SkipTutorial is Esc during the tutorial: the hints stop for this run and
+// stay off on later runs (Settings -> TUTORIAL HINTS turns them back on).
+func (e *Env) SkipTutorial() error {
+	e.TutorialHints = false
+	if sh := e.Shift(); sh != nil {
+		sh.SkipTutorial()
+	}
+	return e.SaveSettings()
+}

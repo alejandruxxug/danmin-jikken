@@ -57,6 +57,8 @@ type Options struct {
 	Score          int    // today's score at the start (day.top10 saves it)
 	Sleepy         bool   // patients fall asleep within a second and sleep long
 	Dark           int    // -dark N: draw every guest N palette steps darker (0-3), -1 = as the game decides
+	Tutorial       string // -tutorial on|off: the hint boxes (off unless asked, so shots stay clean); "" = off
+	TutorialStep   int    // -tutorial-step N: day 1 runs to the moment of tutorial step N (1 to 10); turns the hints on
 
 	// Fullscreen is an ordinary option for players, so it also works
 	// without -agent.
@@ -98,6 +100,8 @@ func ParseOptions(args []string) (Options, error) {
 	fs.StringVar(&o.Scores, "scores", "", "scores file to use (default: none, kept in memory)")
 	fs.IntVar(&o.Score, "score", 0, "today's score at the start")
 	fs.IntVar(&o.Dark, "dark", -1, "draw every guest N palette steps darker, 0-3 (to judge the Severe darkening)")
+	fs.StringVar(&o.Tutorial, "tutorial", "", "the tutorial's hint boxes: on or off (test mode starts with them off)")
+	fs.IntVar(&o.TutorialStep, "tutorial-step", 0, "day 1: start at tutorial step N (1 to 10), hints on; see them with -scene day.reception (step 1) or day.desk.orientation / day.desk.referral")
 	fs.BoolVar(&o.Sleepy, "sleepy", false, "patients fall asleep fast and sleep long")
 	fs.BoolVar(&o.Fullscreen, "fullscreen", false, "start in fullscreen (F11 or Alt+Enter toggles it)")
 	fs.StringVar(&o.Play, "play", "", "audition: open this scene with sound on (e.g. ending.forever), no -agent needed")
@@ -110,6 +114,12 @@ func ParseOptions(args []string) (Options, error) {
 			o.PanSet = true
 		}
 	})
+	if o.Tutorial != "" && o.Tutorial != "on" && o.Tutorial != "off" {
+		return Options{}, fmt.Errorf("-tutorial %q: want on or off", o.Tutorial)
+	}
+	if o.TutorialStep < 0 || o.TutorialStep > 10 {
+		return Options{}, fmt.Errorf("-tutorial-step %d: want a step from 1 to 10", o.TutorialStep)
+	}
 	if o.Enabled && (o.Play != "" || o.Rock != "") {
 		return Options{}, errors.New("-play and -rock are for listening with sound; with -agent use -scene")
 	}
@@ -149,7 +159,7 @@ type Command struct {
 //	down 320 210    press the left button there and hold it (mouse moves it)
 //	up              let the button go
 //	drag 318 213 200 213   down, move, up: drag the page corner left
-//	next            advance the night text (the Space key: first shows the whole line, then goes on)
+//	next            advance the night text (the Space key: first shows the whole line, then goes on); at the desk it ends the tutorial hint
 //	auto [on|off]   night: flip AUTO play (the A key) or set it
 //	skipstrobe      end the day-to-night strobe at once
 //	choose 2        pick option 2 of the open night menu
@@ -157,7 +167,7 @@ type Command struct {
 //	desk            look down to the desk (reception: look back up)
 //	folder          open the folder on the desk
 //	turn            turn the open folder's page
-//	page sleeplog   show a page at once (referral, sleeplog, wristband)
+//	page sleeplog   show a page at once (referral, sleeplog, wristband, report, orientation)
 //	lift admit      lift a stamp off the desk into the hand
 //	apply           press the stamp in the hand on the open referral
 //	putback         put the stamp in the hand back on the desk
@@ -347,7 +357,7 @@ func parseCommand(words []string) (Command, error) {
 		}
 	case "page":
 		if len(args) != 1 {
-			return cmd, fmt.Errorf("page needs referral, sleeplog, wristband or report")
+			return cmd, fmt.Errorf("page needs referral, sleeplog, wristband, report or orientation")
 		}
 		switch strings.ToLower(args[0]) {
 		case "referral":
@@ -358,8 +368,10 @@ func parseCommand(words []string) (Command, error) {
 			cmd.N = int(PageWristband)
 		case "report":
 			cmd.N = int(PageReport)
+		case "orientation":
+			cmd.N = int(PageOrientation)
 		default:
-			return cmd, fmt.Errorf("page %q: want referral, sleeplog, wristband or report", args[0])
+			return cmd, fmt.Errorf("page %q: want referral, sleeplog, wristband, report or orientation", args[0])
 		}
 	case "auto": // auto, auto on, auto off
 		switch {
@@ -448,6 +460,8 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 		return nil, err
 	}
 	env.Sleepy = opts.Sleepy
+	env.TutorialHints = opts.Tutorial == "on" || opts.TutorialStep > 0 // test mode: off unless asked
+	env.TutorialStep = opts.TutorialStep
 	if opts.Dark > maxDarkness {
 		return nil, fmt.Errorf("-dark %d: want 0 to %d", opts.Dark, maxDarkness)
 	}
@@ -812,6 +826,22 @@ type Dump struct {
 
 	// The day-to-night strobe (nil unless a transition scene is playing).
 	Strobe *DumpStrobe `json:"strobe,omitempty"`
+
+	// The tutorial's hint box as the scene shows it (nil without a shift).
+	Tutorial *DumpTutorial `json:"tutorial,omitempty"`
+}
+
+// DumpTutorial is the hint box: whether hints are on, the step of day 1's
+// guided steps (0 for the other hints and when no hint shows), what is
+// framed, the two lines, and the checks ticked on the orientation sheet.
+type DumpTutorial struct {
+	On     bool   `json:"on"`
+	Step   int    `json:"step"`
+	ID     string `json:"id"`
+	Target string `json:"target"`
+	Text   string `json:"text"`
+	Ticks  int    `json:"ticks"`
+	Paused bool   `json:"paused"` // the shift's clock is held by the guided steps
 }
 
 // DumpStrobe is where the strobe is: its tick, what it shows, and how inverted.
@@ -954,6 +984,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 			})
 		}
 		d.addShift(sh)
+		d.Tutorial = dumpTutorial(sh, hintSceneFor(sceneID))
 	}
 	for i, r := range env.Ranked {
 		row := DumpScore{Rank: fmt.Sprint(i + 1), Name: r.Name, Score: fmt.Sprint(r.Score), Time: r.Time, Message: r.Message}
@@ -1073,8 +1104,8 @@ func dumpDesk(sh *Shift) DumpDesk {
 	if st, ok := desk.Holding(); ok {
 		dd.Holding = st.String()
 	}
-	if stamped, right, ok := sh.Slip(); ok {
-		l1, l2 := citationLines(stamped, right)
+	if _, right, reason, ok := sh.Slip(); ok {
+		l1, l2 := citationLines(reason, right)
 		dd.Slip = l1 + " / " + l2
 	}
 	return dd
@@ -1089,4 +1120,26 @@ func writeDump(path string, d Dump) error {
 		return fmt.Errorf("dump: %w", err)
 	}
 	return nil
+}
+
+// hintSceneFor is where the hints show in a scene: the reception, the desk
+// scenes, and nowhere else (hintAnywhere only finds the hints that show everywhere).
+func hintSceneFor(sceneID string) hintScene {
+	switch {
+	case sceneID == SceneDayReception:
+		return hintReception
+	case strings.HasPrefix(sceneID, "day.desk"):
+		return hintDesk
+	}
+	return hintAnywhere
+}
+
+// dumpTutorial describes the hint the scene shows now.
+func dumpTutorial(sh *Shift, scene hintScene) *DumpTutorial {
+	dt := &DumpTutorial{On: sh.TutorialOn(), Ticks: sh.TutorialTicks(), Paused: sh.Paused()}
+	if h := sh.CurrentHint(scene); h != nil {
+		dt.Step, dt.ID, dt.Target = h.Step, h.ID, h.Target
+		dt.Text = h.Lines[0] + " / " + h.Lines[1]
+	}
+	return dt
 }

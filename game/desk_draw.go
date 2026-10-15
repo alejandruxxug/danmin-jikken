@@ -127,7 +127,7 @@ func (p *painter) shadow(s *sprites.Sheet, layer string, x, y, dx, dy int) {
 // cleared first) instead of the screen, and keeps its error.
 func (p *painter) into(buf *ebiten.Image, draw func(q *painter)) {
 	buf.Clear()
-	q := &painter{art: p.art, screen: buf, day: p.day, elapse: p.elapse, forged: p.forged}
+	q := &painter{art: p.art, screen: buf, day: p.day, elapse: p.elapse, forged: p.forged, tutTicks: p.tutTicks}
 	draw(q)
 	p.keep(q.err)
 }
@@ -153,8 +153,8 @@ func (p *painter) deskObjects(sh *Shift, cursor image.Point, landing *slamDraw) 
 		st, holding = landing.stamp, true
 	}
 	p.sheet(p.art.deskTop, deskTopLayers(p.day, holding, st), 0, 0)
-	if stamped, right, ok := sh.Slip(); ok {
-		p.slip(stamped, right)
+	if _, right, reason, ok := sh.Slip(); ok {
+		p.slip(reason, right)
 	}
 	if pose, ok := sh.FolderPose(); ok {
 		p.folder(sh, pose)
@@ -179,11 +179,12 @@ type slamDraw struct {
 	pose  stampPose
 }
 
-// slip is the citation slip for a wrong stamp: flavour, no penalty.
-func (p *painter) slip(stamped, right Stamp) {
+// slip is the citation slip for a wrong stamp: flavour, no penalty. It says
+// why (the reason) and what was right.
+func (p *painter) slip(reason string, right Stamp) {
 	p.shadow(p.art.docCitation, "fill", slipPos.X, slipPos.Y, 1, 1)
 	p.sheet(p.art.docCitation, []string{"fill", "lineart", "detail"}, slipPos.X, slipPos.Y)
-	l1, l2 := citationLines(stamped, right)
+	l1, l2 := citationLines(reason, right)
 	p.text(l1, slipPos.X+5, slipPos.Y+14, colInk)
 	p.text(l2, slipPos.X+5, slipPos.Y+22, colInk)
 }
@@ -338,6 +339,8 @@ func (p *painter) pageSheet(pg Page) *sprites.Sheet {
 		return p.art.docWristband
 	case PageReport:
 		return p.art.docReport
+	case PageOrientation:
+		return p.art.docOrientation
 	}
 	return p.art.docReferral
 }
@@ -367,6 +370,16 @@ func (p *painter) pageAt(g *Guest, pg Page, x, y int) {
 		p.pipsAfter(g.Level, letter, x+55, y+35, true)
 		p.text(g.Name, x+33, y+44, colInk)
 		p.text(g.LastStay.String(), x+8, y+71, colInk)
+	case PageOrientation:
+		// All its lettering is baked in. On the guided first folder the checks
+		// tick themselves as the tutorial explains them (tick_1 to tick_4).
+		layers = append(layers, "ink_words")
+		if g.OrientationFirst {
+			for i := 1; i <= p.tutTicks; i++ {
+				layers = append(layers, fmt.Sprintf("tick_%d", i))
+			}
+		}
+		p.sheet(p.art.docOrientation, layers, x, y)
 	case PageReport:
 		p.sheet(p.art.docReport, layers, x, y)
 		hand, style := p.art.handHana, night.HanaStyle

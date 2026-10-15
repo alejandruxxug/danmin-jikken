@@ -11,7 +11,7 @@ import (
 )
 
 // The settings screen (Build Plan -> M7): CRT on/off, reduce flashing, AUTO
-// play, music and sound volume. Every change is saved at once, in the
+// play, the tutorial hints, music and sound volume. Every change is saved at once, in the
 // settings file next to the scores file. Off-white like the title and the
 // SCENES gallery (Figma: Overnight review -> Settings off-white, 2026-10-14):
 // the title sheet's "bg", ink for the heading and the selected row.
@@ -21,6 +21,7 @@ const (
 	rowCRT = iota
 	rowFlashing
 	rowAuto
+	rowTutorial
 	rowMusic
 	rowSFX
 	rowBack
@@ -121,6 +122,11 @@ func (s *settingsScene) change(row, dir int) error {
 		e.ReduceFlashing = !e.ReduceFlashing
 	case rowAuto:
 		e.Auto = !e.Auto
+	case rowTutorial:
+		e.TutorialHints = !e.TutorialHints
+		if sh := e.Shift(); sh != nil && !e.TutorialHints {
+			sh.SkipTutorial()
+		}
 	case rowMusic:
 		e.MusicVolume = stepVolume(e.MusicVolume, dir)
 		e.Apply(e.Settings())
@@ -173,6 +179,8 @@ func (s *settingsScene) rowText(i int) (label, value string) {
 		return "REDUCE FLASHING", onOff(e.ReduceFlashing)
 	case rowAuto:
 		return "AUTO PLAY", onOff(e.Auto)
+	case rowTutorial:
+		return "TUTORIAL HINTS", onOff(e.TutorialHints)
 	case rowMusic:
 		return "MUSIC", "< " + volumeBar(e.MusicVolume) + " >"
 	case rowSFX:

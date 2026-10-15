@@ -110,6 +110,7 @@ type DeskArt struct {
 	room, desk, glass, waiting, hallway, computer, icons, iconsM4                                     *sprites.Sheet
 	deskTop, folder, docID, docReferral, docSleepLog, docWristband, docStamps, docCitation, inkSpecks *sprites.Sheet
 	docReport, handHana, handMayu                                                                     *sprites.Sheet            // Hana's report and the two hands that can write it
+	docOrientation, tutorial                                                                          *sprites.Sheet            // the orientation sheet and the tutorial's hint box and highlight pieces
 	window                                                                                            map[string]*sprites.Sheet // by Visitor.Sprite
 	font                                                                                              *Font
 
@@ -132,6 +133,7 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		{&a.docReferral, "doc_referral"}, {&a.docSleepLog, "doc_sleep_log"}, {&a.docWristband, "doc_wristband"},
 		{&a.docStamps, "doc_stamps"}, {&a.inkSpecks, "ink_specks"}, {&a.docCitation, "doc_citation"},
 		{&a.docReport, "doc_report"}, {&a.handHana, "hand_hana"}, {&a.handMayu, "hand_mayu"},
+		{&a.docOrientation, "doc_orientation"}, {&a.tutorial, "ui_tutorial"},
 	} {
 		var err error
 		if *l.sheet, err = LoadSheet(fsys, l.name); err != nil {
@@ -161,13 +163,14 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 // painter draws one frame and remembers the first error, because Draw
 // cannot return one.
 type painter struct {
-	art    *DeskArt
-	screen *ebiten.Image
-	day    int           // which day's memo the desk shows
-	elapse time.Duration // time since the scene started, for the boil
-	dark   int           // palette steps darker the next sheets are drawn (a Severe patient)
-	forged bool          // Mayu's hand wrote Hana's report (route_hana), see night.ReportHand
-	err    error
+	art      *DeskArt
+	screen   *ebiten.Image
+	day      int           // which day's memo the desk shows
+	elapse   time.Duration // time since the scene started, for the boil
+	dark     int           // palette steps darker the next sheets are drawn (a Severe patient)
+	forged   bool          // Mayu's hand wrote Hana's report (route_hana), see night.ReportHand
+	tutTicks int           // how many checks of the orientation sheet are ticked (the day 1 tutorial)
+	err      error
 }
 
 func (p *painter) keep(err error) {

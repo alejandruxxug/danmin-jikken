@@ -58,6 +58,11 @@ type Visitor struct {
 	// Report clips Hana's night report to this folder (day 3): the page the
 	// realization in Night 3 points back at.
 	Report bool
+
+	// OrientationFirst puts the Driftwell orientation sheet on top of this
+	// folder, as page 1 (Old Cecily on day 1, the guided first patient).
+	// Every other folder has the sheet as its last page.
+	OrientationFirst bool
 }
 
 // SendToWardC says whether the day's memo sends this visitor to Ward C:
@@ -131,6 +136,7 @@ func buildDays() []DayRules {
 	you.Self = true
 	you.Returning, you.Ward, you.LastStay = true, "WARD C", dayDate(2)
 	cecilyBack := cecily
+	cecily.OrientationFirst = true // day 1 only: cecilyBack is copied above, without it
 	cecilyBack.Returning, cecilyBack.Ward, cecilyBack.LastStay = true, "WARD B", dayDate(1)
 	cecilyBack.Report = true // the first folder of day 3 carries Hana's report
 
