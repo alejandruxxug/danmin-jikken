@@ -1,0 +1,36 @@
+# T08 and T09: five admitted guests nod off in the chairs (the -sleepy flag), then the
+# staff are sent to them one by one; the fourth finds no bed (NO ROOM) and the camera
+# goes to the hallway. Frames 702-801 are the five sleepers, 802-951 the clicks.
+mouse 240 135
+advance 30
+advance 6
+wait 100
+stamp admit
+advance 6
+wait 100
+stamp admit
+advance 6
+wait 100
+stamp admit
+advance 6
+wait 100
+stamp admit
+advance 6
+wait 100
+stamp admit
+wait 200
+pan 0
+wait 100
+click 139 140
+mouse 240 135
+wait 6
+click 167 140
+mouse 240 135
+wait 6
+click 192 140
+mouse 240 135
+wait 6
+click 226 140
+mouse 240 135
+wait 6
+wait 130

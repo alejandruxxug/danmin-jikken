@@ -1,0 +1,6 @@
+# T15: the lit door crack (about a second), then Mayu's face in the gap
+wait 60
+next
+wait 12
+next
+wait 110

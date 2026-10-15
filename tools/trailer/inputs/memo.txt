@@ -1,0 +1,2 @@
+# T10: the desk on day 3, folder closed, the memo at the top right.
+wait 244

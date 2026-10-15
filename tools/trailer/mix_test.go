@@ -155,25 +155,3 @@ func TestSoftLimit(t *testing.T) {
 		t.Error("the limiter should rise with the input and be symmetric")
 	}
 }
-
-func TestFadeFactor(t *testing.T) {
-	for _, c := range []struct {
-		pos           float64
-		in, out, want float64
-	}{
-		{0, 10, 0, 0}, {5, 10, 0, 0.5}, {10, 10, 0, 1}, {50, 10, 10, 1},
-		{99, 0, 10, 0}, {94, 0, 10, 0.5}, {89, 0, 10, 1}, {0, 0, 0, 1},
-	} {
-		if got := FadeFactor(c.pos, 100, int(c.in), int(c.out)); math.Abs(got-c.want) > 1e-9 {
-			t.Errorf("FadeFactor(%v, in %v, out %v) = %v, want %v", c.pos, c.in, c.out, got, c.want)
-		}
-	}
-}
-
-func TestTaperEnd(t *testing.T) {
-	a := constClip(1000, 1)
-	TaperEnd(a)
-	if a.Samples[0] != 1 || a.Samples[2*999] != 0 || a.Samples[2*990] >= 1 {
-		t.Error("the last samples should fall to 0 and the early ones stay")
-	}
-}

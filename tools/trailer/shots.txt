@@ -1,0 +1,34 @@
+# Every game recording the trailer is cut from (Trailer note -> Rendering).
+# name | frames | backdoor args | input <file> | from N
+# The timeline (timeline.go) says which frames of which shot are used where.
+# Cards and motion graphics are not recorded: the compositor draws them from
+# trailer_cards and trailer_fx.
+
+# T02, and the awake half of the T07 split. Cecily is woken at frame 224.
+reception_wake   | 270 | -scene day.reception -day 1 -seed 7 -pan 0   | input inputs/reception_wake.txt
+# T07's asleep half: she dozes off at about frame 215.
+reception_asleep | 380 | -scene day.reception -day 1 -seed 7 -pan 120 | from 230
+# T04
+orientation      | 186 | -scene day.desk.orientation -day 1 -seed 7 -tutorial-step 2 | from 61
+# T05: the game's slam lands on frame 96.
+stamp            | 146 | -scene day.desk.referral -day 2 -seed 7 | input inputs/stamp.txt | from 21
+# T06
+computer         | 100 | -scene day.computer -day 1 -seed 7
+# T08 (frames 702-801) and T09 (802-951): five sleepers, then NO ROOM.
+sleepers         | 951 | -scene day.reception -day 2 -seed 7 -sleepy -speed 2 | input inputs/sleepers.txt | from 702
+# T10 and T10b
+memo             | 244 | -scene day.desk.closed -day 3 -seed 7 | input inputs/memo.txt | from 31
+# T11: the game's strobe. The same run again with -reduce-flashing for the backup file.
+strobe           | 200 | -scene transition.night1 -seed 7 | from 81
+strobe_reduced   | 200 | -scene transition.night1 -seed 7 -reduce-flashing | from 81
+# T13, T14
+coffee           | 240 | -scene night.1 -seed 7 -line 27
+tired            | 180 | -scene night.1 -seed 7 -line 97
+# T15, T16 (and the gap again as a T17 flash)
+gap              | 180 | -scene night.2 -seed 7 -flags find_hana -line 102 | input inputs/gap.txt
+kanashibari      | 270 | -scene night.2 -seed 7 -flags find_hana -line 134 | input inputs/kanashibari.txt
+# T17 flashes
+flash_red        |   4 | -scene night.3 -seed 7 -flags route_hana -line 40
+flash_hana       |   3 | -scene night.3 -seed 7 -flags route_hana,read_letter -line 101 -no-words | from 1
+# T19: the logo drop; the dagger lands on frame 30. No menu, no warnings.
+title            | 369 | -scene title -seed 7 -bare-title | from 9

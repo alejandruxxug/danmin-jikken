@@ -1,6 +1,0 @@
-# A 3-shot sample (3 s each) that proves the pipeline. Render it with
-#   tools/trailer/render.sh tools/trailer/sample_shots.txt sample
-# name | frames | backdoor args | clauses (input, card, music, fadein, fadeout, cut)
-desk   | 180 | -scene day.desk.referral -day 1 -seed 7 | input sample/stamp.txt | fadein 15
-strobe | 180 | -scene transition.night1 -seed 7 | music night_ambience 5 0.5
-coffee | 180 | -scene night.1 -line 24 -seed 7 | music night_ambience 5 0.5 | fadeout 20

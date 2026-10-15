@@ -1,0 +1,9 @@
+# T02 and the awake half of T07: the camera pans in from the left edge, Cecily
+# walks up (the shift runs from the first frame), and a click wakes her after
+# she dozes (about frame 215) so the trailer does not give the joke away early.
+mouse 476 135
+wait 38
+mouse 240 135
+wait 185
+click 240 110
+wait 60

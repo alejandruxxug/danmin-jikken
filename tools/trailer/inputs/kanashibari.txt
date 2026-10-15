@@ -1,0 +1,10 @@
+# T16: the figure in the doorway; the voice types "don't wake up ..."
+wait 90
+next
+wait 20
+next
+wait 20
+next
+wait 20
+next
+wait 120

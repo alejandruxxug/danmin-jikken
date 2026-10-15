@@ -1,23 +1,22 @@
 package main
 
-// The shot list: one line per shot, clauses separated by "|".
+// The shot list: one line per recording, clauses separated by "|".
 //
 //	name | frames | backdoor args | clause | clause ...
 //
-//	stamp | 180 | -scene day.reception -day 1 -seed 7 | input stamp.txt | fadein 20
-//	title | 120 | | card trailer_cards:logo | music driftwell_jingle 4.5 0.8 | fadeout 30
+//	stamp | 146 | -scene day.desk.referral -day 2 -seed 7 | input stamp.txt | from 21
+//
+// A shot is one run of the game in record mode. The trailer's timeline
+// (timeline.go) says which frames of which shot show where; the cards and the
+// motion graphics are not shots, the compositor draws them from the sheets.
 //
 // The clauses, in any order:
 //
-//	input <file>              the input script (relative to the shot list's folder)
-//	card <layer>              a full-screen card, from trailer_cards or "sheet:layer", in place of the game
-//	music <file> <offset> [gain]  a trailer-level music bed (see below)
-//	fadein N, fadeout N       fade the picture and the sound from or to black, N frames
-//	cut                       a hard cut: the shot's sound stops at its last frame with no tiny fade
+//	input <file>   the input script (relative to the shot list's folder)
+//	from N         the first frame to save (-record-from): the run before it
+//	               is played but not drawn, which makes long set-ups quick
 //
-// A music bed replaces the game's own music for the shot. Consecutive shots
-// with the same music clause share one bed: it starts at the first shot's
-// offset and plays on across them without a break. A # starts a comment.
+// A # starts a comment.
 
 import (
 	"bufio"
@@ -28,34 +27,18 @@ import (
 	"strings"
 )
 
-// Bed is a trailer-level music bed.
-type Bed struct {
-	File   string
-	Offset float64 // seconds into the file where it starts
-	Gain   float64
-}
-
 // Shot is one line of the shot list.
 type Shot struct {
-	Name    string
-	Frames  int
-	Args    []string // the game's backdoor flags
-	Input   string   // the input script, "" for none
-	Card    string   // a card layer, "" for a game shot
-	Bed     *Bed
-	FadeIn  int
-	FadeOut int
-	Cut     bool
+	Name   string
+	Frames int      // the run's length: the game stops after this many frames
+	Args   []string // the game's backdoor flags
+	Input  string   // the input script, "" for none
+	From   int      // the first saved frame (1 = save them all)
 }
 
-// GameArgs are the flags for the game binary (without -record and -record-frames).
+// GameArgs are the flags for the game binary, without -record and -record-frames.
 func (s Shot) GameArgs() []string {
-	args := []string{"-agent"}
-	if s.Card != "" {
-		args = append(args, "-scene", "trailer.card", "-card", s.Card)
-	} else {
-		args = append(args, s.Args...)
-	}
+	args := append([]string{"-agent"}, s.Args...)
 	if s.Input != "" {
 		args = append(args, "-input", s.Input)
 	}
@@ -105,7 +88,7 @@ func parseShotLine(line, dir string) (Shot, error) {
 	if err != nil || frames < 1 {
 		return Shot{}, fmt.Errorf("frames %q: want a number of frames, 1 or more", strings.TrimSpace(fields[1]))
 	}
-	shot := Shot{Name: name, Frames: frames, Args: strings.Fields(fields[2])}
+	shot := Shot{Name: name, Frames: frames, Args: strings.Fields(fields[2]), From: 1}
 	for _, clause := range fields[3:] {
 		words := strings.Fields(clause)
 		if len(words) == 0 {
@@ -115,11 +98,11 @@ func parseShotLine(line, dir string) (Shot, error) {
 			return Shot{}, err
 		}
 	}
-	if shot.Card == "" && len(shot.Args) == 0 {
-		return Shot{}, fmt.Errorf("shot %q has no backdoor args and no card", name)
+	if len(shot.Args) == 0 {
+		return Shot{}, fmt.Errorf("shot %q has no backdoor args", name)
 	}
-	if shot.FadeIn+shot.FadeOut > shot.Frames {
-		return Shot{}, fmt.Errorf("shot %q: the fades (%d + %d) are longer than the shot (%d)", name, shot.FadeIn, shot.FadeOut, shot.Frames)
+	if shot.From > shot.Frames {
+		return Shot{}, fmt.Errorf("shot %q: from %d is after its last frame (%d)", name, shot.From, shot.Frames)
 	}
 	return shot, nil
 }
@@ -141,70 +124,17 @@ func (s *Shot) addClause(words []string, dir string) error {
 			return err
 		}
 		s.Input = abs
-	case "card":
+	case "from":
 		if len(args) != 1 {
-			return fmt.Errorf("card needs one layer")
-		}
-		s.Card = args[0]
-	case "music":
-		if len(args) < 2 || len(args) > 3 {
-			return fmt.Errorf("music needs a file, an offset in seconds and, optionally, a gain")
-		}
-		offset, err := strconv.ParseFloat(args[1], 64)
-		if err != nil || offset < 0 {
-			return fmt.Errorf("music offset %q: want seconds, 0 or more", args[1])
-		}
-		gain := 1.0
-		if len(args) == 3 {
-			if gain, err = strconv.ParseFloat(args[2], 64); err != nil || gain < 0 {
-				return fmt.Errorf("music gain %q: want a number, 0 or more", args[2])
-			}
-		}
-		s.Bed = &Bed{File: args[0], Offset: offset, Gain: gain}
-	case "fadein", "fadeout":
-		if len(args) != 1 {
-			return fmt.Errorf("%s needs a number of frames", key)
+			return fmt.Errorf("from needs a frame number")
 		}
 		n, err := strconv.Atoi(args[0])
-		if err != nil || n < 0 {
-			return fmt.Errorf("%s %q: want a number of frames", key, args[0])
+		if err != nil || n < 1 {
+			return fmt.Errorf("from %q: want a frame number, 1 or more", args[0])
 		}
-		if key == "fadein" {
-			s.FadeIn = n
-		} else {
-			s.FadeOut = n
-		}
-	case "cut":
-		if len(args) != 0 {
-			return fmt.Errorf("cut takes no argument")
-		}
-		s.Cut = true
+		s.From = n
 	default:
-		return fmt.Errorf("unknown clause %q (want input, card, music, fadein, fadeout or cut)", key)
+		return fmt.Errorf("unknown clause %q (want input or from)", key)
 	}
 	return nil
-}
-
-// sameBed says whether two shots are on the same music bed: both have one and
-// it is the very same clause.
-func sameBed(a, b *Bed) bool {
-	return a != nil && b != nil && *a == *b
-}
-
-// BedStarts gives, for every shot with a bed, how many seconds into the bed
-// file the shot begins: the bed's offset, plus the length of the earlier shots
-// of the same run. A shot with no bed gets -1.
-func BedStarts(shots []Shot) []float64 {
-	starts := make([]float64, len(shots))
-	for i, s := range shots {
-		switch {
-		case s.Bed == nil:
-			starts[i] = -1
-		case i > 0 && sameBed(shots[i-1].Bed, s.Bed):
-			starts[i] = starts[i-1] + float64(shots[i-1].Frames)/FPS
-		default:
-			starts[i] = s.Bed.Offset
-		}
-	}
-	return starts
 }

@@ -1,0 +1,6 @@
+# T05: the desk on the first referral. Lift the ADMIT stamp, press it: the slam is frame 96.
+wait 60
+lift admit
+wait 30
+click 250 60
+wait 90
