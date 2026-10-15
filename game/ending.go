@@ -13,8 +13,9 @@ import (
 // An ending is four things in a row (Sound -> The ending rule): the ending's
 // script (in cinematic mode, the bars up), a hard cut to black and a beat of
 // silence, then the rock slams in and the last picture comes back with the
-// ending's title written over it, and the credits run in the bottom bar over
-// the same picture. Then the top-10, once, and the title screen.
+// ending's title written over it, and then the finale (finale.go): the credits
+// roll up over the same picture, the logo holds, the screen fades to black and
+// the TV turns on onto the top-10, once, and the title screen after it.
 
 type endingPhase int
 
@@ -22,21 +23,18 @@ const (
 	phaseScript endingPhase = iota
 	phaseSilence
 	phaseTitle
-	phaseCredits
+	phaseFinale
 )
 
 func (p endingPhase) String() string {
-	return [...]string{"script", "silence", "title", "credits"}[p]
+	return [...]string{"script", "silence", "title", "finale"}[p]
 }
 
 const (
-	silenceTicks      = 90  // black and quiet before the rock
-	titleTicks        = 360 // the title stays up 6 s
-	secretTitleTicks  = 600 // the secret ending's stays 10 s, the glitch needs the time
-	creditsSkipAfter  = 30  // a click skips a phase only after half a second
-	creditsCardHeadY  = 245 // caps top of a card's heading in the bottom bar
-	creditsCardLineY  = 256 // ... and of its line
-	creditsCardAloneY = 250 // a card with only a heading
+	silenceTicks     = 90  // black and quiet before the rock
+	titleTicks       = 360 // the title stays up 6 s
+	secretTitleTicks = 600 // the secret ending's stays 10 s, the glitch needs the time
+	titleSkipAfter   = 30  // a click skips a replay's title only after half a second
 )
 
 // endingScene plays one ending (ending.sleep, ending.wake, ending.forever,
@@ -44,7 +42,7 @@ const (
 //
 // A gallery replay (replay.sleep ...) plays the same scene: the script, the
 // cut, the silence, the rock and the title, glitch and stain included. It
-// differs only at the edges: no credits and no top-10 (it goes back to the
+// differs only at the edges: no finale and no top-10 (it goes back to the
 // gallery once the title has been up its time, or on a click, or on Esc), and
 // no side effects (no sleep_log, no 3:17 quit, nothing saved).
 type endingScene struct {
@@ -56,7 +54,9 @@ type endingScene struct {
 	phase  endingPhase
 	ticks  int // ticks into the phase
 	cards  []creditCard
-	blood  int // ticks since the blood splashed (Forever); -1 when it has not
+	finale *finaleArt    // the roll, the logo and the fade
+	over   *ebiten.Image // 3:17: the finale's layer drawn aside, so a row band can slip
+	blood  int           // ticks since the blood splashed (Forever); -1 when it has not
 	title  *titleArt
 	timed  bool          // the rock plays from the first line, timed to the title (Forever)
 	glitch *Glitch       // the secret ending's lag and glitch (nil for the others)
@@ -79,6 +79,9 @@ func (s *endingScene) Enter(env *Env) error {
 		}
 	}
 	s.cards = CreditCards()
+	if s.finale, err = newFinaleArt(env.Sprites, s.name, s.cards); err != nil {
+		return err
+	}
 	env.Ending = s.name
 	s.script = &nightScene{script: night.EndingScript(s.name), onEnd: s.scriptEnded, replay: s.replay}
 	if err := s.script.Enter(env); err != nil {
@@ -162,6 +165,12 @@ func (s *endingScene) setPhase(p endingPhase) {
 }
 
 func (s *endingScene) Update() error {
+	if s.env.JumpToFinale { // the backdoor's "finale N": straight to tick N of the finale
+		s.env.JumpToFinale = false
+		if err := s.jumpToFinale(s.env.FinaleJumpTick); err != nil {
+			return err
+		}
+	}
 	if s.phase == phaseScript {
 		if s.env.SkipToCard { // the backdoor's "card": jump to the end of the script
 			s.env.SkipToCard = false
@@ -185,39 +194,62 @@ func (s *endingScene) Update() error {
 	if err := s.script.engine.Tick(); err != nil {
 		return err
 	}
-	skip := false
-	if _, _, clicked := s.env.Input.Click(); clicked || s.env.Input.KeyPressed(ebiten.KeySpace) {
-		skip = s.ticks > creditsSkipAfter
-	}
 	switch s.phase {
 	case phaseSilence:
 		if s.ticks >= silenceTicks {
 			s.setPhase(phaseTitle)
 		}
 	case phaseTitle:
+		// Only a replay can be clicked past its title: the real ending runs
+		// on its own, so Forever's music stays in step with the picture.
+		_, _, clicked := s.env.Input.Click()
+		skip := s.replay != nil && (clicked || s.env.Input.KeyPressed(ebiten.KeySpace)) && s.ticks > titleSkipAfter
 		if s.ticks >= s.titleLength() || skip {
-			if s.replay != nil { // a replay ends with the title: no credits, no top-10
+			if s.replay != nil { // a replay ends with the title: no finale, no top-10
 				s.env.SwitchTo(SceneScenes)
 				return nil
 			}
-			s.setPhase(phaseCredits)
+			s.setPhase(phaseFinale)
 		}
-	case phaseCredits:
-		if s.ticks == CreditsTicks(s.cards)-creditsFadeTicks && s.env.Sound != nil {
-			s.env.Sound.FadeOut(creditsFadeTicks) // the rock fades in the last seconds
-		}
-		if (s.creditsDone() || skip) && s.env.Audition {
-			return ebiten.Termination // an audition ends with the credits: no top-10, nothing saved
-		}
-		if s.creditsDone() || skip {
-			s.env.SwitchTo(SceneDayTop10)
-		}
+	case phaseFinale:
+		return s.updateFinale()
 	}
 	return nil
 }
 
-// creditsDone says whether the last card has gone.
-func (s *endingScene) creditsDone() bool { return s.ticks >= CreditsTicks(s.cards) }
+// jumpToFinale is the backdoor's way to any tick of the finale: it plays the
+// rest of the script away first if it is still running.
+func (s *endingScene) jumpToFinale(tick int) error {
+	if s.phase == phaseScript {
+		if err := s.scriptEnded(""); err != nil {
+			return err
+		}
+	}
+	s.script.engine.CutToStill()
+	s.setPhase(phaseFinale)
+	s.ticks = tick - 1 // this frame's Update counts the tick
+	return nil
+}
+
+// updateFinale moves the finale one tick on. The music fades out over the
+// 3 s before the black; after the black the TV turns on onto the top-10 (an
+// audition ends here instead: no top-10, nothing saved).
+func (s *endingScene) updateFinale() error {
+	st, ok := FinaleAt(s.ticks)
+	s.env.EndingStage, s.env.EndingTick = st.Stage, st.At
+	if s.ticks == FinaleStageStart("black")-finaleFadeOut && s.env.Sound != nil {
+		s.env.Sound.FadeOut(finaleFadeOut)
+	}
+	if ok {
+		return nil
+	}
+	if s.env.Audition {
+		return ebiten.Termination
+	}
+	s.env.StartPowerOn()
+	s.env.SwitchTo(SceneDayTop10)
+	return nil
+}
 
 func (s *endingScene) Draw(screen *ebiten.Image) {
 	screen.Fill(paletteInk)
@@ -231,8 +263,16 @@ func (s *endingScene) Draw(screen *ebiten.Image) {
 		}
 		return
 	}
+	st, running := FinaleAt(s.ticks)
+	if s.phase == phaseFinale && (!running || fadeFrame(st) == 3) {
+		return // black and silence, until the TV turns on
+	}
 	if s.glitch == nil {
 		s.drawPicture(screen)
+		if s.phase == phaseFinale {
+			s.finale.draw(screen, st)
+			s.finale.drawFade(screen, st)
+		}
 		return
 	}
 	// The secret ending: draw aside, then let the glitch tear it onto the screen.
@@ -242,17 +282,27 @@ func (s *endingScene) Draw(screen *ebiten.Image) {
 	s.buf.Fill(paletteInk)
 	s.drawPicture(s.buf)
 	s.glitch.Apply(screen, s.buf, s.ticks, s.glitchLevel(), s.env.ReduceFlashing)
+	if s.phase != phaseFinale {
+		return
+	}
+	// The roll and the logo stay readable: they are drawn aside as well, and
+	// only now and then one row band of them slips sideways.
+	if s.over == nil {
+		s.over = ebiten.NewImage(ScreenW, ScreenH)
+	}
+	s.over.Clear()
+	s.finale.draw(s.over, st)
+	drawSlipped(screen, s.over, s.ticks, s.env.Seed)
+	s.finale.drawFade(screen, st)
 }
 
-// drawPicture paints the ending's last picture (with its bars) and then the
-// title over it, or the credit card in the bottom bar.
+// drawPicture paints the ending's last picture (with its bars) and, in the
+// title phase, the title over it.
 func (s *endingScene) drawPicture(dst *ebiten.Image) {
 	s.script.art.Draw(dst, s.script.engine)
 	if s.phase == phaseTitle {
 		s.drawTitle(dst)
-		return
 	}
-	s.drawCard(dst)
 }
 
 // titleLength is how long the title stays up: the secret ending's glitch
@@ -265,9 +315,9 @@ func (s *endingScene) titleLength() int {
 }
 
 // glitchLevel is the secret ending's glitch strength now: it ramps up over
-// the title and stays strong under the credits.
+// the title and stays strong under the finale.
 func (s *endingScene) glitchLevel() float64 {
-	if s.phase == phaseCredits {
+	if s.phase == phaseFinale {
 		return 0.7
 	}
 	return glitchLevel(s.ticks)
@@ -280,31 +330,6 @@ func (s *endingScene) drawTitle(dst *ebiten.Image) {
 	small := color.Color(s.title.small)
 	s.centered(dst, strings.ToUpper(titleLabels[s.name]), labelCapTop-capTop, small)
 	s.centered(dst, strings.ToUpper(endingSubtitle), subtitleTop-capTop, small)
-}
-
-// drawCard writes the credit card that is up in the bottom bar. The white
-// bars of the Sleep ending take ink and deep sage, the others off-white and
-// mid grey. A glitched ending shows its cards a few frames late.
-func (s *endingScene) drawCard(dst *ebiten.Image) {
-	ticks := s.ticks
-	if s.glitch != nil {
-		ticks = lagTick(ticks, s.env.Seed, s.glitchLevel())
-	}
-	i, showing := CardAt(s.cards, ticks)
-	if !showing {
-		return
-	}
-	card := s.cards[i]
-	head, line := color.Color(colMidRGBA), color.Color(colPaperRGBA)
-	if s.name == night.EndingSleep {
-		head, line = colDim, colInk
-	}
-	if card.Line == "" {
-		s.centered(dst, strings.ToUpper(card.Heading), creditsCardAloneY-capTop, head)
-		return
-	}
-	s.centered(dst, strings.ToUpper(card.Heading), creditsCardHeadY-capTop, head)
-	s.centered(dst, card.Line, creditsCardLineY-capTop, line)
 }
 
 func (s *endingScene) centered(screen *ebiten.Image, text string, y int, c color.Color) {

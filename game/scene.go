@@ -106,8 +106,12 @@ type Env struct {
 	GalleryState *DumpGallery
 
 	// The end of the run.
-	Ending         string  // the ending that is playing: sleep, wake, forever, 317 ("" before)
-	EndingPhase    string  // script, silence, title or credits
+	Ending         string // the ending that is playing: sleep, wake, forever, 317 ("" before)
+	EndingPhase    string // script, silence, title or finale
+	EndingStage    string // the finale's stage: shade-in, roll, thanks, shade-out, logo, fade or black ("" before it)
+	EndingTick     int    // ticks into the finale
+	JumpToFinale   bool   // test mode: an ending scene jumps to tick FinaleJumpTick of its finale
+	FinaleJumpTick int
 	EndingTitleAt  int     // ticks from the ending's first line to its title (the script plus the black beat)
 	EndingRockFrom float64 // Forever: seconds into the rock file where it starts so its drop lands on the title (0 for the others)
 	View           View    // where the picture sits on the screen (the dump shows it)
@@ -163,7 +167,7 @@ func (e *Env) NewRun() {
 	e.Flags = make(night.Flags)
 	e.Scores = make(map[string]int)
 	e.savedRows = nil
-	e.Ending, e.EndingPhase, e.MusicCue = "", "", ""
+	e.Ending, e.EndingPhase, e.EndingStage, e.EndingTick, e.MusicCue = "", "", "", 0, ""
 	e.EndingTitleAt, e.EndingRockFrom = 0, 0
 	e.QuitAfterTop10 = false
 }

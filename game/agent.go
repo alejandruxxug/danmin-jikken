@@ -138,7 +138,7 @@ func ParseOptions(args []string) (Options, error) {
 
 // Command is one line of an input script.
 type Command struct {
-	Op    string // "next", "choose", "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "card", "shot" or "dump"
+	Op    string // "next", "choose", "wait", "key", "click", "mouse", "down", "up", "pan", "dark", "advance", "type", "stamp", "card", "finale", "shot" or "dump"
 	Text  string // type: the characters
 	N     int    // wait: frames; pan: camera x
 	Stamp Stamp  // stamp: which one
@@ -384,6 +384,15 @@ func parseCommand(words []string) (Command, error) {
 		default:
 			return cmd, fmt.Errorf("auto takes nothing, on or off")
 		}
+	case "finale": // finale N: jump to tick N of an ending's finale
+		if len(args) != 1 {
+			return cmd, fmt.Errorf("finale needs one tick number")
+		}
+		n, err := strconv.Atoi(args[0])
+		if err != nil || n < 0 {
+			return cmd, fmt.Errorf("finale %q: want a tick number", args[0])
+		}
+		cmd.N = n
 	case "next", "skipstrobe", "card":
 		if len(args) != 0 {
 			return cmd, fmt.Errorf("%s takes no argument", cmd.Op)
@@ -585,6 +594,8 @@ func (a *Agent) runCommands(env *Env) {
 			env.SkipStrobe = true
 		case "card": // an ending scene jumps from its script to its card
 			env.SkipToCard = true
+		case "finale": // an ending scene jumps to a tick of its finale
+			env.JumpToFinale, env.FinaleJumpTick = true, cmd.N
 		case "choose":
 			if env.Night != nil {
 				_ = env.Night.Choose(cmd.N - 1) // no menu open: nothing happens, as for a click
@@ -797,6 +808,10 @@ type Dump struct {
 	Route       string `json:"route"`
 	Ending      string `json:"ending"`
 	EndingPhase string `json:"endingPhase"`
+	// The finale's stage (shade-in, roll, thanks, shade-out, logo, fade, black)
+	// and the ticks into it, 60 a second.
+	EndingStage string `json:"endingStage"`
+	EndingTick  int    `json:"endingTick"`
 	// Ticks from the ending's first line to its title, and where in the rock
 	// file Forever's music starts so its drop lands on that title.
 	EndingTitleAt  int      `json:"endingTitleAt"`
@@ -1000,6 +1015,7 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	}
 	d.View = env.View
 	d.Route, d.Ending, d.EndingPhase, d.MusicCue = night.RouteFor(env.Flags), env.Ending, env.EndingPhase, env.MusicCue
+	d.EndingStage, d.EndingTick = env.EndingStage, env.EndingTick
 	d.SleepLogPath, d.SleepLogErr = env.SleepLogPath, env.SleepLogError
 	d.EndingGlitch = env.EndingGlitch
 	d.EndingTitleAt, d.EndingRockFrom = env.EndingTitleAt, env.EndingRockFrom

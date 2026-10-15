@@ -478,7 +478,7 @@ func TestGalleryPicks(t *testing.T) {
 }
 
 // An ending's replay plays on to its title (cut, silence, rock, title) and
-// then goes back to the gallery: no credits, no top-10, and none of the
+// then goes back to the gallery: no finale, no top-10, and none of the
 // ending's side effects (the 3:17 sleep log and quit).
 func TestEndingReplayStopsAtTheTitle(t *testing.T) {
 	for _, id := range []string{"sleep", "wake", "forever", "317"} {
@@ -530,8 +530,8 @@ func TestEndingReplayClickAndEsc(t *testing.T) {
 			t.Fatal(err)
 		}
 		env.SkipToCard = true
-		for i := 0; i < silenceTicks+creditsSkipAfter+10 && env.nextScene == ""; i++ {
-			if s.phase == phaseTitle && s.ticks > creditsSkipAfter {
+		for i := 0; i < silenceTicks+titleSkipAfter+10 && env.nextScene == ""; i++ {
+			if s.phase == phaseTitle && s.ticks > titleSkipAfter {
 				env.Input.InjectKey(key)
 			}
 			if err := s.Update(); err != nil {

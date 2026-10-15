@@ -185,7 +185,7 @@ func TestDeskDayHasArt(t *testing.T) {
 	}
 }
 
-// Each ending's title comes back over its own last picture, and the credits
+// Each ending's title comes back over its own last picture, and the finale
 // run over the same picture until the top-10.
 func TestEndingTitleComesBackOverTheLastPicture(t *testing.T) {
 	for _, c := range []struct {
@@ -214,15 +214,18 @@ func TestEndingTitleComesBackOverTheLastPicture(t *testing.T) {
 			}
 			g.env.Input.endFrame()
 		}
-		want := []string{"silence", "title", "credits"}
+		want := []string{"silence", "title", "finale"}
 		if len(phases) != 3 || phases[0] != want[0] || phases[1] != want[1] || phases[2] != want[2] {
 			t.Errorf("%s: phases %v, want %v then the top-10", c.ending, phases, want)
 		}
 		if g.env.nextScene != SceneDayTop10 {
-			t.Errorf("%s: after the credits the game goes to %q, want the top-10", c.ending, g.env.nextScene)
+			t.Errorf("%s: after the finale the game goes to %q, want the top-10", c.ending, g.env.nextScene)
+		}
+		if !g.env.PoweringOn {
+			t.Errorf("%s: the TV must turn on onto the top-10", c.ending)
 		}
 		if !s.script.engine.Cinematic() {
-			t.Errorf("%s: the bars must still be up in the title and the credits", c.ending)
+			t.Errorf("%s: the bars must still be up in the title and the finale", c.ending)
 		}
 	}
 }

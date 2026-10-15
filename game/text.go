@@ -36,13 +36,17 @@ type Font struct {
 	face *text.GoTextFace
 }
 
-// LoadFont reads the embedded Silkscreen font.
-func LoadFont() (*Font, error) {
+// LoadFont reads the embedded Silkscreen font at its native size.
+func LoadFont() (*Font, error) { return LoadFontAt(fontSize) }
+
+// LoadFontAt reads it at another size. Silkscreen is a pixel font, so only
+// whole multiples of 8 keep it crisp (the ending's thanks line uses 16).
+func LoadFontAt(size float64) (*Font, error) {
 	src, err := text.NewGoTextFaceSource(bytes.NewReader(silkscreenTTF))
 	if err != nil {
 		return nil, fmt.Errorf("loading the font: %w", err)
 	}
-	return &Font{face: &text.GoTextFace{Source: src, Size: fontSize}}, nil
+	return &Font{face: &text.GoTextFace{Source: src, Size: size}}, nil
 }
 
 // Draw prints s with its top-left corner at (x, y), in game pixels.

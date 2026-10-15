@@ -91,13 +91,13 @@ func TestRockStartsCoverEveryEnding(t *testing.T) {
 	}
 }
 
-// The rock must last through what plays after it enters (title and credits)
-// or the credits would roll in silence. Each file's real length is read. For
+// The rock must last through what plays after it enters (title and finale)
+// or the finale would play in silence. Each file's real length is read. For
 // Forever the rock enters earlier, so what counts is the part of the file
 // after the drop, which lands on the title.
-func TestRockOutlastsTheCredits(t *testing.T) {
+func TestRockOutlastsTheFinale(t *testing.T) {
 	p := soundPlayer(t)
-	need := time.Duration(secretTitleTicks+CreditsTicks(CreditCards())) * time.Second / 60
+	need := time.Duration(secretTitleTicks+FinaleStageStart("black")) * time.Second / 60 // it fades out into the black
 	for _, name := range night.Endings {
 		length, err := p.Length("ending_rock_" + name)
 		if err != nil {
@@ -108,11 +108,11 @@ func TestRockOutlastsTheCredits(t *testing.T) {
 			left = length - drop
 		}
 		if left < need {
-			t.Errorf("%s: %v of rock after the title enters, but the title and credits last %v", name, left, need)
+			t.Errorf("%s: %v of rock after the title enters, but the title and finale last %v", name, left, need)
 		}
 	}
-	if CreditsTicks(CreditCards())-creditsFadeTicks < 0 {
-		t.Error("the fade starts before the credits")
+	if FinaleStageStart("black")-finaleFadeOut < FinaleStageStart("logo") {
+		t.Error("the music fade starts before the logo")
 	}
 }
 
@@ -195,40 +195,12 @@ func TestForeverPlaysItselfToTheTitle(t *testing.T) {
 	}
 }
 
-// The roll is over exactly when the last card and its gap are done.
-func TestCreditsDoneMatchesCreditsTicks(t *testing.T) {
-	s := &endingScene{cards: CreditCards()}
-	total := CreditsTicks(s.cards)
-	s.ticks = total - 5
-	if s.creditsDone() {
-		t.Error("credits done 5 ticks early")
-	}
-	s.ticks = total + 5
-	if !s.creditsDone() {
-		t.Error("credits not done 5 ticks late")
-	}
-}
-
-// CardAt walks the cards: each shows for its ticks, then a quarter second of
-// empty bar, and the roll ends after the last.
-func TestCardAt(t *testing.T) {
-	cards := []creditCard{{"A", "a", 100}, {"B", "b", 50}}
-	for _, c := range []struct {
-		ticks   int
-		index   int
-		showing bool
-	}{{0, 0, true}, {99, 0, true}, {100, 0, false}, {100 + cardGapTicks - 1, 0, false}, {100 + cardGapTicks, 1, true}, {100 + cardGapTicks + 49, 1, true}, {100 + cardGapTicks + 50, 1, false}, {CreditsTicks(cards), 2, false}} {
-		if i, showing := CardAt(cards, c.ticks); i != c.index || showing != c.showing {
-			t.Errorf("CardAt(%d) = %d, %v; want %d, %v", c.ticks, i, showing, c.index, c.showing)
-		}
-	}
-}
-
-// The last card is the thank-you, 4 s; every card line fits the bottom bar.
+// The thanks is the last card and the roll is one column: every line of it
+// fits the 336 px column, the widest in uppercase like the roll prints it.
 func TestCreditCards(t *testing.T) {
 	cards := CreditCards()
 	last := cards[len(cards)-1]
-	if last.Heading != "Thank you for staying awake" || last.Ticks != 240 {
+	if last.Heading != "Thank you for staying awake" || last.Line != "" {
 		t.Errorf("last card %+v", last)
 	}
 	font, err := LoadFont()
@@ -236,8 +208,8 @@ func TestCreditCards(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range cards {
-		if w := font.Width(c.Line); w > 360 {
-			t.Errorf("card line %q is %d px wide, the bar takes 360", c.Line, w)
+		if w := font.Width(strings.ToUpper(c.Line)); w > 336 {
+			t.Errorf("card line %q is %d px wide, the column takes 336", c.Line, w)
 		}
 	}
 }
