@@ -51,6 +51,8 @@ type Options struct {
 	ReduceFlashing bool
 	Quit           bool
 	Frames         int
+	Card           string // -card sheet:layer: what the scene trailer.card shows
+	Record         string // -record <dir>: save every frame as a 1920x1080 PNG plus audio.json (record.go)
 	Pan            int    // camera x at the start (used only when PanSet)
 	PanSet         bool   // -pan was given; without it the camera starts at 120
 	Scores         string // the scores file (without it scores stay in memory)
@@ -98,6 +100,9 @@ func ParseOptions(args []string) (Options, error) {
 	fs.BoolVar(&o.PowerOn, "poweron", false, "play the CRT turn-on at the start (see it with wait N and shot4)")
 	fs.BoolVar(&o.Quit, "quit", false, "exit when the script (or -frames) ends")
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
+	fs.IntVar(&o.Frames, "record-frames", 0, "the same as -frames (the number of frames to record)")
+	fs.StringVar(&o.Record, "record", "", "record mode: save every frame as a 1920x1080 PNG, and audio.json, in this folder (fixed 60 updates a second)")
+	fs.StringVar(&o.Card, "card", "", "scene trailer.card: show this layer of a sheet, as sheet:layer (the sheet defaults to trailer_cards)")
 	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
 	fs.StringVar(&o.Scores, "scores", "", "scores file to use (default: none, kept in memory)")
 	fs.IntVar(&o.Score, "score", 0, "today's score at the start")
@@ -126,6 +131,12 @@ func ParseOptions(args []string) (Options, error) {
 	}
 	if o.TutorialStep < 0 || o.TutorialStep > 10 {
 		return Options{}, fmt.Errorf("-tutorial-step %d: want a step from 1 to 10", o.TutorialStep)
+	}
+	if o.Record != "" && !o.Enabled {
+		return Options{}, errors.New("-record needs -agent")
+	}
+	if o.Record != "" {
+		o.Quit = true // a recording ends with its script or its frames
 	}
 	if o.Enabled && (o.Play != "" || o.Rock != "") {
 		return Options{}, errors.New("-play and -rock are for listening with sound; with -agent use -scene")

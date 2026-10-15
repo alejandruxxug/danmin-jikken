@@ -27,6 +27,7 @@ type Game struct {
 	shotCRT *CRT          // the same shader for the x4 screenshots (a buffer of its own)
 	ticks   int           // frames updated so far: the shader's clock
 	sharp   *ebiten.Image // the canvas scaled up by a whole number, for the visual novel's sharp-bilinear fit
+	rec     *recorder     // non-nil in record mode (record.go)
 }
 
 // New builds the game from the command-line options and enters the first
@@ -75,6 +76,7 @@ func New(opts Options) (*Game, error) {
 			return &nightScene{script: card.Script, replay: &card}
 		})
 	}
+	g.scenes.Register(SceneTrailerCard, func() Scene { return &cardScene{spec: opts.Card} })
 	g.scenes.Register(SceneDayReception, func() Scene { return &receptionScene{} })
 	g.scenes.Register(SceneDayComputer, func() Scene { return &computerScene{} })
 	g.scenes.Register(SceneDayDesk, func() Scene { return &deskScene{} })
@@ -110,6 +112,11 @@ func New(opts Options) (*Game, error) {
 			return nil, err
 		}
 		g.agent = agent
+		if opts.Record != "" {
+			if g.rec, err = newRecorder(opts.Record); err != nil {
+				return nil, err
+			}
+		}
 		first = opts.Scene
 		env.SeenPrologue = opts.SeenPrologue
 	} else {
@@ -167,10 +174,20 @@ func New(opts Options) (*Game, error) {
 
 // Update runs once per tick (60 times a second).
 func (g *Game) Update() error {
+	if g.rec != nil && g.rec.mustWait() {
+		return nil // record mode: one update per saved frame (record.go)
+	}
+	if g.env.Sound != nil {
+		g.env.Sound.SetFrame(g.ticks + 1) // the frame this update makes, for the sound events
+		defer g.env.Sound.EndFrame()
+	}
 	if g.agent != nil {
 		if err := g.agent.Update(g); err != nil {
 			return err
 		}
+	}
+	if g.rec != nil {
+		g.rec.startFrame()
 	}
 	g.ticks++
 	if g.env.Sound != nil {
@@ -238,6 +255,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	if g.agent != nil {
 		g.agent.AfterDraw(g, g.canvas)
+	}
+	if g.rec != nil {
+		g.rec.save(g)
+		// The window stays as it is while recording: drawing the CRT a second
+		// time, at the window's size, made the saved frames differ from run to run.
+		return
 	}
 	g.putOnScreen(screen, ebiten.IsFullscreen())
 }
@@ -422,6 +445,11 @@ func Run(opts Options) error {
 	runErr := ebiten.RunGame(g)
 	g.scenes.Close()
 	_ = g.env.StopShift() // the goroutines must not outlive the window
+	if g.rec != nil {
+		if err := g.rec.finish(g.env.Sound.Events); err != nil {
+			return err
+		}
+	}
 	if runErr != nil && !errors.Is(runErr, ebiten.Termination) {
 		return fmt.Errorf("running the game: %w", runErr)
 	}

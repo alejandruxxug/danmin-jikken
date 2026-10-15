@@ -75,6 +75,63 @@ type Player struct {
 	files   map[string]string // cue -> file on disk that stands in for the embedded one (Override)
 	missing map[string]bool
 	Log     []string // every request, like "sfx stamp_thunk" or "music title"
+
+	// Events is the log with frame numbers, offsets and gains, for the trailer
+	// mixer (tools/trailer). Only the muted player (test mode) fills it.
+	Events   []Event
+	frame    int     // the frame being updated (SetFrame), 1 for the first
+	lastGain float64 // the music gain the last "gain" event recorded; -1 = record the next one
+}
+
+// Event is one thing the sound system did, with the frame it happened in.
+// Frame 1 is the first update; its picture is shown at 0 s, so an event of
+// frame n sounds at (n-1)/60 s. Kinds:
+//
+//	sfx    File played once at Gain
+//	music  File started at Offset seconds into the file; Loop repeats it from there
+//	seek   the playing music jumps to Offset seconds
+//	gain   the music's loudness is now Gain (volume x fades x shape)
+//	stop   the music stops (cut, or a fade that reached 0)
+type Event struct {
+	Frame  int     `json:"frame"`
+	Kind   string  `json:"kind"`
+	Cue    string  `json:"cue,omitempty"`
+	File   string  `json:"file,omitempty"` // the file in the sound folder; "" when the cue has none
+	Gain   float64 `json:"gain,omitempty"`
+	Offset float64 `json:"offset,omitempty"`
+	Loop   bool    `json:"loop,omitempty"`
+}
+
+// SetFrame tells the player which frame is being updated; the events are
+// stamped with it. The game calls it first thing in every update.
+func (p *Player) SetFrame(n int) { p.frame = n }
+
+// record adds an event (muted player only).
+func (p *Player) record(e Event) {
+	if p.muted {
+		e.Frame = p.frame
+		p.Events = append(p.Events, e)
+	}
+}
+
+// fileOf is the name of the file a cue plays, "" when it has none.
+func (p *Player) fileOf(name string) string {
+	if _, ext, ok := p.find(name); ok {
+		return name + ext
+	}
+	return ""
+}
+
+// EndFrame closes a frame: if the music is louder or quieter than the last
+// recorded gain (a fade, the shape, a volume change), it records the new one.
+func (p *Player) EndFrame() {
+	if !p.muted || p.current == "" {
+		return
+	}
+	if g := p.MusicGain(); g != p.lastGain {
+		p.lastGain = g
+		p.record(Event{Kind: "gain", Gain: g})
+	}
 }
 
 // New makes a player reading files from fsys. muted gives a player that only
@@ -182,6 +239,7 @@ func (p *Player) Note(text string) { p.Log = append(p.Log, "note "+text) }
 // SFX volume. Several can play at the same time.
 func (p *Player) PlaySFXGain(name string, gain float64) {
 	p.Log = append(p.Log, "sfx "+name)
+	p.record(Event{Kind: "sfx", Cue: name, File: p.fileOf(name), Gain: p.sfxVol * min(max(gain, 0), 1)})
 	if p.muted || p.ctx == nil {
 		return
 	}
@@ -219,6 +277,12 @@ func (p *Player) PlayMusic(name string, loop bool, start time.Duration) {
 	p.Log = append(p.Log, "music "+name)
 	if name == p.current && p.music != nil && p.music.IsPlaying() {
 		return
+	}
+	// The muted player restarts its pretend music on every request, but the
+	// real one ignores a track that is already playing; the events follow the real one.
+	if !(p.muted && name == p.current && p.simPlaying) {
+		p.record(Event{Kind: "music", Cue: name, File: p.fileOf(name), Offset: start.Seconds(), Loop: loop})
+		p.lastGain = -1
 	}
 	p.stop()
 	p.current = name
@@ -355,6 +419,7 @@ func (p *Player) MusicPosition() (pos time.Duration, ok bool) {
 // point the stream started at is not possible and goes to that point.
 func (p *Player) SeekMusic(pos time.Duration) {
 	p.Log = append(p.Log, fmt.Sprintf("music seek %.3f", pos.Seconds()))
+	p.record(Event{Kind: "seek", Offset: pos.Seconds()})
 	if p.muted || p.ctx == nil {
 		p.simPos, p.simDelay = pos, 0
 		return
@@ -415,6 +480,9 @@ func (p *Player) Update() {
 		p.music.SetVolume(p.musicVol * p.gain())
 	}
 	if p.fadeTotal > 0 && p.fadeLeft == 0 {
+		if p.current != "" {
+			p.record(Event{Kind: "stop"})
+		}
 		p.stop()
 	}
 }
@@ -422,6 +490,9 @@ func (p *Player) Update() {
 // StopMusic cuts the music (a script's "music off").
 func (p *Player) StopMusic() {
 	p.Log = append(p.Log, "music off")
+	if p.current != "" {
+		p.record(Event{Kind: "stop"})
+	}
 	p.stop()
 }
 
