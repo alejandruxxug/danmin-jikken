@@ -21,8 +21,8 @@ var finaleStages = []struct {
 	Ticks int
 }{
 	{"shade-in", 30}, // the dither column steps in (and the roll starts to climb)
-	{"roll", 2004},   // the credits climb 16 px/s until THANK YOU is at its resting y
-	{"thanks", 180},  // THANK YOU FOR STAYING AWAKE holds in the middle
+	{"roll", rollTicks(CreditCards(night.EndingForever))}, // the credits climb 16 px/s until THANK YOU is at its resting y (derived from the layout)
+	{"thanks", 180}, // THANK YOU FOR STAYING AWAKE holds in the middle
 	{"shade-out", 30},
 	{"logo", 300}, // the logo holds, still
 	{"fade", 90},  // three dither steps to black, 0.5 s each
@@ -124,6 +124,16 @@ func fadeFrame(st FinaleState) int {
 func rollDY(tick int) int {
 	climbing := tick - finaleStages[0].Ticks
 	return min(max(climbing, 0), finaleStages[1].Ticks) * rollPxPerSec / 60
+}
+
+// rollTicks is how long the roll climbs for these cards: until the thanks line
+// has reached thanksStopY, rounded up to a whole tick. The stage table uses it,
+// so a change to the credits can never leave the two out of step. The four
+// endings' credits have the same layout, so one length serves all of them
+// (TestRollIsTheSameForEveryEnding).
+func rollTicks(cards []creditCard) int {
+	pixels := rollStartY + thanksY(rollLayout(cards)) - thanksStopY
+	return (pixels*60 + rollPxPerSec - 1) / rollPxPerSec
 }
 
 // rollLine is one line of the roll: its text, its caps-top y counted from

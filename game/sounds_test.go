@@ -198,18 +198,42 @@ func TestForeverPlaysItselfToTheTitle(t *testing.T) {
 // The thanks is the last card and the roll is one column: every line of it
 // fits the 336 px column, the widest in uppercase like the roll prints it.
 func TestCreditCards(t *testing.T) {
-	cards := CreditCards()
-	last := cards[len(cards)-1]
-	if last.Heading != "Thank you for staying awake" || last.Line != "" {
-		t.Errorf("last card %+v", last)
-	}
 	font, err := LoadFont()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, c := range cards {
-		if w := font.Width(strings.ToUpper(c.Line)); w > 336 {
-			t.Errorf("card line %q is %d px wide, the column takes 336", c.Line, w)
+	for _, ending := range night.Endings {
+		cards := CreditCards(ending)
+		last := cards[len(cards)-1]
+		if last.Heading != "Thank you for staying awake" || last.Line != "" {
+			t.Errorf("%s: last card %+v", ending, last)
+		}
+		// Every ending has its own dedication, the card before the thanks.
+		ded := cards[len(cards)-2]
+		if ded.Heading != "Made with love" || ded.Line == "" || ded.Line != dedications[ending] {
+			t.Errorf("%s: dedication card %+v", ending, ded)
+		}
+		for _, c := range cards {
+			if w := font.Width(strings.ToUpper(c.Line)); w > 336 {
+				t.Errorf("%s: card line %q is %d px wide, the column takes 336", ending, c.Line, w)
+			}
+		}
+	}
+}
+
+// The roll is as long as its layout says, for every ending: the thanks line
+// stops exactly at thanksStopY when the roll ends, and the four endings roll
+// for the same time (the stage table has one roll length).
+func TestRollIsTheSameForEveryEnding(t *testing.T) {
+	for _, ending := range night.Endings {
+		cards := CreditCards(ending)
+		if got := rollTicks(cards); got != finaleStages[1].Ticks {
+			t.Errorf("%s: the roll needs %d ticks, the finale gives it %d", ending, got, finaleStages[1].Ticks)
+		}
+		end := finaleStages[0].Ticks + finaleStages[1].Ticks
+		y := rollStartY + thanksY(rollLayout(cards)) - rollDY(end)
+		if y < thanksStopY-1 || y > thanksStopY {
+			t.Errorf("%s: the thanks stops at y %d, want %d", ending, y, thanksStopY)
 		}
 	}
 }

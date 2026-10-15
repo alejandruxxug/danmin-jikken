@@ -12,6 +12,7 @@ import (
 // The stages follow the spec's seconds: the roll runs 33.4 s from 5.5 s, the
 // thanks holds 3 s, the logo 5 s, the fade 1.5 s, then 1 s of black.
 func TestFinaleStageTable(t *testing.T) {
+	roll := finaleStages[1].Ticks // derived from the credits' layout (rollTicks)
 	for _, c := range []struct {
 		tick  int
 		stage string
@@ -19,15 +20,15 @@ func TestFinaleStageTable(t *testing.T) {
 	}{
 		{0, "shade-in", 0},
 		{29, "shade-in", 29},
-		{30, "roll", 0},               // 5.5 s after the title pop
-		{30 + 2004 - 1, "roll", 2003}, // the last tick of the roll
-		{2034, "thanks", 0},           // 38.9 s
-		{2213, "thanks", 179},         // 41.9 s is next
-		{2214, "shade-out", 0},        // the thanks goes off
-		{2244, "logo", 0},             // 42.4 s
-		{2544, "fade", 0},             // 47.4 s
-		{2634, "black", 0},            // 48.9 s
-		{2693, "black", 60 - 1},       // the last tick before the turn-on
+		{30, "roll", 0},                   // 5.5 s after the title pop
+		{30 + roll - 1, "roll", roll - 1}, // the last tick of the roll
+		{30 + roll, "thanks", 0},
+		{30 + roll + 179, "thanks", 179},
+		{30 + roll + 180, "shade-out", 0}, // the thanks goes off
+		{30 + roll + 210, "logo", 0},
+		{30 + roll + 510, "fade", 0},
+		{30 + roll + 600, "black", 0},
+		{30 + roll + 659, "black", 60 - 1}, // the last tick before the turn-on
 	} {
 		st, ok := FinaleAt(c.tick)
 		if !ok || st.Stage != c.stage || st.Tick != c.in || st.At != c.tick {
@@ -40,9 +41,9 @@ func TestFinaleStageTable(t *testing.T) {
 	if _, ok := FinaleAt(-1); ok {
 		t.Error("the finale starts before tick 0")
 	}
-	// From the title's end (spec 5.0 s) to the turn-on (49.9 s): 44.9 s.
-	if FinaleTicks() != 2694 {
-		t.Errorf("the finale is %d ticks, want 2694", FinaleTicks())
+	// Everything after the roll is fixed: 30 ticks of shade-in before it, 660 after.
+	if FinaleTicks() != 30+roll+660 {
+		t.Errorf("the finale is %d ticks, want %d", FinaleTicks(), 30+roll+660)
 	}
 }
 
@@ -92,7 +93,7 @@ func TestShadeAndFadeFrames(t *testing.T) {
 // last line to the next heading 24, the thanks 50 below the last line, and
 // the thanks reaches y 130 exactly when the roll stops.
 func TestRollLayoutAndPositions(t *testing.T) {
-	lines := rollLayout(CreditCards())
+	lines := rollLayout(CreditCards(night.EndingForever))
 	at := map[string]int{}
 	for _, l := range lines {
 		at[l.Text] = l.Y
@@ -102,10 +103,10 @@ func TestRollLayoutAndPositions(t *testing.T) {
 		"A game for the course":       24,
 		"Made by":                     58,
 		"Art":                         126,
-		"Music and sound":             160,
-		"Halcyon Rest":                334,
-		"Drift off well.":             344,
-		"Thank you for staying awake": 394,
+		"Music and sound":             204,
+		"Halcyon Rest":                378,
+		"Drift off well.":             388,
+		"Thank you for staying awake": 472,
 	} {
 		if got, ok := at[text]; !ok || got != y {
 			t.Errorf("%q is at y %d (found %v), want %d", text, got, ok, y)

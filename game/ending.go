@@ -85,7 +85,7 @@ func (s *endingScene) Enter(env *Env) error {
 			return err
 		}
 	}
-	s.cards = CreditCards()
+	s.cards = CreditCards(s.name)
 	if s.finale, err = newFinaleArt(env.Sprites, s.name, s.cards); err != nil {
 		return err
 	}
