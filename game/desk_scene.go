@@ -60,6 +60,7 @@ func (s *deskScene) Enter(env *Env) error {
 
 // Exit puts a lifted stamp back: it does not stay in the hand off the desk.
 func (s *deskScene) Exit() {
+	s.env.StampLanding = false
 	s.shift.PutBackStamp()
 	s.shift.EndFlipDrag()
 }
@@ -114,14 +115,14 @@ func (s *deskScene) stepSlam() {
 	if f == impactFrame-1 {
 		if err := s.shift.ApplyStamp(); err != nil { // it cannot land after all
 			s.shift.PutBackStamp()
-			s.slam = nil
+			s.slam, s.env.StampLanding = nil, false
 			return
 		}
 		playSFX("stamp_thunk")
 	}
 	s.slam.frame++
 	if landingPose(s.slam.frame).done {
-		s.slam = nil
+		s.slam, s.env.StampLanding = nil, false
 	}
 }
 
@@ -156,6 +157,7 @@ func (s *deskScene) click(x, y int) {
 			if err := sh.CheckApply(); err == nil {
 				st, _ := sh.Desk().Holding()
 				s.slam = &slamAnim{stamp: st, from: image.Pt(x-4, y-4)}
+				s.env.StampLanding = true
 				playSFX("stamp_lift")
 				return
 			}

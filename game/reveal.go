@@ -134,7 +134,9 @@ func (e *Env) UpdateReveal(sh *Shift) {
 	case RevealArrival, RevealDesk:
 		// The shift ran out before the folder was stamped: the reveal still
 		// happens. From the desk the view goes back up first.
-		if sh.Over() {
+		// A stamp still landing at the desk is let land first: it sets the
+		// stamped_self flag when it hits, and leaving now would drop it.
+		if sh.Over() && !e.StampLanding {
 			if r.Stage == RevealDesk {
 				e.SwitchTo(SceneDayReception)
 			}

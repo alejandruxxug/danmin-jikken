@@ -185,3 +185,21 @@ func TestRevealStillPlaysWhenTheShiftRunsOut(t *testing.T) {
 		t.Error("stamped_self set without a stamp")
 	}
 }
+
+// The shift runs out while a stamp is still landing at the desk: the reveal
+// waits for it, so the stamp (and stamped_self) is not dropped.
+func TestRevealWaitsForALandingStamp(t *testing.T) {
+	sh := newTestShift(t, 3)
+	sh.over = true
+	env := &Env{Day: 3, Flags: night.Flags{}, StampLanding: true}
+	env.Reveal = Reveal{Stage: RevealDesk}
+	env.UpdateReveal(sh)
+	if env.Reveal.Stage != RevealDesk || env.nextScene != "" {
+		t.Fatalf("left the desk mid-landing: stage %v, next %q", env.Reveal.Stage, env.nextScene)
+	}
+	env.StampLanding = false // the stamp has landed
+	env.UpdateReveal(sh)
+	if env.Reveal.Stage != RevealBack || env.nextScene != SceneDayReception {
+		t.Errorf("after the landing: stage %v, next %q; want back up at the reception", env.Reveal.Stage, env.nextScene)
+	}
+}

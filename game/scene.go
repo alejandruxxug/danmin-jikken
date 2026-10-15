@@ -58,6 +58,7 @@ type Env struct {
 	StrobeNight    int       // the night the strobe is leading into (0 when none plays), for the dump
 	StrobeTick     int       // ticks into it
 	Reveal         Reveal    // the day 3 YOU reveal (reveal.go)
+	StampLanding   bool      // the desk is playing a stamp landing; the reveal waits for it
 	fade           musicFade // the music fading out into a day (music.go)
 	PoweringOn     bool      // the day is turning on like a CRT (poweron.go)
 	PowerOnTick    int
