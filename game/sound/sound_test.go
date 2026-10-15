@@ -169,3 +169,45 @@ func TestOverrideReadsADiskFile(t *testing.T) {
 		t.Error("a missing override file must not fall back silently")
 	}
 }
+
+// The muted player records frame-stamped events for the trailer mixer.
+func TestEventsForTheTrailer(t *testing.T) {
+	fsys := fstest.MapFS{"hit.wav": {Data: wavBytes(100)}, "bed.wav": {Data: wavBytes(100)}}
+	p := New(fsys, true)
+	p.SetFrame(1)
+	p.PlayMusic("bed", true, 2*time.Second)
+	p.FadeIn(10)
+	p.EndFrame()
+	p.SetFrame(5)
+	p.PlaySFXGain("hit", 0.5)
+	p.PlayMusic("bed", true, 0) // already playing: no new event
+	p.Update()
+	p.EndFrame()
+	p.SetFrame(6)
+	p.StopMusic()
+	p.PlaySFX("nothing")
+
+	want := []Event{
+		{Frame: 1, Kind: "music", Cue: "bed", File: "bed.wav", Offset: 2, Loop: true},
+		{Frame: 5, Kind: "sfx", Cue: "hit", File: "hit.wav", Gain: 0.5},
+		{Frame: 6, Kind: "stop"},
+		{Frame: 6, Kind: "sfx", Cue: "nothing", Gain: 1},
+	}
+	var got []Event
+	for _, e := range p.Events {
+		if e.Kind != "gain" { // the gain events are checked below
+			got = append(got, e)
+		}
+	}
+	if len(got) != len(want) {
+		t.Fatalf("events = %+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("event %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+	if p.Events[1].Kind != "gain" || p.Events[1].Frame != 1 || p.Events[1].Gain != 0 {
+		t.Errorf("the fade-in should start the music at gain 0, got %+v", p.Events[1])
+	}
+}
