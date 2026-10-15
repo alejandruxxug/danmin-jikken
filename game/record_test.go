@@ -45,3 +45,20 @@ func TestRecordNeedsAgent(t *testing.T) {
 		t.Errorf("got %+v, %v", o, err)
 	}
 }
+
+func TestRecordTrailerOptions(t *testing.T) {
+	o, err := ParseOptions([]string{"-agent", "-record", "x", "-record-from", "31", "-bare-title", "-no-words"})
+	if err != nil || o.RecordFrom != 31 || !o.BareTitle || !o.NoWords {
+		t.Errorf("got %+v, %v", o, err)
+	}
+	if o, _ := ParseOptions([]string{"-agent"}); o.RecordFrom != 1 {
+		t.Errorf("RecordFrom defaults to %d, want 1", o.RecordFrom)
+	}
+	if _, err := ParseOptions([]string{"-agent", "-record-from", "0"}); err == nil {
+		t.Error("-record-from 0 should fail: frames count from 1")
+	}
+	// Players cannot reach them without -agent.
+	if o, _ := ParseOptions([]string{"-bare-title", "-no-words"}); o.BareTitle || o.NoWords {
+		t.Error("the trailer options work without -agent")
+	}
+}

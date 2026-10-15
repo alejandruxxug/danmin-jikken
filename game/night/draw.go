@@ -88,6 +88,7 @@ func ShakeOffset(ticks int) (dx, dy int) {
 
 // Art is every sheet the night scenes draw with.
 type Art struct {
+	NoWords            bool           // the trailer: no subtitles, text box or menu on top of the picture
 	scratch            *ebiten.Image  // the finished scene, when a shake or the redscale must reshape it
 	red                *ebiten.Shader // redscale.kage
 	mayu, hana         *sprites.Sheet
@@ -392,6 +393,9 @@ func (a *Art) drawOverlay(dst *ebiten.Image, e *Engine) {
 	}
 	if t, ok := e.FxTicks("splash"); ok {
 		a.DrawBlood(dst, t)
+	}
+	if a.NoWords {
+		return
 	}
 	switch {
 	case e.OnPaper():

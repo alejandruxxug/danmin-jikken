@@ -113,7 +113,7 @@ func New(opts Options) (*Game, error) {
 		}
 		g.agent = agent
 		if opts.Record != "" {
-			if g.rec, err = newRecorder(opts.Record); err != nil {
+			if g.rec, err = newRecorder(opts.Record, opts.RecordFrom); err != nil {
 				return nil, err
 			}
 		}

@@ -53,6 +53,9 @@ type Options struct {
 	Frames         int
 	Card           string // -card sheet:layer: what the scene trailer.card shows
 	Record         string // -record <dir>: save every frame as a 1920x1080 PNG plus audio.json (record.go)
+	RecordFrom     int    // -record-from N: frames before N run but are not saved (record.go)
+	BareTitle      bool   // -bare-title: the title without its menu and warnings (the trailer)
+	NoWords        bool   // -no-words: the visual novel without its subtitles and text box (the trailer)
 	Pan            int    // camera x at the start (used only when PanSet)
 	PanSet         bool   // -pan was given; without it the camera starts at 120
 	Scores         string // the scores file (without it scores stay in memory)
@@ -102,6 +105,9 @@ func ParseOptions(args []string) (Options, error) {
 	fs.IntVar(&o.Frames, "frames", 0, "end the run after N frames")
 	fs.IntVar(&o.Frames, "record-frames", 0, "the same as -frames (the number of frames to record)")
 	fs.StringVar(&o.Record, "record", "", "record mode: save every frame as a 1920x1080 PNG, and audio.json, in this folder (fixed 60 updates a second)")
+	fs.IntVar(&o.RecordFrom, "record-from", 1, "record mode: the first frame to save; the ones before it still run, but are not drawn or saved")
+	fs.BoolVar(&o.BareTitle, "bare-title", false, "the title without its menu and warnings (the trailer's logo shot)")
+	fs.BoolVar(&o.NoWords, "no-words", false, "the visual novel without its subtitles and text box (the trailer's flashes)")
 	fs.StringVar(&o.Card, "card", "", "scene trailer.card: show this layer of a sheet, as sheet:layer (the sheet defaults to trailer_cards)")
 	fs.IntVar(&o.Pan, "pan", 0, "camera x at the start, 0-240 (default 120, the centre)")
 	fs.StringVar(&o.Scores, "scores", "", "scores file to use (default: none, kept in memory)")
@@ -134,6 +140,9 @@ func ParseOptions(args []string) (Options, error) {
 	}
 	if o.Record != "" && !o.Enabled {
 		return Options{}, errors.New("-record needs -agent")
+	}
+	if o.RecordFrom < 1 {
+		return Options{}, fmt.Errorf("-record-from %d: frames count from 1", o.RecordFrom)
 	}
 	if o.Record != "" {
 		o.Quit = true // a recording ends with its script or its frames
@@ -514,6 +523,7 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 		env.StartPowerOn()
 	}
 	env.ReduceFlashing = opts.ReduceFlashing
+	env.BareTitle, env.NoWords = opts.BareTitle, opts.NoWords
 	env.Input.IgnoreReal = !opts.Live
 	if opts.PanSet {
 		if opts.Pan > MaxCameraX {

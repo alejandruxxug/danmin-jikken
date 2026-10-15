@@ -47,6 +47,7 @@ type AudioLog struct {
 // recorder saves the frames.
 type recorder struct {
 	dir     string
+	from    int // the first frame that is drawn and saved (-record-from)
 	frame   int // frames updated so far (= saved, once drawn)
 	drawn   bool
 	started bool          // an update has run
@@ -54,11 +55,11 @@ type recorder struct {
 	err     error
 }
 
-func newRecorder(dir string) (*recorder, error) {
+func newRecorder(dir string, from int) (*recorder, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("record: %w", err)
 	}
-	return &recorder{dir: dir, drawn: true, screen: ebiten.NewImage(RecordW, RecordH)}, nil
+	return &recorder{dir: dir, from: from, drawn: true, screen: ebiten.NewImage(RecordW, RecordH)}, nil
 }
 
 // mustWait says whether the last update is still waiting for its frame to be
@@ -77,6 +78,9 @@ func (r *recorder) save(g *Game) {
 		return
 	}
 	r.drawn = true
+	if r.frame < r.from {
+		return // a lead-in frame: the game ran it, nobody sees it
+	}
 	g.putOnScreen(r.screen, false)
 	img := readScreen(r.screen)
 	f, err := os.Create(filepath.Join(r.dir, FrameFile(r.frame)))

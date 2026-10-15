@@ -188,7 +188,7 @@ func (s *titleScene) Draw(screen *ebiten.Image) {
 		drawBigText(screen, s.bigF, "DANMIN", titleLogoY+dy+drop, dx)
 		drawBigText(screen, s.bigF, "JIKKEN", titleLogoY+34+dy+drop, dx)
 	}
-	if s.ticks >= titleMenuFrom {
+	if s.ticks >= titleMenuFrom && !s.env.BareTitle {
 		for i, item := range titleItems {
 			c, label := dim, item
 			if i == s.sel {
@@ -224,7 +224,7 @@ func (s *titleScene) drawSheet(screen *ebiten.Image) {
 				continue
 			}
 		case "press_rule":
-			if s.ticks < titleMenuFrom {
+			if s.ticks < titleMenuFrom || s.env.BareTitle {
 				continue
 			}
 			y += titleRuleDY

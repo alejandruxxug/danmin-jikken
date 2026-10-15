@@ -92,6 +92,8 @@ type Env struct {
 	SFXVolume    float64
 	TitleWhite   bool // the Prologue's white carries into the title drop
 	TitleSettled bool // the title is entered with its logo already down (coming back from the settings)
+	BareTitle    bool // test mode (the trailer): the title shows no menu and no warnings
+	NoWords      bool // test mode (the trailer): the visual novel shows no subtitles or text box
 	SeenPrologue bool // saved: later launches may skip the Prologue with a key
 	// The day 1 tutorial (tutorial.go). TutorialHints is saved in the settings;
 	// TutorialStep is test mode's -tutorial-step: the shift starts at that step.
@@ -159,6 +161,7 @@ func (e *Env) NightArt() (*night.Art, error) {
 			return nil, err
 		}
 	}
+	e.nightArt.NoWords = e.NoWords
 	return e.nightArt, nil
 }
 
