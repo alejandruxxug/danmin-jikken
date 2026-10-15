@@ -220,7 +220,7 @@ Swap the track name in the Kevin line for each Kevin track you end up using (Hot
 
 ## 🔌 What is in the game now
 
-Built 2026-10-14 by the builder. I can't listen, so **every row below is a default pick, Alejo to confirm by ear.** Files, authors and licences are also in `game/assets/sound/README.txt`. Each download was opened on its OpenGameArt page (licence and author checked) before use; Pixabay was not used because its pages answer an automated download with a 403 challenge (not bypassed) and Sonniss was not used.
+Built 2026-10-14 by the builder. I can't listen, so **every row below was a default pick; Alejo confirmed them by ear after full playthroughs (2026-10-14: "audio wise its good too").** Files, authors and licences are also in `game/assets/sound/README.txt`. Each download was opened on its OpenGameArt page (licence and author checked) before use; Pixabay was not used because its pages answer an automated download with a 403 challenge (not bypassed) and Sonniss was not used.
 
 ### Music
 

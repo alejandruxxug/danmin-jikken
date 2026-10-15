@@ -1,5 +1,5 @@
 Sound files for the game (see docs/Danmin Jikken - Sound.md for the sources and licences). A cue with no file here is silent.
-Every name is a cue: the game looks for name.ogg, name.mp3 or name.wav. All the choices below are DEFAULT PICKS, Alejo to confirm by ear.
+Every name is a cue: the game looks for name.ogg, name.mp3 or name.wav. All the choices below were confirmed by ear by Alejo (2026-10-14: "audio wise its good too").
 
 MUSIC
 title.mp3               Vampire's Piano, TAD, CC0, opengameart.org/content/vampires-piano
