@@ -83,6 +83,9 @@ var (
 	rectSlip       = rect{370, 200, 94, 38}
 )
 
+// onReferral says whether a target is a field of the referral page.
+func onReferral(r rect) bool { return r == rectRefName || r == rectRefDate || r == rectRefDiag }
+
 // The moments hints wait for.
 func atCecily(f tutFacts) bool { return f.day == 1 && f.window == "Old Cecily" && f.served == 0 }
 func cecilyOpen(f tutFacts) bool {
@@ -320,7 +323,15 @@ func (s *Shift) NoteHintShown(scene hintScene) { s.tut.markShown(s.CurrentHint(s
 // HintTargets is where the hint's highlights go on the screen. The sleeper
 // is in the room, so its place moves with the camera.
 func (s *Shift) HintTargets(h *Hint, cameraX int) []rect {
-	out := append([]rect(nil), h.Targets...)
+	var out []rect
+	for _, r := range h.Targets {
+		// The referral's fields are on the referral page only: with another
+		// page on top (the orientation sheet) the frame would sit on its text.
+		if onReferral(r) && s.desk.page != PageReferral {
+			continue
+		}
+		out = append(out, r)
+	}
 	if g := s.firstSleeper(); h.Sleeper && g != nil {
 		r := guestRect(s, g)
 		r.x -= cameraX

@@ -387,3 +387,37 @@ func TestGuidedStepsHoldTheHUDClock(t *testing.T) {
 		t.Error("HUD clock should run again after Esc")
 	}
 }
+
+// A field of the referral is framed only while the referral is the page on
+// top; the desk's own things (the ID, the stamps) are always framed.
+func TestHighlightsFollowThePageOnTop(t *testing.T) {
+	sh := newTestShift(t, 1)
+	sh.EnableTutorial(true)
+	if err := deskSetup(true, PageOrientation)(sh); err != nil {
+		t.Fatal(err)
+	}
+	var date, diag *Hint
+	for i := range hintList {
+		switch hintList[i].ID {
+		case "d1.expiry":
+			date = &hintList[i]
+		case "d1.diagnosis":
+			diag = &hintList[i]
+		}
+	}
+	if got := sh.HintTargets(date, 0); len(got) != 1 || got[0] != rectIDExpiry {
+		t.Errorf("orientation on top: date targets %v, want only the ID's expiry", got)
+	}
+	if got := sh.HintTargets(diag, 0); len(got) != 0 {
+		t.Errorf("orientation on top: diagnosis targets %v, want none", got)
+	}
+	if err := sh.GoToPage(PageReferral); err != nil {
+		t.Fatal(err)
+	}
+	if got := sh.HintTargets(date, 0); len(got) != 2 {
+		t.Errorf("referral on top: date targets %v, want both", got)
+	}
+	if got := sh.HintTargets(diag, 0); len(got) != 1 {
+		t.Errorf("referral on top: diagnosis targets %v, want one", got)
+	}
+}
