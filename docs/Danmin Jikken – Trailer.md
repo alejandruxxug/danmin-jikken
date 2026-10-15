@@ -45,3 +45,45 @@ Back to [[Danmin Jikken]] · Music in [[Danmin Jikken – Sound]] · Looks in [[
 | Length | 30 s (shots 2, 5, 6, 7, 9) / ~1 min (all) |
 | Presentation date | Around Oct 23. Confirm the exact day |
 | Text cards | English only, or English + Japanese (眠らないで, "don't sleep") |
+
+## 🎞️ Rendering the trailer
+
+Built 2026-10-14 (builder). The game renders the trailer **itself**, frame by frame, with the CRT and every shader exactly as a player sees them. No screen recording.
+
+**One command** (from the repo root; needs ffmpeg and a screen, because the game opens a window while it records):
+
+```bash
+tools/trailer/render.sh tools/trailer/shots.txt trailer     # -> trailer_out/trailer.mp4
+tools/trailer/render.sh tools/trailer/sample_shots.txt sample   # the 3-shot proof
+```
+
+| Part | What it does |
+|---|---|
+| `-agent -record <dir> -record-frames N` | The game runs fixed-step (one update per saved frame, 60 a second of output, no real time) and saves `<dir>/f000001.png …` at 1920x1080 (the 480x270 canvas x4, nearest) plus `<dir>/audio.json`. Works with `-input`, `-scene`, `-day`, `-seed`, `-flags`, `-line` and the rest. Writes no save files |
+| `audio.json` | Every sound event with its frame: `sfx` (file, gain), `music` (file, start offset, loop), `seek`, `gain` (the music's loudness each frame, so fades are exact), `stop`. Frame 1 is at 0 s; an event of frame n sounds at (n-1)/60 s |
+| `tools/trailer` (`trailer mix <dir>`) | Decodes the files from `game/assets/sound` to 48 kHz stereo, places every event, soft-limits, writes `<dir>/audio.wav` |
+| `trailer render` | Records each shot, mixes it, joins the shots (frames as links, fades as darkened copies), applies the music beds, and runs ffmpeg: H.264, yuv420p, 60 fps, CRF 16, AAC 192k |
+
+**The shot list** is one line per shot, clauses separated by `|`:
+
+```
+name | frames | backdoor args | clause | clause ...
+desk | 180 | -scene day.desk.referral -day 1 -seed 7 | input stamp.txt | fadein 15
+```
+
+| Clause | Meaning |
+|---|---|
+| `input <file>` | The input script, path relative to the shot list |
+| `card <layer>` | A full-screen card instead of the game: a layer of the sheet `trailer_cards`, or `sheet:layer`. Scene `trailer.card`, flat, no CRT |
+| `music <file> <offset> [gain]` | A music bed that replaces the game's own music for the shot. Shots in a row with the same `music` clause share one bed that plays on across them. The game's sound effects stay |
+| `fadein N` / `fadeout N` | Fade the picture and the sound from or to black over N frames |
+| `cut` | Hard cut: the shot's sound is not tapered (10 ms) at its end |
+
+Checks without listening (printed per shot): peak and RMS in dBFS, in the shot as the game sounded and as it sits in the trailer. The sample renders 9 s, 540 frames, 1920x1080, 60 fps, AAC 48 kHz stereo.
+
+**Limits.**
+- The window shows nothing while it records (drawing the CRT twice made the frames differ from run to run).
+- The ward's timers (when a patient falls asleep) run in real time inside `hospital/`, which is frozen, so shots that depend on a sleeper nodding off can differ between runs. Everything seeded and everything on the VN side is identical every run (tested with `go test` in `tools/trailer`).
+- A shot is as long as its `frames`, exactly; an sfx tail that runs past the end is cut.
+- The rock audition's `-rock` files and the `audition/` folder are not mixed (only `game/assets/sound`).
+
