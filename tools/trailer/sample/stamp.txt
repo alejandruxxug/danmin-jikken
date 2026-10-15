@@ -1,0 +1,6 @@
+# the desk: lift the ADMIT stamp, press it on the referral
+wait 20
+lift admit
+wait 30
+apply
+wait 130

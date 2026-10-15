@@ -13,3 +13,6 @@ assets/preview/
 # Rock audition tracks (listening only, never committed or embedded); the README stays
 game/assets/sound/audition/*
 !game/assets/sound/audition/README.txt
+
+# The rendered trailer (frames, wavs, mp4s)
+/trailer_out/
