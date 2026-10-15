@@ -56,3 +56,29 @@ func TestPowerOnRunsOut(t *testing.T) {
 		t.Error("the turn-on must end")
 	}
 }
+
+// With reduce flashing the turn-on is a smooth rise: from black to the
+// settled level, no frame-to-frame step above 20/255, and no overshoot.
+func TestReducedPowerOnIsSmooth(t *testing.T) {
+	prev := 0.0
+	if PowerOnLevel(0) != 0 {
+		t.Fatal("must start from black")
+	}
+	for tick := 0; tick < PowerOnTicks(); tick++ {
+		st, _ := PowerOnAt(tick)
+		level := PowerOnLevel(st.Progress)
+		if level < prev {
+			t.Errorf("tick %d: level fell from %v to %v", tick, prev, level)
+		}
+		if level > 1 {
+			t.Errorf("tick %d: level %v overshoots the settled picture", tick, level)
+		}
+		if step := (level - prev) * 255; step > 20 {
+			t.Errorf("tick %d: a step of %.1f/255", tick, step)
+		}
+		prev = level
+	}
+	if last := PowerOnLevel(1); last != 1 || 1-prev > 20.0/255 {
+		t.Errorf("ends at %v (last tick %v): want it to land on the settled level", last, prev)
+	}
+}

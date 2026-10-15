@@ -48,6 +48,15 @@ func PowerOnAt(tick int) (st PowerOnState, ok bool) {
 	return PowerOnState{}, false
 }
 
+// PowerOnLevel is the brightness of the turn-on with "reduce flashing" on:
+// no dot, no white flash, no over-bright settle, only a slow rise from black
+// to the normal picture (an eased 0 to 1, so it never overshoots). Over the
+// 48 ticks its steepest step is under 4 % of the full range.
+func PowerOnLevel(progress float64) float64 {
+	t := max(0, min(progress, 1))
+	return t * t * (3 - 2*t)
+}
+
 // StartPowerOn begins the turn-on; the day scene that follows a night calls
 // it through the night scene (and -poweron in test mode).
 func (e *Env) StartPowerOn() {

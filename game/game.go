@@ -318,17 +318,28 @@ func (g *Game) crtParams() CRTParams {
 	if g.env.Reveal.Active() {
 		p.Filmed = 0.3 // the x4 punch-in would show moire through the full glass (same fix as the report shot)
 	}
-	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn {
+	// With reduce flashing the CRT's dot and flash are left out: fadeFromBlack
+	// brings the picture up slowly instead.
+	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn && !g.env.ReduceFlashing {
 		p.PowerOn = st.Progress
 	}
 	return p
 }
 
 // fadeFromBlack is the turn-on without the CRT (-nocrt): a plain fast fade.
+// With reduce flashing it is also the turn-on of the CRT, as a slow eased fade.
 func (g *Game) fadeFromBlack(canvas *ebiten.Image) {
-	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn && !g.env.CRT {
-		vector.FillRect(canvas, 0, 0, ScreenW, ScreenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8((1 - st.Progress) * 255)}, false)
+	st, ok := PowerOnAt(g.env.PowerOnTick)
+	if !ok || !g.env.PoweringOn {
+		return
 	}
+	dark := 1 - st.Progress
+	if g.env.ReduceFlashing {
+		dark = 1 - PowerOnLevel(st.Progress)
+	} else if g.env.CRT {
+		return // the shader does the turn-on
+	}
+	vector.FillRect(canvas, 0, 0, ScreenW, ScreenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(dark * 255)}, false)
 }
 
 // fitScreen says how to show the 480x270 picture on a screen of w x h real
