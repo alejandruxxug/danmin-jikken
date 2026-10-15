@@ -1,0 +1,18 @@
+DANMIN JIKKEN - Windows (64-bit)
+
+1. Unzip the whole folder (do not run it from inside the zip), then
+   double-click danmin.exe.
+2. The build is not code-signed, so Windows SmartScreen may warn you.
+   Click "More info" and then "Run anyway".
+
+Saves: scores (danmin_scores.txt) and settings (danmin_settings.json) are
+written NEXT TO danmin.exe. Keep the game in a folder you can write to
+(for example Documents, not Program Files).
+
+Keys: F11 or Alt+Enter fullscreen, F10 CRT filter, Esc skips the prologue and hints.
+Settings are in the title menu.
+
+CONTENT WARNING: suicide, self-harm, death, graphic gore, and strong flashing
+lights (a strobe). Settings has a "Reduce flashing" option.
+
+Credits: SOUND-CREDITS.txt. Licence: LICENSE (code) and LICENSE-ART.md (art).

@@ -1,0 +1,20 @@
+DANMIN JIKKEN - Linux (64-bit x86)
+
+1. Unzip, then in a terminal in that folder:
+       chmod +x danmin
+       ./danmin
+2. The game needs a desktop (X11 or Wayland), OpenGL and a sound device.
+   On Debian/Ubuntu install the runtime libraries if it fails to start:
+       sudo apt install libgl1 libasound2 libxcursor1 libxi6 libxinerama1 libxrandr2 libxxf86vm1
+   (On newer Ubuntu the sound package is called libasound2t64.)
+
+Saves: scores (danmin_scores.txt) and settings (danmin_settings.json) are
+written NEXT TO the executable. Keep the game in a folder you can write to.
+
+Keys: F11 fullscreen, F10 CRT filter, Esc skips the prologue and hints.
+Settings are in the title menu.
+
+CONTENT WARNING: suicide, self-harm, death, graphic gore, and strong flashing
+lights (a strobe). Settings has a "Reduce flashing" option.
+
+Credits: SOUND-CREDITS.txt. Licence: LICENSE (code) and LICENSE-ART.md (art).

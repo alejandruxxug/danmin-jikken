@@ -1,0 +1,24 @@
+DANMIN JIKKEN - macOS (arm64 = Apple Silicon M1/M2/M3/M4, amd64 = Intel)
+
+1. Unzip, then in Terminal in that folder:
+       chmod +x danmin
+       ./danmin
+2. The build is NOT signed or notarized (it is a student project), so macOS
+   will say it cannot verify the developer. Either:
+     - right-click the file "danmin" in Finder, choose Open, then Open again; or
+     - remove the quarantine flag once:
+           xattr -d com.apple.quarantine danmin
+   If the system still blocks it: System Settings > Privacy & Security >
+   "Open Anyway".
+
+Saves: scores (danmin_scores.txt) and settings (danmin_settings.json) are
+written NEXT TO the executable. Keep the game in a folder you can write to
+(not inside a read-only disk image).
+
+Keys: F11 or Cmd+F fullscreen, F10 CRT filter, Esc skips the prologue and hints.
+Settings are in the title menu.
+
+CONTENT WARNING: suicide, self-harm, death, graphic gore, and strong flashing
+lights (a strobe). Settings has a "Reduce flashing" option.
+
+Credits: SOUND-CREDITS.txt. Licence: LICENSE (code) and LICENSE-ART.md (art).
