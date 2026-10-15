@@ -16,3 +16,9 @@ game/assets/sound/audition/*
 
 # The rendered trailer (frames, wavs, mp4s)
 /trailer_out/
+
+# Files the game writes next to its executable (scores, settings, the 3:17 log)
+danmin_scores.txt
+danmin_settings.json
+sleep_log_317.txt
+/game/danmin

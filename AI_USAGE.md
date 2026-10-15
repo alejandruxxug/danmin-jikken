@@ -1,13 +1,15 @@
 # AI usage
 
-> Running log, written as the project happens so it matches the defense. Finished before submission.
+> Running log, written as the project happens so it matches the defense. Rows are in date order; each one is a real mistake found in AI-written code or advice.
 
 ## Tools
-- **Claude Code (Claude Opus 5.5)**, several sessions/accounts: design docs, the `hospital` model, tests, the demo, the game.
+- **Claude Code** (Anthropic), run in several sessions. The work is split between three project agents (defined in `.claude/agents/`): **`art`** on **Claude Opus** (Aseprite sprites, Figma views, art reviews), **`builder`** on **Claude Sonnet** (Go code: the model, the simulation, the game, tests) and **`tester`** on **Claude Sonnet** (runs the checks and drives the game through the agent backdoor; reports bugs, never fixes them). The main session coordinates them. Design docs, the `hospital` model, the demo, the tests and the game were all written with this setup.
+- Skills used by the agents: the pixel-game-studio skill ([ClaudeWD40](https://github.com/alejandruxxug/ClaudeWD40)).
+- The design, the story, the scope and every approval of a screen are Alejo's decisions (the visual approval gate: nothing is coded before he approves its Figma view). The AI proposed and built; the rows below are the mistakes found along the way.
 - Student: Alejandro Urrego Giraldo
 
 ## Decisive prompts
-*(to fill in: 2–3 prompts that shaped the project)*
+*TODO (Alejo, before the defense): 2-3 prompts that shaped the project, in your own words.*
 
 ## Cases where the AI was wrong or not idiomatic
 
@@ -45,4 +47,4 @@
 | 2026-10-14 | The AI cleared `TutorialHints` only in `endShift()`, but a real run ends through the ending finale to the top-10, so the design-log rule "hints off after the first finished run" never happened | The tester ran an ending and the setting stayed true | The finale clears and saves it when it hands over to the top-10 (not for replays or auditions); tests for all endings |
 
 ## What I learned
-*(to fill in before the defense)*
+*TODO (Alejo, before the defense): write this section yourself, in your own words. It is not filled in on purpose.*

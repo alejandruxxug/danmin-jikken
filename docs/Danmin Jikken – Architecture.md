@@ -170,7 +170,7 @@ An id that is not registered stops the game with `unknown scene "<id>"` and exit
 game/go.mod             module danmingame, requires danmin via replace
 game/cmd/danmin/        main: flags in, game.Run out
 game/scene.go           Scene interface, SceneManager, Env (shared clock/ward/input/day/flags)
-game/scenes.go          placeholder title
+game/scenes.go          the scene table (id -> constructor)
 game/days.go            the 3 days as a table (visitors, rooms, shift length), Stamp, Visitor.RightStamp
 game/shift.go           Shift: one day at the desk (queue, stamps, dispatch, score, alert). No drawing
 game/ward.go            Ward: Admit (goroutine per admitted patient), Attend, AssignRoom, Drain, Snapshot
