@@ -54,6 +54,24 @@ type Player struct {
 	// A fade-in in progress (FadeIn): inLeft counts ticks down to 0.
 	inLeft, inTotal int
 
+	// shape is a multiplier the game sets by hand every tick (SetMusicShape),
+	// for music whose loudness follows the picture (Forever's build-up).
+	shape    float64
+	shapeSet bool
+
+	// musicBase is where in the track the playing stream began (PlayMusic's
+	// start), so MusicPosition can say where in the file the music is.
+	musicBase time.Duration
+
+	// The muted player has no sound card, so it keeps a pretend position that
+	// moves one tick per Update, like the real one does in real time. A test
+	// can make the pretend music start late (SimulateLateStart), the way a
+	// slow decode does on a real machine.
+	simPos     time.Duration
+	simPlaying bool
+	simDelay   int // ticks the pretend music still waits before it moves
+	lateStart  int // ticks the next pretend start waits (SimulateLateStart)
+
 	files   map[string]string // cue -> file on disk that stands in for the embedded one (Override)
 	missing map[string]bool
 	Log     []string // every request, like "sfx stamp_thunk" or "music title"
@@ -205,6 +223,7 @@ func (p *Player) PlayMusic(name string, loop bool, start time.Duration) {
 	p.stop()
 	p.current = name
 	if p.muted || p.ctx == nil {
+		p.simPos, p.simPlaying, p.simDelay = start, true, p.lateStart
 		return
 	}
 	pcm, ok := p.preloaded[name]
@@ -233,9 +252,10 @@ func (p *Player) PlayMusic(name string, loop bool, start time.Duration) {
 		p.missing[name] = true
 		return
 	}
-	pl.SetVolume(p.musicVol)
-	pl.Play()
 	p.music = pl
+	p.musicBase = time.Duration(skip/4) * time.Second / SampleRate
+	pl.SetVolume(p.musicVol * p.gain())
+	pl.Play()
 }
 
 // Preload decodes a track ahead of time so PlayMusic can start it at once.
@@ -296,8 +316,56 @@ func (p *Player) fadeInGain() float64 {
 	return 1 - EasedFadeGain(p.inLeft, p.inTotal)
 }
 
-// gain is both fades together.
-func (p *Player) gain() float64 { return p.fadeGain() * p.fadeInGain() }
+// gain is the fades and the shape together.
+func (p *Player) gain() float64 {
+	g := p.fadeGain() * p.fadeInGain()
+	if p.shapeSet {
+		g *= p.shape
+	}
+	return g
+}
+
+// SetMusicShape sets a hand-made multiplier (0 to 1) on the music volume until
+// the music stops. The ending calls it every tick with forevergain.
+func (p *Player) SetMusicShape(g float64) {
+	p.shape, p.shapeSet = min(max(g, 0), 1), true
+	if p.music != nil {
+		p.music.SetVolume(p.musicVol * p.gain())
+	}
+}
+
+// MusicPosition is where in its file the music is playing right now (what the
+// sound card is really playing, not what the game hopes). ok is false when
+// nothing plays.
+func (p *Player) MusicPosition() (pos time.Duration, ok bool) {
+	if p.current == "" {
+		return 0, false
+	}
+	if p.muted || p.ctx == nil {
+		return p.simPos, p.simPlaying
+	}
+	if p.music == nil {
+		return 0, false
+	}
+	return p.musicBase + p.music.Position(), true
+}
+
+// SeekMusic jumps the playing music to pos in its file. The ending only does
+// it while the music is quiet: a jump is a click. Seeking back before the
+// point the stream started at is not possible and goes to that point.
+func (p *Player) SeekMusic(pos time.Duration) {
+	p.Log = append(p.Log, fmt.Sprintf("music seek %.3f", pos.Seconds()))
+	if p.muted || p.ctx == nil {
+		p.simPos, p.simDelay = pos, 0
+		return
+	}
+	if p.music != nil {
+		_ = p.music.SetPosition(max(pos-p.musicBase, 0))
+	}
+}
+
+// SimulateLateStart makes the next muted PlayMusic start ticks late (tests).
+func (p *Player) SimulateLateStart(ticks int) { p.lateStart = ticks }
 
 // MusicGain is how loud the music plays right now: the volume times the
 // fades. The test dump shows it.
@@ -330,6 +398,13 @@ func EasedFadeGain(left, total int) float64 {
 
 // Update moves a fade-out one tick forward. Call it once per frame.
 func (p *Player) Update() {
+	if p.simPlaying { // the muted player's pretend music
+		if p.simDelay > 0 {
+			p.simDelay--
+		} else {
+			p.simPos += time.Second / 60
+		}
+	}
 	if p.inLeft > 0 {
 		p.inLeft--
 	}
@@ -351,6 +426,7 @@ func (p *Player) StopMusic() {
 }
 
 func (p *Player) stop() {
+	p.shape, p.shapeSet, p.simPlaying = 0, false, false
 	p.fadeLeft, p.fadeTotal, p.fadeEased = 0, 0, false
 	p.inLeft, p.inTotal = 0, 0
 	if p.music != nil {

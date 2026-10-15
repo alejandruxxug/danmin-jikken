@@ -244,7 +244,9 @@ The other rock files are **cut at the slam** (frame-level mp3 cut, no re-encodin
 
 | Step | Code |
 |---|---|
-| Hard cut, 1.5 s silence | `phaseSilence`: `SetMusic("")`; the rock is **decoded now** (`Player.Preload`) so the slam is not late. **Forever skips both**: its music is already playing (`planMusic`, `syncedStart`, `Player.FadeIn`) |
+| Hard cut, 1.5 s silence | `phaseSilence`: `SetMusic("")`; the rock is **decoded now** (`Player.Preload`) so the slam is not late. **Forever skips both**: its music is already playing (`planMusic`, `syncedStart`, `foreverGain`, `syncMusic`) |
+
+**Forever's music: volume shape and the audio clock (2026-10-14).** Alejo played it: the drop was a few seconds behind the title. Measured: the script timeline was exact (title at the planned tick, 0 error), but the sound card started the music late (2458 ms on a cold start, 20 to 40 ms warm), so it ran behind for the whole ending. Fix (`game/ending_sync.go`): every 6 ticks the player's real position (`Player.MusicPosition`) is compared with `drop - ticksUntilTitle/60`; a drift over 40 ms is fixed with `Player.SeekMusic`, **only while the music is quiet** (gain up to 0.3; loud and over 150 ms off is reported in the dump as a note, never seeked). The volume is `foreverGain`: 9 % at the first line, flat until the first eyes-closing bars (`bars 62`, found by `night.TimelineMarks`), a smoothstep rise to full 0.1 s before the drop, full under the finale until the existing fade. The file is decoded when Night 3's "Close your eyes / Keep them open" menu appears (`preloadForever`). Proof of the clock: `DANMIN_SYNCLOG=1 go run ./cmd/danmin -play ending.forever -flags route_hana` prints the ticks and positions to stderr.
 | Slam, no fade-in | `phaseCard`: `PlayMusic("ending_rock_<name>", false, rockStarts[name])` |
 | Credits under the same track | the track just keeps playing |
 | Fade in the last seconds | when 4 s of credits are left, `Player.FadeOut(240)` (a tested linear ramp, `FadeGain`); skipping the credits hard-cuts at the top-10 |

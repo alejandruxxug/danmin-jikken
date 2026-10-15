@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -58,9 +59,15 @@ type endingScene struct {
 	over   *ebiten.Image // 3:17: the finale's layer drawn aside, so a row band can slip
 	blood  int           // ticks since the blood splashed (Forever); -1 when it has not
 	title  *titleArt
-	timed  bool          // the rock plays from the first line, timed to the title (Forever)
-	glitch *Glitch       // the secret ending's lag and glitch (nil for the others)
-	buf    *ebiten.Image // the picture drawn aside, before the glitch tears it
+	timed  bool // the rock plays from the first line, timed to the title (Forever)
+	clock  int  // ticks since the ending began (every phase), for the music's sync
+	eyesAt int  // tick the eyes start to close (-1: never), where Forever's music starts to rise
+	// the clock tick before which the music is not judged again (it just jumped)
+	settleUntil int
+	musicStart  time.Duration // where the music was asked to start in its file
+	musicMoved  bool          // the sound card has really started playing it
+	glitch      *Glitch       // the secret ending's lag and glitch (nil for the others)
+	buf         *ebiten.Image // the picture drawn aside, before the glitch tears it
 }
 
 func (s *endingScene) Enter(env *Env) error {
@@ -99,11 +106,12 @@ func (s *endingScene) planMusic() error {
 	if err != nil {
 		return err
 	}
-	scriptTicks, err := night.Timeline(script, s.script.engine.Flags(), Username())
+	scriptTicks, eyes, err := night.TimelineMarks(script, s.script.engine.Flags(), Username())
 	if err != nil {
 		return err
 	}
 	s.env.EndingTitleAt = scriptTicks + silenceTicks
+	s.eyesAt = eyes
 	drop, timed := rockDrops[s.name]
 	s.timed = timed
 	if !timed || s.env.Sound == nil {
@@ -111,12 +119,15 @@ func (s *endingScene) planMusic() error {
 	}
 	start, clamped := syncedStart(drop, s.env.EndingTitleAt)
 	s.env.EndingRockFrom = start.Seconds()
+	s.musicStart = start
+	s.settleUntil = syncSettle // the first reading of a fresh stream is noisy: look from half a second on
 	if clamped {
 		s.env.Sound.Note(fmt.Sprintf("ending %s: the rock file starts too late to reach its drop by tick %d; starting at 0", s.name, s.env.EndingTitleAt))
 	}
 	s.env.MusicCue = "ending_rock_" + s.name
 	s.env.Sound.PlayMusic("ending_rock_"+s.name, false, start)
-	s.env.Sound.FadeIn(foreverFadeInTicks)
+	s.env.Sound.SetMusicShape(foreverQuiet) // very quiet until the eyes close (ending_sync.go)
+	logSync("%s: music asked for at tick 0, from %.3f s in the file; title planned at tick %d, eyes at %d", s.name, start.Seconds(), s.env.EndingTitleAt, eyes)
 	return nil
 }
 
@@ -153,6 +164,10 @@ func (s *endingScene) setPhase(p endingPhase) {
 			s.env.Sound.Preload("ending_rock_" + s.name) // decode now, in the quiet, so the slam is not late
 		}
 	case phaseTitle:
+		if s.timed && s.env.Sound != nil {
+			pos, _ := s.env.Sound.MusicPosition()
+			logSync("title pops at tick %d (planned %d); music at %.3f s, drop at %.3f s (error %+.1f ms)", s.clock, s.env.EndingTitleAt, pos.Seconds(), rockDrops[s.name].Seconds(), (pos-rockDrops[s.name]).Seconds()*1000)
+		}
 		s.script.engine.CutToStill() // the last picture comes back (some endings name theirs)
 		if s.timed {
 			return // the rock has been playing since the first line
@@ -165,6 +180,8 @@ func (s *endingScene) setPhase(p endingPhase) {
 }
 
 func (s *endingScene) Update() error {
+	s.clock++
+	defer s.syncMusic()
 	if s.env.JumpToFinale { // the backdoor's "finale N": straight to tick N of the finale
 		s.env.JumpToFinale = false
 		if err := s.jumpToFinale(s.env.FinaleJumpTick); err != nil {

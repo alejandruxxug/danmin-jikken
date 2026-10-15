@@ -15,8 +15,9 @@ import (
 
 // nightScene plays one night script (the Prologue or Night 1).
 type nightScene struct {
-	env    *Env
-	script string // night.Prologue, night.Night1 ... or an ending's script
+	preloaded, menuShown bool // Night 3: Forever's music is decoded ahead (preloadForever)
+	env                  *Env
+	script               string // night.Prologue, night.Night1 ... or an ending's script
 	// onEnd, when set, takes over the end of the script (the ending scene
 	// uses it for "end card"); otherwise finish decides.
 	onEnd func(to string) error
@@ -105,6 +106,7 @@ func (s *nightScene) Update() error {
 			storyClick = true
 		}
 	}
+	s.preloadForever()
 	if n := len(e.Options()); n > 0 {
 		s.updateMenu(n)
 	} else if storyClick || in.KeyPressed(ebiten.KeySpace) || in.KeyPressed(ebiten.KeyEnter) {
@@ -264,5 +266,26 @@ func (s *nightScene) Exit() {
 	}
 	if s.env.Night == s.engine {
 		s.env.Night = nil
+	}
+}
+
+// preloadForever decodes Forever's music while the player is still deciding
+// on Night 3's last choice (Close your eyes / Keep them open), so the ending
+// does not stall decoding it. The menu gets one frame on screen first: the
+// decode takes a moment and the picture freezes while it runs.
+func (s *nightScene) preloadForever() {
+	if s.script != night.Night3 || s.env.Sound == nil || s.preloaded {
+		return
+	}
+	for _, o := range s.engine.Options() {
+		if o.Text == "Close your eyes" {
+			if !s.menuShown {
+				s.menuShown = true
+				return
+			}
+			s.preloaded = true
+			s.env.Sound.Preload("ending_rock_" + night.EndingForever)
+			return
+		}
 	}
 }

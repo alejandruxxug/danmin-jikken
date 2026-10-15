@@ -809,24 +809,36 @@ const maxTimeline = 10 * 60 * TicksPerSecond
 // clicking would not change the answer. The flags are copied, so the real
 // ones are not touched.
 func Timeline(s *Script, flags Flags, player string) (int, error) {
+	total, _, err := TimelineMarks(s, flags, player)
+	return total, err
+}
+
+// TimelineMarks is Timeline and also the tick the eyes start to close: the
+// first time the cinematic bars are sent past their usual height (Forever's
+// `bars 62`, the eyelids). It is -1 when the script never does that.
+func TimelineMarks(s *Script, flags Flags, player string) (total, eyes int, err error) {
 	copied := Flags{}
 	for name, on := range flags {
 		copied[name] = on
 	}
 	e, err := NewEngineFor(s, copied, player)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	if !e.forced {
-		return 0, fmt.Errorf("%s: no `autoplay on`, so its length depends on the player", s.Name)
+		return 0, 0, fmt.Errorf("%s: no `autoplay on`, so its length depends on the player", s.Name)
 	}
+	eyes = -1
 	for e.ticks < maxTimeline {
+		if e.bars.to > BarFull && eyes < 0 {
+			eyes = e.ticks
+		}
 		if _, ended := e.Ended(); ended {
-			return e.ticks, nil
+			return e.ticks, eyes, nil
 		}
 		if err := e.Tick(); err != nil {
-			return 0, err
+			return 0, 0, err
 		}
 	}
-	return 0, fmt.Errorf("%s: still running after %d ticks", s.Name, maxTimeline)
+	return 0, 0, fmt.Errorf("%s: still running after %d ticks", s.Name, maxTimeline)
 }

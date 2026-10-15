@@ -80,9 +80,6 @@ const (
 	foreverCutFrom = time.Duration(1914*1152) * time.Second / 44100
 )
 
-// foreverFadeInTicks is the short fade-in of Forever's music (3 s).
-const foreverFadeInTicks = 180
-
 // syncedStart is where in its file a track must start so that its drop lands
 // after titleAt ticks of playing. If the file does not reach back that far
 // the track starts at 0 and clamped says so (the drop will then be late).
