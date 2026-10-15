@@ -2,7 +2,7 @@
 
 Back to [[Danmin Jikken]] · Music in [[Danmin Jikken – Sound]] · Looks in [[Danmin Jikken – Art Direction]]
 
-> **Status: in production (2026-10-14).** Alejo's picks: rendered by the game (record mode → MP4), ~1 min **with dark hints** (split-second flashes, no endings), English cards with Japanese accents. **Storyboard v2 approved (2026-10-14)** with the main session's picks (red-room flash as is, T15 trimmed to ~1 s of the injection, a real tape-stop, CC BY credits on the end card, the five cards). **Added since:** the blood splash on the logo slam (T19b) and the **motion pass** (Alejo: *"i just want it very motion graphicky! … It will be at the start of it"*: the trailer opens his defense). **The motion pass is waiting for Alejo's approval.** Figma page *Overnight review*, section `Trailer (2026-10-14)`. The v1 list is kept at the bottom for reference.
+> **Status: in production (2026-10-14).** Alejo's picks: rendered by the game (record mode → MP4), ~1 min **with dark hints** (split-second flashes, no endings), English cards with Japanese accents. **Storyboard v2 approved (2026-10-14)** with the main session's picks (red-room flash as is, T15 trimmed to ~1 s of the injection, a real tape-stop, CC BY credits on the end card, the five cards). **Added since:** the blood splash on the logo slam (T19b) and the **motion pass** (Alejo: *"i just want it very motion graphicky! … It will be at the start of it"*: the trailer opens his defense). **The motion pass was approved with all big moves kept, the full strobe and the CC BY credits (Alejo, 2026-10-14); built and rendered, see Rendering.** Figma page *Overnight review*, section `Trailer (2026-10-14)`. The v1 list is kept at the bottom for reference.
 >
 > **Was: proposal (2026-10-13).** A ~1 minute trailer to present the game to the class, **around Oct 23** (Alejo: "it's in 10 days"). That's after the Oct 19 submission and the Oct 20 defense, so the **finished game** is in the shots: night, title and all. Record on **Oct 21–22**, never during the build days.
 
@@ -146,44 +146,43 @@ Previews: `assets/preview/figma/trailer/T01…T20_*.png` (the Figma images, ×4)
 
 ## 🎞️ Rendering the trailer
 
-Built 2026-10-14 (builder). The game renders the trailer **itself**, frame by frame, with the CRT and every shader exactly as a player sees them. No screen recording.
+Built 2026-10-14 (builder). The game records its shots **itself** (CRT and every shader as a player sees them); a compositor in `tools/trailer` cuts them together with the cards and the motion graphics. No screen recording.
 
-**One command** (from the repo root; needs ffmpeg and a screen, because the game opens a window while it records):
+**One command** (from the repo root; needs ffmpeg and a screen, the game opens a window while it records):
 
 ```bash
-tools/trailer/render.sh tools/trailer/shots.txt trailer     # -> trailer_out/trailer.mp4
-tools/trailer/render.sh tools/trailer/sample_shots.txt sample   # the 3-shot proof
+tools/trailer/render.sh                                          # records every shot, writes trailer_out/trailer.mp4 (full strobe)
+tools/trailer/render.sh -reuse                                   # same shots as last time: skips the recording (about 80 s)
+tools/trailer/render.sh -reuse -reduced -name trailer_reduced    # the backup: the -reduce-flashing strobe only
+tools/trailer/render.sh -reuse -only 142,146,796                 # just these frames, as PNGs in trailer_out/trailer_frames/
 ```
 
 | Part | What it does |
 |---|---|
-| `-agent -record <dir> -record-frames N` | The game runs fixed-step (one update per saved frame, 60 a second of output, no real time) and saves `<dir>/f000001.png …` at 1920x1080 (the 480x270 canvas x4, nearest) plus `<dir>/audio.json`. Works with `-input`, `-scene`, `-day`, `-seed`, `-flags`, `-line` and the rest. Writes no save files |
-| `audio.json` | Every sound event with its frame: `sfx` (file, gain), `music` (file, start offset, loop), `seek`, `gain` (the music's loudness each frame, so fades are exact), `stop`. Frame 1 is at 0 s; an event of frame n sounds at (n-1)/60 s |
-| `tools/trailer` (`trailer mix <dir>`) | Decodes the files from `game/assets/sound` to 48 kHz stereo, places every event, soft-limits, writes `<dir>/audio.wav` |
-| `trailer render` | Records each shot, mixes it, joins the shots (frames as links, fades as darkened copies), applies the music beds, and runs ffmpeg: H.264, yuv420p, 60 fps, CRF 16, AAC 192k |
+| `shots.txt` | The recordings, one line each: `name \| frames \| backdoor args \| input file \| from N`. 16 game runs; the inputs are in `tools/trailer/inputs/`. Cards and motion graphics are not recorded |
+| `-agent -record <dir> -record-frames N [-record-from N]` | Fixed-step run, one update per saved frame, `f000001.png ...` at 1920x1080 plus `audio.json`. `-record-from` runs the first frames without drawing or saving them (long set-ups are quick). Record-only options: `-bare-title` (the title without menu and warnings), `-no-words` (the VN without subtitles and text box) |
+| `timeline.go` | For each of the 4020 frames, the list of layers (which recorded frame, which sprite at which offset, clips, zoom). Pure arithmetic, table-tested (`timeline_test.go`); easings, slam, typewriter, clock race and glitch rows are in `ease.go` and `motion.go` |
+| `compose.go`, `canvas.go` | The compositor. **It works on the 1920x1080 picture:** the recorded frames already have the game's CRT, so they are copied as they are (offsets in whole game pixels = multiples of 4, punch-ins whole x2 / x3 by nearest copy); sprites are drawn pixel by pixel as 4x4 blocks, so the motion layers stay crisp and the CRT look is identical to the game's. The cards and graphics have no CRT, as in the Figma views |
+| `audioplan.go`, `tape.go` | The mix: beds, cues and the game's own sound effects at their frames. **Tape stop**: the jingle is read by a resampling ramp (speed 1 to 0.3, `inQuad`, frames 1096 to 1346), so speed and pitch fall together |
+| `render.go` | Records, composes on all cores, pipes raw frames to ffmpeg (H.264, yuv420p, 60 fps, CRF 16, AAC 192k) |
 
-**The shot list** is one line per shot, clauses separated by `|`:
+**Outputs:** `trailer_out/trailer.mp4` (full strobe, as Alejo chose) and `trailer_out/trailer_reduced.mp4` (backup, only the strobe differs). 4020 frames, 67.000 s, 1920x1080, 60 fps, yuv420p, AAC 48 kHz stereo.
 
-```
-name | frames | backdoor args | clause | clause ...
-desk | 180 | -scene day.desk.referral -day 1 -seed 7 | input stamp.txt | fadein 15
-```
+**Sync, in numbers** (the render prints them):
+- **Ironbound's drop is on trailer frame 3261 and the dagger lands on frame 3261.** The bed starts at file 24.7 s on frame 2661 at normal speed, so file 34.7 s (the drop) is exactly 600 frames later. The dagger lands on the title's **frame 30** (it starts 14 ticks after the logo and falls for 16), not "tick 21" as the motion table said; T19 starts at the title's frame 9 so that frame 30 is on frame 3261.
+- The game's slam in the stamp shot is its frame 96; T05 shows frames 21 to 145, so it lands on frame 796 (beat 30).
+- Tape stop: the jingle's zero crossings per second fall from 1086 (frames 1100 to 1140) to 656 (1200 to 1240) to 318 (1290 to 1330) while the speed ramp ends at 0.3. Frames 1346 to 1495 are digital silence (-180 dB) except the one quiet snore on 1500; 3960 to 3978 is silent until the bell.
 
-| Clause | Meaning |
-|---|---|
-| `input <file>` | The input script, path relative to the shot list |
-| `card <layer>` | A full-screen card instead of the game: a layer of the sheet `trailer_cards`, or `sheet:layer`. Scene `trailer.card`, flat, no CRT |
-| `music <file> <offset> [gain]` | A music bed that replaces the game's own music for the shot. Shots in a row with the same `music` clause share one bed that plays on across them. The game's sound effects stay |
-| `fadein N` / `fadeout N` | Fade the picture and the sound from or to black over N frames |
-| `cut` | Hard cut: the shot's sound is not tapered (10 ms) at its end |
+**Take pinning.** Everything seeded is identical every run. The sleepers (T08, T09) depend on the ward's real-time timers, so they can differ between recordings: the take that is in `trailer_out/shots/` is the take; `-reuse` keeps it, and the game's own snores for that shot are **not** used (the snores are fixed cues on fixed frames). Delete `trailer_out/shots/sleepers` to take it again and look at the result before rendering.
 
-Checks without listening (printed per shot): peak and RMS in dBFS, in the shot as the game sounded and as it sits in the trailer. The sample renders 9 s, 540 frames, 1920x1080, 60 fps, AAC 48 kHz stereo.
+**Things that differ from the note's table, on purpose**
+- The v3 frames win over the v2 seconds (the tape stop is 1096 to 1346, the jingle cut 1346, Ironbound's hard cut 3960, the bell 3978).
+- T05 is recorded on **day 2** (`-day 2`): on day 1 Old Cecily is asleep at the window and the game refuses the stamp until she is woken; the shot is the same desk.
+- Old Cecily is woken at frame 224 of the T02 run, so the "dozed off" joke is not given away before the T07 split screen.
+- `sweep` (a full-width dither band) rides the T01 to T02 whip at mid height.
+- The T10b clock runs from 17:58 through midnight to 03:17 in about 40 changes (gap 6 frames to 1, inQuad); the digits are Silkscreen rasterised without smoothing at x4.
 
-**Limits.**
-- The window shows nothing while it records (drawing the CRT twice made the frames differ from run to run).
-- The ward's timers (when a patient falls asleep) run in real time inside `hospital/`, which is frozen, so shots that depend on a sleeper nodding off can differ between runs. Everything seeded and everything on the VN side is identical every run (tested with `go test` in `tools/trailer`).
-- A shot is as long as its `frames`, exactly; an sfx tail that runs past the end is cut.
-- The rock audition's `-rock` files and the `audition/` folder are not mixed (only `game/assets/sound`).
+**Limits.** The window shows nothing while it records. A shot is as long as its frames. The rock audition's files are not used.
 
 ## 🗄️ Shot list v1 (2026-10-13, superseded by v2)
 
