@@ -32,6 +32,9 @@ func (s *receptionScene) Enter(env *Env) error {
 		return err
 	}
 	s.shift = env.Shift()
+	if g := env.Reveal.Guest; g != nil { // looking back up from the desk
+		env.Reveal.LookUp(g.status != guestWaiting)
+	}
 	return nil
 }
 
@@ -43,6 +46,14 @@ func (s *receptionScene) Update() error {
 		return s.drawErr
 	}
 	s.ticks++
+	if rv := &s.env.Reveal; rv.Active() {
+		// The YOU reveal: the camera is locked on the x4 view and the only
+		// input is looking down at the desk, and only before the stamp.
+		if x, y, ok := s.env.Input.Click(); ok && rv.Stage == RevealArrival && filesRect.has(x, y) {
+			s.env.SwitchTo(SceneDayDesk)
+		}
+		return nil
+	}
 	s.pan()
 	if err := tutorialInput(s.env, s.shift, hintReception); err != nil {
 		return err
@@ -152,6 +163,16 @@ func guestRect(sh *Shift, g *Guest) rect {
 
 func (s *receptionScene) Draw(screen *ebiten.Image) {
 	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60, tutTicks: s.shift.TutorialTicks()}
+	if rv := &s.env.Reveal; rv.Active() {
+		p.revealView(rv)
+		if rv.Stage == RevealArrival {
+			p.filesTab(s.shift) // the way down to the desk
+		}
+		if p.err != nil && s.drawErr == nil {
+			s.drawErr = p.err
+		}
+		return
+	}
 	p.room(s.shift, int(s.env.CameraX))
 	p.hud(s.shift, s.env.Clock.String(), "^ PATIENT COMPUTER ^")
 	p.toast(s.shift.Banner())

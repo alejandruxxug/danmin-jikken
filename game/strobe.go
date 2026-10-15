@@ -153,14 +153,10 @@ func (s *strobeScene) Draw(screen *ebiten.Image) {
 	st := s.state()
 	switch st.Layer {
 	case layerDay:
-		p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
-		p.room(nil, DefaultCameraX)
-		p.glass()
+		s.drawDay(screen)
 	case layerWhite:
 		if s.env.ReduceFlashing { // the day, going to white through the shader's inversion
-			p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
-			p.room(nil, DefaultCameraX)
-			p.glass()
+			s.drawDay(screen)
 			vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0x0b, 0x0b, 0x0c, uint8(st.Fall * 255)}, false)
 			return
 		}
@@ -169,6 +165,18 @@ func (s *strobeScene) Draw(screen *ebiten.Image) {
 		screen.Fill(paletteInk) // the fall ends on solid black
 		s.whiteOver(screen, st)
 	}
+}
+
+// drawDay draws the day under the strobe: the empty room, or (day 3) the x4
+// face of the YOU reveal the strobe started from.
+func (s *strobeScene) drawDay(screen *ebiten.Image) {
+	p := &painter{art: s.art, screen: screen, day: s.env.Day, elapse: time.Duration(s.ticks) * time.Second / 60}
+	if s.env.Reveal.Active() {
+		p.revealView(&s.env.Reveal)
+		return
+	}
+	p.room(nil, DefaultCameraX)
+	p.glass()
 }
 
 // fallWhite is how much white lies over the black at a moment of the fall
@@ -191,7 +199,10 @@ func (s *strobeScene) whiteOver(screen *ebiten.Image, st StrobeState) {
 	vector.FillRect(screen, 0, 0, ScreenW, ScreenH, color.NRGBA{0xec, 0xec, 0xe6, uint8(alpha * 255)}, false)
 }
 
-func (s *strobeScene) Exit() { s.env.Invert, s.env.StrobeNight, s.env.StrobeTick = 0, 0, 0 }
+func (s *strobeScene) Exit() {
+	s.env.Invert, s.env.StrobeNight, s.env.StrobeTick = 0, 0, 0
+	s.env.Reveal = Reveal{}
+}
 
 // UpdateLiveStrobe runs the strobe over the live day (Alejo: it starts while
 // you finish the last patient). The flicker begins when the last guest is at
@@ -203,7 +214,10 @@ func (e *Env) UpdateLiveStrobe(sh *Shift) (handOver bool) {
 	if _, ok := strobeTicks[e.Day]; !ok {
 		return false
 	}
-	last := sh.Served() == sh.Total() || sh.Over() // the last stamp has landed
+	if e.Reveal.Active() && e.Reveal.Stage != RevealStun {
+		return false // the reveal is playing; the strobe starts at its end
+	}
+	last := sh.Served() == sh.Total() || sh.Over() || e.Reveal.Stage == RevealStun // the last stamp has landed
 	if e.StrobeNight == 0 {
 		if !last && !sh.LastGuestAtDesk() {
 			return false

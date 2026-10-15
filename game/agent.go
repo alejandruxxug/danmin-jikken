@@ -58,6 +58,8 @@ type Options struct {
 	Sleepy         bool   // patients fall asleep within a second and sleep long
 	Dark           int    // -dark N: draw every guest N palette steps darker (0-3), -1 = as the game decides
 	Tutorial       string // -tutorial on|off: the hint boxes (off unless asked, so shots stay clean); "" = off
+	Live           bool   // -live: the real mouse and keyboard work too, so a person can play the scene
+	YouReveal      string // -you-reveal STAGE: day 3 jumps to a stage of the YOU reveal (sb1, sb3, tilt, face, stun)
 	TutorialStep   int    // -tutorial-step N: day 1 runs to the moment of tutorial step N (1 to 10); turns the hints on
 
 	// Fullscreen is an ordinary option for players, so it also works
@@ -102,6 +104,8 @@ func ParseOptions(args []string) (Options, error) {
 	fs.IntVar(&o.Dark, "dark", -1, "draw every guest N palette steps darker, 0-3 (to judge the Severe darkening)")
 	fs.StringVar(&o.Tutorial, "tutorial", "", "the tutorial's hint boxes: on or off (test mode starts with them off)")
 	fs.IntVar(&o.TutorialStep, "tutorial-step", 0, "day 1: start at tutorial step N (1 to 10), hints on; see them with -scene day.reception (step 1) or day.desk.orientation / day.desk.referral")
+	fs.StringVar(&o.YouReveal, "you-reveal", "", "day 3: jump to a stage of the YOU reveal: sb1, sb3, tilt, face or stun (use -scene day.reception -day 3)")
+	fs.BoolVar(&o.Live, "live", false, "with -agent: let the real mouse and keyboard play (test mode ignores them otherwise)")
 	fs.BoolVar(&o.Sleepy, "sleepy", false, "patients fall asleep fast and sleep long")
 	fs.BoolVar(&o.Fullscreen, "fullscreen", false, "start in fullscreen (F11 or Alt+Enter toggles it)")
 	fs.StringVar(&o.Play, "play", "", "audition: open this scene with sound on (e.g. ending.forever), no -agent needed")
@@ -116,6 +120,9 @@ func ParseOptions(args []string) (Options, error) {
 	})
 	if o.Tutorial != "" && o.Tutorial != "on" && o.Tutorial != "off" {
 		return Options{}, fmt.Errorf("-tutorial %q: want on or off", o.Tutorial)
+	}
+	if _, ok := revealJumps[o.YouReveal]; o.YouReveal != "" && !ok {
+		return Options{}, fmt.Errorf("-you-reveal %q: want sb1, sb3, tilt, face or stun", o.YouReveal)
 	}
 	if o.TutorialStep < 0 || o.TutorialStep > 10 {
 		return Options{}, fmt.Errorf("-tutorial-step %d: want a step from 1 to 10", o.TutorialStep)
@@ -496,7 +503,7 @@ func newAgent(opts Options, env *Env) (*Agent, error) {
 		env.StartPowerOn()
 	}
 	env.ReduceFlashing = opts.ReduceFlashing
-	env.Input.IgnoreReal = true
+	env.Input.IgnoreReal = !opts.Live
 	if opts.PanSet {
 		if opts.Pan > MaxCameraX {
 			return nil, fmt.Errorf("-pan %d: want a number from 0 to %d", opts.Pan, MaxCameraX)
@@ -844,6 +851,19 @@ type Dump struct {
 
 	// The tutorial's hint box as the scene shows it (nil without a shift).
 	Tutorial *DumpTutorial `json:"tutorial,omitempty"`
+
+	// The day 3 YOU reveal (nil while it has not started).
+	Reveal *DumpReveal `json:"reveal,omitempty"`
+}
+
+// DumpReveal is where the YOU reveal is: its stage, the tick in the stage
+// and the world y of the x4 view's top edge.
+type DumpReveal struct {
+	Stage     string `json:"stage"` // arrival, desk, back, tilt, face or stun
+	Tick      int    `json:"tick"`
+	TopY      int    `json:"topY"`
+	Blinking  bool   `json:"blinking"`
+	InputLock bool   `json:"inputLocked"`
 }
 
 // DumpTutorial is the hint box: whether hints are on, the step of day 1's
@@ -1048,6 +1068,10 @@ func BuildDump(env *Env, sceneID string, frame int) Dump {
 	if env.StrobeNight > 0 {
 		st := StrobeAt(env.StrobeNight, env.StrobeTick, env.ReduceFlashing)
 		d.Strobe = &DumpStrobe{Night: env.StrobeNight, Tick: env.StrobeTick, Layer: st.Layer.String(), Invert: st.Invert, Length: StrobeLength(env.StrobeNight)}
+	}
+	if env.Reveal.Active() {
+		r := &env.Reveal
+		d.Reveal = &DumpReveal{Stage: r.Stage.String(), Tick: r.Tick, TopY: r.TopY(), Blinking: r.Blinking(), InputLock: r.InputLocked()}
 	}
 	sort.Strings(d.Flags) // map order is random; sorted keeps dumps comparable
 	return d

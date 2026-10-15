@@ -130,10 +130,11 @@ func buildDays() []DayRules {
 	pearl := person("Pearl Wick", "pearl_wick", smile, 29, hospital.Mild, gullhaven, Date{4, 22, 79}, "SEASICKNESS", "FEELS ILL ON THE", "FERRY.")
 
 	cecily := person("Old Cecily", "cecily", smile, 71, hospital.Severe, gullhaven, Date{6, 30, 79}, "NARCOLEPSY", "FALLS ASLEEP AT HER", "FISH STALL.")
-	// You: the last patient of day 3. The sprite is Silas Brook's until
-	// the art for the player's own window picture exists (placeholder).
-	you := person("YOU", "silas_brook", neutral, 24, hospital.Moderate, theShoals, Date{10, 30, 79}, "SLEEP ATTACKS", "FALLS ASLEEP AT", "THE DESK.")
+	cecily.FaceY = 5 // her face is drawn higher than the others': the photo starts higher too
+	// You: the last patient of day 3, in a hospital gown with a chest tag.
+	you := person("YOU", "you_patient", neutral, 24, hospital.Moderate, theShoals, Date{10, 30, 79}, "SLEEP ATTACKS", "FALLS ASLEEP AT", "THE DESK.")
 	you.Self = true
+	you.FaceY = 11 // the whole head in the ID photo (the gown sprite's hair starts higher)
 	you.Returning, you.Ward, you.LastStay = true, "WARD C", dayDate(2)
 	cecilyBack := cecily
 	cecily.OrientationFirst = true // day 1 only: cecilyBack is copied above, without it

@@ -116,6 +116,7 @@ type DeskArt struct {
 
 	// Scratch pictures the look-down desk draws into before bending them.
 	back, top, closed, open, page *ebiten.Image
+	view                          *ebiten.Image // scratch of the YOU reveal (reveal_draw.go)
 	white                         *ebiten.Image // one white pixel, the source of flat-coloured triangles
 }
 
@@ -149,6 +150,7 @@ func LoadDeskArt(fsys fs.FS) (*DeskArt, error) {
 		a.window[name] = sheet
 	}
 	a.back, a.top = ebiten.NewImage(ScreenW, ScreenH), ebiten.NewImage(ScreenW, ScreenH)
+	a.view = ebiten.NewImage(ScreenW, ScreenH)
 	a.closed, a.open = ebiten.NewImage(folderW, folderH), ebiten.NewImage(folderW, folderH)
 	a.page = ebiten.NewImage(pageW, pageH)
 	a.white = ebiten.NewImage(1, 1)

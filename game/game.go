@@ -157,6 +157,11 @@ func New(opts Options) (*Game, error) {
 	if err := g.scenes.Switch(first); err != nil {
 		return nil, err
 	}
+	if opts.Enabled && opts.YouReveal != "" {
+		if err := env.jumpToReveal(opts.YouReveal); err != nil {
+			return nil, err
+		}
+	}
 	return g, nil
 }
 
@@ -186,9 +191,10 @@ func (g *Game) Update() error {
 	}
 	if sh := g.env.Shift(); sh != nil {
 		sh.Update()
+		g.env.UpdateReveal(sh)
 		if g.env.UpdateLiveStrobe(sh) {
 			g.env.SwitchTo(strobeSceneID(g.env.StrobeNight)) // the strobe goes on in its own scene
-		} else if sh.Over() && g.env.StrobeNight == 0 {
+		} else if sh.Over() && g.env.StrobeNight == 0 && !g.env.Reveal.Active() {
 			if err := g.endShift(); err != nil {
 				return err
 			}
@@ -308,6 +314,9 @@ func (g *Game) crtParams() CRTParams {
 	p := DefaultCRT(g.env.Day, float64(g.ticks)/60, g.env.Invert)
 	if n := g.env.Night; n != nil && n.DayLook() {
 		p.Filmed, p.Day = 0.3, 1 // the report seen from inside the night: a light glass, no day 3 breakdown
+	}
+	if g.env.Reveal.Active() {
+		p.Filmed = 0.3 // the x4 punch-in would show moire through the full glass (same fix as the report shot)
 	}
 	if st, ok := PowerOnAt(g.env.PowerOnTick); ok && g.env.PoweringOn {
 		p.PowerOn = st.Progress

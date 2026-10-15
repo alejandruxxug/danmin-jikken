@@ -57,6 +57,7 @@ type Env struct {
 	SkipStrobe     bool      // test mode: the strobe scene ends at once
 	StrobeNight    int       // the night the strobe is leading into (0 when none plays), for the dump
 	StrobeTick     int       // ticks into it
+	Reveal         Reveal    // the day 3 YOU reveal (reveal.go)
 	fade           musicFade // the music fading out into a day (music.go)
 	PoweringOn     bool      // the day is turning on like a CRT (poweron.go)
 	PowerOnTick    int
@@ -187,6 +188,7 @@ func (e *Env) StartShift() error {
 		return err
 	}
 	e.shift = sh
+	e.Reveal = Reveal{}   // a new shift starts with no reveal
 	e.SetMusic("day_hum") // the fluorescent hum under the desk
 	sh.Flags = e.Flags
 	sh.forceDark = e.Dark

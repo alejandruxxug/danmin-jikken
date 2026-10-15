@@ -49,6 +49,7 @@ func (s *deskScene) Enter(env *Env) error {
 	}
 	s.shift = env.Shift()
 	s.shift.Desk().MarkVisited() // the FILES tab stops pulsing
+	s.env.Reveal.LookDown()
 	if s.setup != nil {
 		s.t = 1
 		return s.setup(s.shift)
@@ -187,6 +188,10 @@ func (s *deskScene) Draw(screen *ebiten.Image) {
 	if s.t < 1 {
 		// The reception goes into its own picture first, so it can be squashed.
 		p.into(s.art.back, func(q *painter) {
+			if s.env.Reveal.Active() { // the tag shot tilts away, not the wide room
+				q.revealView(&s.env.Reveal)
+				return
+			}
 			q.room(s.shift, int(s.env.CameraX))
 			q.hud(s.shift, s.env.Clock.String(), "^ PATIENT COMPUTER ^")
 			q.toast(s.shift.Message())
