@@ -4,9 +4,24 @@
 
 ## Tools
 - **Claude Code** (Anthropic), run in several sessions. The work is split between three project agents (defined in `.claude/agents/`): **`art`** on **Claude Opus** (Aseprite sprites, Figma views, art reviews), **`builder`** on **Claude Sonnet** (Go code: the model, the simulation, the game, tests) and **`tester`** on **Claude Sonnet** (runs the checks and drives the game through the agent backdoor; reports bugs, never fixes them). The main session coordinates them. Design docs, the `hospital` model, the demo, the tests and the game were all written with this setup.
-- Skills used by the agents: the pixel-game-studio skill ([ClaudeWD40](https://github.com/alejandruxxug/ClaudeWD40)).
+- Skills used by the agents: the pixel-game-studio skill ([ClaudeWD40](https://github.com/alejandruxxug/ClaudeWD40)), made for this game (see below).
 - The design, the story, the scope and every approval of a screen are Alejo's decisions (the visual approval gate: nothing is coded before he approves its Figma view). The AI proposed and built; the rows below are the mistakes found along the way.
 - Student: Alejandro Urrego Giraldo
+
+## The pixel-game-studio skill
+A Claude Code skill Alejo and Claude made on 2026-10-14 from the way this game was built, so the same workflow can be reused on other 2D games. It lives in his skills repo: [`skills/pixel-game-studio`](https://github.com/alejandruxxug/ClaudeWD40/tree/main/skills/pixel-game-studio) (commit `c2b0f7d`).
+
+| Part | What it does |
+|---|---|
+| `SKILL.md` | Makes the main Claude session the **producer**: it talks to the student, writes decisions down, hands work to the agents and relays between them. It does very little drawing or coding itself |
+| The three lanes | `art` (Opus: Aseprite sprites, Figma views), `builder` (Sonnet: game code, tests), `tester` (Sonnet: drives the game, reports, never fixes). Templates in `references/agents/`, the same agents this repo has in `.claude/agents/` |
+| The approval gate | No screen is coded before its Figma view is approved. Every decision goes into the design log in the student's own words |
+| The visual-issue loop | `tester` spots something that looks wrong → `art` confirms it and fixes only that → `builder` if the cause is code → `tester` re-checks |
+| `references/agent-backdoor.md` | How to give the game a test mode (`-agent -scene <id>`, scripted input, screenshots, state dumps), like this game's backdoor |
+| `references/prompts.md` | Prompt templates for each agent: the student's words, what's approved, exact paths, which files the agent may touch, the checks and what to report |
+| `references/sound.md` | Rules for finding sound legally (licences, credits) and letting the student choose by ear |
+
+Why it matters here: it writes down the method used for the GUI and the night (who decides, who draws, who codes, who tests), so the workflow is something Alejo can explain, not something hidden in old chats. The game's credits name it ("Made with: the pixel-game-studio skill").
 
 ## Decisive prompts
 *TODO (Alejo, before the defense): 2-3 prompts that shaped the project, in your own words.*
